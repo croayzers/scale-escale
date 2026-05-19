@@ -1,0 +1,475 @@
+/* ─────────────────────────────────────────────────────────
+   SCENE MANAGER — Three.js: escena, cámaras, render, cotas
+   ───────────────────────────────────────────────────────── */
+
+import { ModelFactory } from '../models/index.js';
+// Imports diferidos para romper ciclos:
+// AppState y UIManager se cargan en runtime, no en estático.
+
+let _appState, _uiManager;
+async function bindDeps() {
+  if (!_appState)  ({ AppState:  _appState  } = await import('../core/AppState.js'));
+  if (!_uiManager) ({ UIManager: _uiManager } = await import('../ui/UIManager.js'));
+}
+
+let scene, renderer, perspectiveCam, orthoCam, controlsIso, controlsTop;
+let activeCam, activeControls;
+let groundPlane, planMesh, gridHelper, gridMain, axes;
+const meshes = new Map();
+let dragPlane;
+let directionalLight, ambientLight, fillLight;
+let cotasGroup;
+
+function init() {
+  const canvas = document.getElementById('scene-canvas');
+
+  /* ===== Renderer ===== */
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+    preserveDrawingBuffer: true,
+    powerPreference: 'high-performance'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  /* ===== Escena ===== */
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xf5f3ee, 60, 140);
+
+  /* ===== Cámaras ===== */
+  const aspect = window.innerWidth / window.innerHeight;
+
+  perspectiveCam = new THREE.PerspectiveCamera(45, aspect, 0.1, 500);
+  perspectiveCam.position.set(28, 28, 28);
+  perspectiveCam.lookAt(0, 0, 0);
+
+  const orthoSize = 25;
+  orthoCam = new THREE.OrthographicCamera(
+    -orthoSize * aspect, orthoSize * aspect,
+    orthoSize, -orthoSize,
+    0.1, 500
+  );
+  orthoCam.position.set(0, 60, 0);
+  orthoCam.lookAt(0, 0, 0);
+  orthoCam.zoom = 1;
+  orthoCam.updateProjectionMatrix();
+
+  activeCam = perspectiveCam;
+
+  /* ===== Controles ===== */
+  controlsIso = new THREE.OrbitControls(perspectiveCam, canvas);
+  controlsIso.enableDamping = true;
+  controlsIso.dampingFactor = 0.08;
+  controlsIso.minPolarAngle = Math.PI / 8;
+  controlsIso.maxPolarAngle = Math.PI / 2.2;
+  controlsIso.minDistance = 8;
+  controlsIso.maxDistance = 80;
+  controlsIso.target.set(0, 0, 0);
+
+  controlsTop = new THREE.OrbitControls(orthoCam, canvas);
+  controlsTop.enableRotate = false;
+  controlsTop.enableDamping = true;
+  controlsTop.dampingFactor = 0.1;
+  controlsTop.screenSpacePanning = true;
+  controlsTop.mouseButtons = {
+    LEFT: THREE.MOUSE.PAN,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT: THREE.MOUSE.PAN
+  };
+  controlsTop.minZoom = 0.3;
+  controlsTop.maxZoom = 4;
+  controlsTop.enabled = false;
+
+  activeControls = controlsIso;
+
+  /* ===== Iluminación ===== */
+  ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+  scene.add(ambientLight);
+
+  directionalLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  directionalLight.position.set(15, 25, 10);
+  directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.set(2048, 2048);
+  directionalLight.shadow.camera.left = -40;
+  directionalLight.shadow.camera.right = 40;
+  directionalLight.shadow.camera.top = 40;
+  directionalLight.shadow.camera.bottom = -40;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 100;
+  directionalLight.shadow.bias = -0.0003;
+  scene.add(directionalLight);
+
+  fillLight = new THREE.DirectionalLight(0xeae5da, 0.25);
+  fillLight.position.set(-15, 10, -10);
+  scene.add(fillLight);
+
+  /* ===== Suelo ===== */
+  groundPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200),
+    new THREE.MeshStandardMaterial({
+      color: 0xe9e4da,
+      roughness: 0.95,
+      metalness: 0.0,
+    })
+  );
+  groundPlane.rotation.x = -Math.PI / 2;
+  groundPlane.receiveShadow = true;
+  groundPlane.position.y = -0.01;
+  scene.add(groundPlane);
+
+  rebuildGrids();
+
+  /* ===== Ejes ===== */
+  const axesGroup = new THREE.Group();
+  const xMat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: 0.6 });
+  const xLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-50, 0.01, 0), new THREE.Vector3(50, 0.01, 0)]),
+    xMat
+  );
+  axesGroup.add(xLine);
+  scene.add(axesGroup);
+  axes = axesGroup;
+
+  /* ===== Plano matemático para drag ===== */
+  dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+  /* ===== Grupo de cotas ===== */
+  cotasGroup = new THREE.Group();
+  scene.add(cotasGroup);
+
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function rebuildGrids() {
+  if (gridHelper) { scene.remove(gridHelper); gridHelper.geometry.dispose(); gridHelper.material.dispose(); }
+  if (gridMain)   { scene.remove(gridMain);   gridMain.geometry.dispose();   gridMain.material.dispose();   }
+
+  const SIZE = 60;
+  const spacing = _appState?.snap?.spacing ?? 0.25;
+  const fineDivisions = Math.min(1200, Math.round(SIZE / spacing));
+  const mainDivisions = SIZE;
+
+  gridHelper = new THREE.GridHelper(SIZE, fineDivisions, 0x1a1a1c, 0x1a1a1c);
+  gridHelper.material.opacity = 0.10;
+  gridHelper.material.transparent = true;
+  scene.add(gridHelper);
+
+  gridMain = new THREE.GridHelper(SIZE, mainDivisions, 0x1a1a1c, 0x1a1a1c);
+  gridMain.material.opacity = 0.25;
+  gridMain.material.transparent = true;
+  gridMain.position.y = 0.001;
+  scene.add(gridMain);
+}
+
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight, a = w / h;
+  renderer.setSize(w, h);
+  perspectiveCam.aspect = a;
+  perspectiveCam.updateProjectionMatrix();
+
+  const orthoSize = 25;
+  orthoCam.left = -orthoSize * a;
+  orthoCam.right = orthoSize * a;
+  orthoCam.top = orthoSize;
+  orthoCam.bottom = -orthoSize;
+  orthoCam.updateProjectionMatrix();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  activeControls.update();
+  _uiManager?.updateTooltipPosition?.();
+  renderer.render(scene, activeCam);
+}
+
+function setCamera(mode) {
+  if (_appState) _appState.camera = mode;
+  if (mode === 'iso') {
+    activeCam = perspectiveCam;
+    controlsIso.enabled = true;
+    controlsTop.enabled = false;
+    activeControls = controlsIso;
+    document.getElementById('status-mode').textContent = 'ISO · 45°';
+  } else {
+    activeCam = orthoCam;
+    controlsTop.enabled = true;
+    controlsIso.enabled = false;
+    activeControls = controlsTop;
+    document.getElementById('status-mode').textContent = 'TOP · CENITAL';
+  }
+  // Las carpas tienen representación distinta según vista → reconstruir
+  if (_appState) {
+    _appState.items.filter(i => i.type === 'carpa').forEach(c => rebuild(c));
+  }
+}
+
+function spawn(item) {
+  const group = ModelFactory.create(item);
+  group.userData = { id: item.id };
+  group.position.set(item.x, 0, item.z);
+  if (item.rotY) group.rotation.y = item.rotY;
+  meshes.set(item.id, group);
+  scene.add(group);
+  if (_appState?.showCotas) drawCotas();
+}
+
+function rebuild(item) {
+  removeItem(item.id);
+  spawn(item);
+}
+
+function removeItem(id) {
+  const g = meshes.get(id);
+  if (!g) return;
+  scene.remove(g);
+  disposeGroup(g);
+  meshes.delete(id);
+  if (_appState?.showCotas) drawCotas();
+}
+
+function disposeGroup(group) {
+  group.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function moveItem(id, x, z) {
+  const g = meshes.get(id);
+  if (!g) return;
+  g.position.x = x;
+  g.position.z = z;
+  const item = _appState?.items.find(i => i.id === id);
+  if (item) { item.x = x; item.z = z; }
+  moveCotaFor(id, x, z);
+}
+
+function rotateItem(id, rotY) {
+  const g = meshes.get(id);
+  if (!g) return;
+  g.rotation.y = rotY;
+  const item = _appState?.items.find(i => i.id === id);
+  if (item) item.rotY = rotY;
+}
+
+function highlightSelection() {
+  if (!_appState) return;
+  const sel = _appState.items.find(i => i.id === _appState.selectedId);
+  meshes.forEach((g, id) => {
+    const it = _appState.items.find(x => x.id === id);
+    g.traverse(child => {
+      if (child.isMesh && child.userData.baseColor !== undefined) {
+        const isSelected = id === _appState.selectedId;
+        const isSimilar = sel && sel.type === 'mesa' && it && it.type === 'mesa'
+                          && it.dims.diameter === sel.dims.diameter && id !== sel.id;
+        const isCarpa = it && it.type === 'carpa';
+
+        if (isCarpa) {
+          if (isSelected) {
+            if (child.material.opacity !== undefined) {
+              child.material.opacity = Math.min(1, (child.userData.baseOpacity || 1) * 1.5);
+            }
+            child.material.color.setHex(0x8b5a2b);
+          } else {
+            if (child.material.opacity !== undefined && child.userData.baseOpacity) {
+              child.material.opacity = child.userData.baseOpacity;
+            }
+            child.material.color.setHex(child.userData.baseColor);
+          }
+          return;
+        }
+
+        if (isSelected) {
+          child.material.emissive = new THREE.Color(0xffffff);
+          child.material.emissiveIntensity = 0.18;
+          child.material.color.setHex(0x2a2a2c);
+        } else if (isSimilar) {
+          child.material.emissive = new THREE.Color(0xd4ff3a);
+          child.material.emissiveIntensity = 0.10;
+          child.material.color.setHex(child.userData.baseColor);
+        } else {
+          child.material.emissive = new THREE.Color(0x000000);
+          child.material.emissiveIntensity = 0;
+          child.material.color.setHex(child.userData.baseColor);
+        }
+      }
+    });
+  });
+}
+
+function drawCotas() {
+  while (cotasGroup.children.length) {
+    const c = cotasGroup.children.pop();
+    if (c.material && c.material.map) c.material.map.dispose();
+    if (c.material) c.material.dispose();
+    if (c.geometry) c.geometry.dispose();
+  }
+  if (!_appState?.showCotas) return;
+
+  _appState.items.forEach(item => {
+    const isMesa  = item.type === 'mesa';
+    const isCarpa = item.type === 'carpa';
+    let label, kind, yOffset;
+
+    if (isCarpa) {
+      label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${(item.dims.length*item.dims.width).toFixed(0)}m²`;
+      kind = 'carpa';
+      yOffset = _appState.camera === 'top' ? 0.5 : 4.5;
+    } else if (isMesa) {
+      if (item.subtype === 'presi') {
+        label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
+      } else {
+        label = `Ø ${item.dims.diameter.toFixed(2)}m · ${item.chairs}p`;
+      }
+      kind = 'mesa';
+      yOffset = 1.55;
+    } else {
+      label = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;
+      kind = 'buffet';
+      yOffset = 2.55;
+    }
+
+    const sprite = makeTextSprite(label, kind);
+    sprite.position.set(item.x, yOffset, item.z);
+    sprite.userData.itemId = item.id;
+    cotasGroup.add(sprite);
+  });
+}
+
+function moveCotaFor(itemId, x, z) {
+  if (!_appState?.showCotas) return;
+  cotasGroup.children.forEach(sprite => {
+    if (sprite.userData.itemId === itemId) {
+      sprite.position.x = x;
+      sprite.position.z = z;
+    }
+  });
+}
+
+function makeTextSprite(text, kind = 'mesa') {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 640; canvas.height = 144;
+
+  const r = 16;
+  ctx.fillStyle = 'rgba(10,10,11,0.92)';
+  roundRect(ctx, 4, 4, canvas.width-8, canvas.height-8, r);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 4, 4, canvas.width-8, canvas.height-8, r);
+  ctx.stroke();
+
+  const labels = { mesa: '— MESA —', buffet: '— BUFFET —', carpa: '— CARPA —' };
+  const labelColors = {
+    mesa:   'rgba(212,255,58,0.85)',
+    buffet: 'rgba(212,255,58,0.85)',
+    carpa:  'rgba(212,165,116,0.95)',
+  };
+
+  ctx.font = '500 22px "JetBrains Mono", monospace';
+  ctx.fillStyle = labelColors[kind] || labelColors.mesa;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(labels[kind] || labels.mesa, canvas.width/2, 18);
+
+  ctx.font = '500 44px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#f5f3ee';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width/2, canvas.height/2 + 14);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.8, 0.63, 1);
+  sprite.renderOrder = 999;
+  return sprite;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+/* ─── Plano base (imagen/PDF/DXF aplicado como textura del suelo) ─── */
+function setPlanTexture(texture) {
+  if (planMesh) {
+    scene.remove(planMesh);
+    planMesh.geometry.dispose();
+    planMesh.material.dispose();
+  }
+  const geo = new THREE.PlaneGeometry(_appState.plan.widthM, _appState.plan.lengthM);
+  const mat = new THREE.MeshStandardMaterial({
+    map: texture,
+    transparent: true,
+    opacity: _appState.plan.opacity,
+    roughness: 1.0,
+    metalness: 0,
+    depthWrite: false
+  });
+  planMesh = new THREE.Mesh(geo, mat);
+  planMesh.rotation.x = -Math.PI / 2;
+  planMesh.position.y = 0.005;
+  planMesh.receiveShadow = true;
+  scene.add(planMesh);
+  _appState.plan.mesh = planMesh;
+  _appState.plan.texture = texture;
+}
+
+function updatePlanSize() {
+  if (!planMesh) return;
+  planMesh.geometry.dispose();
+  planMesh.geometry = new THREE.PlaneGeometry(_appState.plan.widthM, _appState.plan.lengthM);
+}
+
+function updatePlanOpacity(v) {
+  if (planMesh) {
+    planMesh.material.opacity = v;
+    planMesh.material.needsUpdate = true;
+  }
+}
+
+function setControlsEnabled(enabled) {
+  if (!_appState) return;
+  if (_appState.camera === 'iso') {
+    controlsIso.enabled = enabled;
+  } else {
+    controlsTop.enabled = enabled;
+  }
+}
+
+/* ─── API exportada ─── */
+export const SceneManager = {
+  async init() {
+    await bindDeps();
+    init();
+  },
+  spawn, rebuild, removeItem, moveItem, rotateItem,
+  highlightSelection,
+  drawCotas,
+  setCamera,
+  setControlsEnabled,
+  rebuildGrids,
+  setPlanTexture, updatePlanSize, updatePlanOpacity,
+  get scene() { return scene; },
+  get renderer() { return renderer; },
+  get activeCam() { return activeCam; },
+  get meshes() { return meshes; },
+  get dragPlane() { return dragPlane; }
+};
