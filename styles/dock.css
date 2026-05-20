@@ -151,12 +151,29 @@ body.has-items #empty-hint { display: none; }
 #header-mac {
   left: 50% !important;
   transform: translateX(-50%) !important;
-  max-width: calc(100vw - 48px);
+  max-width: calc(100vw - 24px);
   white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
+#header-mac::-webkit-scrollbar { display: none; }
 
 /* ── Dock centrado ── */
 #dock {
   left: 50% !important;
   transform: translateX(-50%) !important;
+}
+
+#dock-items button.active {
+  background: linear-gradient(180deg, var(--brand-primary), color-mix(in srgb, var(--brand-primary) 80%, black));
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.4);
+}
+
+.hdr-icon.active {
+  background: linear-gradient(180deg, var(--brand-primary), color-mix(in srgb, var(--brand-primary) 80%, black));
+  color: white;
+  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.4);
 }

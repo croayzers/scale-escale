@@ -10,21 +10,71 @@ import { AppState } from '../core/AppState.js';
 const STORAGE_KEY = 'escale_company';
 let pending = null;
 
+function applyBrandColors(company) {
+  const root = document.documentElement;
+  if (company.colorPrimary) {
+    root.style.setProperty('--brand-primary', company.colorPrimary);
+    root.style.setProperty('--brand-primary-rgb', hexToRgb(company.colorPrimary));
+  } else {
+    root.style.setProperty('--brand-primary', '#2563eb');
+    root.style.setProperty('--brand-primary-rgb', '37,99,235');
+  }
+  if (company.colorSecondary) {
+    root.style.setProperty('--brand-secondary', company.colorSecondary);
+  } else {
+    root.style.setProperty('--brand-secondary', '#d4ff3a');
+  }
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
 function init() {
-  // Restaurar de localStorage si existe
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      AppState.company = { ...AppState.company, ...data };
+      if (data.name) AppState.company = { ...AppState.company, ...data };
     }
   } catch (e) { /* localStorage no disponible o JSON inválido */ }
 
+  applyBrandColors(AppState.company);
   syncBrandUI();
 
   document.getElementById('btn-company')?.addEventListener('click', openModal);
   document.getElementById('company-close')?.addEventListener('click', closeModal);
   document.getElementById('company-cancel')?.addEventListener('click', closeModal);
+
+  document.getElementById('company-color-primary')?.addEventListener('input', e => {
+    if (pending) {
+      pending.colorPrimary = e.target.value;
+      const hex = document.getElementById('company-color-primary-hex');
+      if (hex) hex.textContent = e.target.value;
+      applyBrandColors({ ...AppState.company, ...pending });
+    }
+  });
+
+  document.getElementById('company-color-secondary')?.addEventListener('input', e => {
+    if (pending) {
+      pending.colorSecondary = e.target.value;
+      const hex = document.getElementById('company-color-secondary-hex');
+      if (hex) hex.textContent = e.target.value;
+      applyBrandColors({ ...AppState.company, ...pending });
+    }
+  });
+
+  document.getElementById('company-color-secondary')?.addEventListener('input', e => {
+    if (pending) {
+      pending.colorSecondary = e.target.value;
+      const hex = document.getElementById('company-color-secondary-hex');
+      if (hex) hex.textContent = e.target.value;
+      applyBrandColors({ ...AppState.company, ...pending });
+    }
+  });
 
   document.getElementById('company-modal')?.addEventListener('click', e => {
     if (e.target.id === 'company-modal') closeModal();
@@ -94,6 +144,7 @@ function handleLogoFile(e) {
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(AppState.company));
+    applyBrandColors(AppState.company);
   } catch (e) {
     console.warn('No se pudo guardar empresa en localStorage:', e);
   }
@@ -108,6 +159,14 @@ function syncModalUI() {
   const emptyTxt = document.getElementById('company-logo-empty');
   const clearBtn = document.getElementById('company-logo-clear');
   const label    = document.getElementById('company-logo-label');
+  const cp = document.getElementById('company-color-primary');
+  const cs = document.getElementById('company-color-secondary');
+  if (cp) { cp.value = pending.colorPrimary || '#2563eb'; }
+  if (cs) { cs.value = pending.colorSecondary || '#d4ff3a'; }
+  const cpHex = document.getElementById('company-color-primary-hex');
+  const csHex = document.getElementById('company-color-secondary-hex');
+  if (cpHex) cpHex.textContent = pending.colorPrimary || '#2563eb';
+  if (csHex) csHex.textContent = pending.colorSecondary || '#d4ff3a';
 
   if (pending.logo) {
     thumbImg.src = pending.logo;

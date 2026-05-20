@@ -6,6 +6,9 @@
   --accent: #d4ff3a;
   --muted: #6a6a6e;
   --hairline: rgba(10, 10, 11, 0.12);
+  --brand-primary:     #2563eb;
+  --brand-primary-rgb: 37,99,235;
+  --brand-secondary:   #d4ff3a;
 }
 
 * { box-sizing: border-box; }

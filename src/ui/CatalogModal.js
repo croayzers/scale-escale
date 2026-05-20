@@ -47,7 +47,7 @@ function open(categoryKey) {
         if (def) {
           AppState.add(ElementLibrary.toItem(def));
           document.body.classList.add('has-items');
-          // No cerramos para permitir añadir varios
+          close();
         }
       });
     });

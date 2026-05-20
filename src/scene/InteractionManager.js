@@ -130,6 +130,13 @@ function onPointerDown(e) {
     return;
   }
 
+// Modo mover plano
+  if (SceneManager.isPlanMoving()) {
+    const point = getDragPoint();
+    if (point) SceneManager.startPlanMove(point);
+    return;
+  }
+
   const item = getIntersectedItem();
 
   // Click en vacío + Shift → empezar box-select
@@ -174,6 +181,12 @@ function onPointerMove(e) {
   setPointer(e);
   updateCursorReadout();
 
+  if (SceneManager.isPlanMoving()) {
+    const point = getDragPoint();
+    if (point) SceneManager.updatePlanMove(point);
+    return;
+  }
+
   if (boxSelecting) {
     updateBoxOverlay(boxSelecting.startX, boxSelecting.startY, e.clientX, e.clientY);
     return;
@@ -205,6 +218,10 @@ function onPointerMove(e) {
 
 function onPointerUp(e) {
   mouseDown = false;
+  if (SceneManager.isPlanMoving()) {
+    SceneManager.endPlanMove();
+    return;
+  }
 
   if (boxSelecting) {
     const x1 = Math.min(boxSelecting.startX, e.clientX);

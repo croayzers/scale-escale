@@ -1,9 +1,5 @@
 /* ─────────────────────────────────────────────────────────
    EXPORT MANAGER — Exportación a PDF (3D / Plano cenital)
-   ────────────────────────────────────────────────────────
-   · 3D:    captura cámara actual, A4 apaisado.
-   · Plano: cambia a cenital, overlay para seleccionar área,
-            recorta y exporta con cabecera + inventario.
    ───────────────────────────────────────────────────────── */
 
 import { AppState }     from '../core/AppState.js';
@@ -41,15 +37,12 @@ function export3D() {
   requestAnimationFrame(() => {
     const src = SceneManager.renderer.domElement;
     const out = document.createElement('canvas');
-    out.width = src.width;
-    out.height = src.height;
+    out.width = src.width; out.height = src.height;
     const ctx = out.getContext('2d');
     ctx.fillStyle = '#f5f3ee';
     ctx.fillRect(0, 0, out.width, out.height);
     ctx.drawImage(src, 0, 0);
-
-    const dataURL = out.toDataURL('image/png');
-    buildPDF(dataURL, '3D · Vista isométrica');
+    buildPDF(out.toDataURL('image/png'), '3D · Vista isométrica');
   });
 }
 
@@ -69,8 +62,7 @@ function startPlanoSelection() {
 
 function cancelArea() {
   document.getElementById('area-overlay')?.classList.add('hidden');
-  areaSelecting = false;
-  areaStart = areaEnd = null;
+  areaSelecting = false; areaStart = areaEnd = null;
 }
 
 function onAreaStart(e) {
@@ -86,11 +78,10 @@ function onAreaMove(e) {
   areaEnd = { x: e.clientX, y: e.clientY };
   const rect = computeRect();
   updateHole(rect.x, rect.y, rect.w, rect.h);
-
   const dimsEl = document.getElementById('area-dims');
   dimsEl.textContent = `${Math.round(rect.w)} × ${Math.round(rect.h)} px`;
   dimsEl.style.left = (rect.x + rect.w + 12) + 'px';
-  dimsEl.style.top  = (rect.y) + 'px';
+  dimsEl.style.top  = rect.y + 'px';
 }
 
 function onAreaEnd(e) {
@@ -116,45 +107,88 @@ function updateHole(x, y, w, h) {
   ['hole', 'select-rect'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.setAttribute('x', x);
-    el.setAttribute('y', y);
-    el.setAttribute('width', w);
-    el.setAttribute('height', h);
+    el.setAttribute('x', x); el.setAttribute('y', y);
+    el.setAttribute('width', w); el.setAttribute('height', h);
   });
 }
 
 function capturePlanoArea(rect) {
   document.getElementById('area-overlay')?.classList.add('hidden');
   SceneManager.renderer.render(SceneManager.scene, SceneManager.activeCam);
-
   requestAnimationFrame(() => {
     const dpr = window.devicePixelRatio || 1;
     const src = SceneManager.renderer.domElement;
-
     const out = document.createElement('canvas');
     out.width  = Math.round(rect.w * dpr);
     out.height = Math.round(rect.h * dpr);
     const ctx = out.getContext('2d');
     ctx.fillStyle = '#f5f3ee';
     ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(
-      src,
+    ctx.drawImage(src,
       rect.x * dpr, rect.y * dpr, rect.w * dpr, rect.h * dpr,
-      0, 0, out.width, out.height
-    );
-
-    const dataURL = out.toDataURL('image/png');
-    buildPDF(dataURL, 'PLANO · Vista cenital');
+      0, 0, out.width, out.height);
+    buildPDF(out.toDataURL('image/png'), 'PLANO · Vista cenital');
   });
 }
 
+/* ─── Helpers inventario ─── */
+const CATEGORY_GROUPS = [
+  { label: 'Mesas',              types: ['mesa','mesaRect','mesaImperial','mesaCocktail','mesaCurva','mesaSerpentina'] },
+  { label: 'Sillas',             types: ['sillaCatering','sillaLineal'] },
+  { label: 'Barra & Buffet',     types: ['buffet','barraLibre'] },
+  { label: 'Carpas',             types: ['carpa','carpaCuadrada','carpaStar','carpaPabellon','carpaTransparente','carpaBeduina','carpaSailcloth','carpaTipi','carpaDomo'] },
+  { label: 'Estructuras',        types: ['room','poste'] },
+  { label: 'Decoración',         types: ['arbusto','arbol','cableLuces','ambiente'] },
+];
+
+function getItemLabel(item) {
+  if (item.type === 'mesa') {
+    if (item.subtype === 'presi') return `Presidencial ${item.dims.length}×${item.dims.width}m`;
+    return `Mesa ${item.subtype} Ø${item.dims.diameter?.toFixed(1) ?? '?'}m`;
+  }
+  if (item.type === 'mesaRect')       return `Rect. ${item.dims.length}×${item.dims.width}m`;
+  if (item.type === 'mesaImperial')   return `Imperial ${item.dims.length}×${item.dims.width}m`;
+  if (item.type === 'mesaCocktail')   return `Cocktail Ø${item.dims.diameter}m H${item.dims.height}m`;
+  if (item.type === 'mesaCurva')      return `Curva R${item.dims.radioInt}m ${item.dims.anguloDeg}°`;
+  if (item.type === 'mesaSerpentina') return `Serpentina R${item.dims.radioInt}m`;
+  if (item.type === 'buffet')         return `Buffet ${item.dims.length}m · ${item.subtype || ''}`;
+  if (item.type === 'barraLibre')     return `Barra ${item.dims.length}m · ${item.cubiteras ?? 1} cub.`;
+  if (item.type === 'sillaCatering')  return `Silla ${item.subtype}`;
+  if (item.type === 'sillaLineal')    return `Lineal ${item.count}× ${item.subtype}`;
+  if (item.type === 'carpa')          return `Carpa ${item.dims.length}×${item.dims.width}m`;
+  if (item.type.startsWith('carpa'))  return `${item.type.replace('carpa','Carpa ')} ${item.dims.size ?? item.dims.length ?? '?'}m`;
+  if (item.type === 'arbusto')        return `Arbusto Ø${item.dims.width}m`;
+  if (item.type === 'arbol')          return `Árbol H${item.dims.height}m`;
+  if (item.type === 'cableLuces')     return `Cable ${item.count} luces`;
+  if (item.type === 'room')           return `4 Paredes ${item.dims.length}×${item.dims.width}m`;
+  if (item.type === 'poste')          return `Poste H${item.dims.height}m`;
+  if (item.type === 'ambiente') {
+    const s = item.subtype;
+    const dim = s === 'alfombra' ? `${item.dims.length}×${item.dims.width}m` : `H${item.dims.height}m`;
+    return `${s === 'alfombra' ? 'Alfombra' : s === 'planta' ? 'Planta' : 'Spot'} ${dim}`;
+  }
+  return item.type;
+}
+
+function buildInventoryLines() {
+  const lines = {};
+  AppState.items.forEach(item => {
+    const key = getItemLabel(item);
+    if (!lines[key]) lines[key] = { label: key, type: item.type, count: 0, pax: 0 };
+    lines[key].count++;
+    lines[key].pax += (item.chairs || 0);
+  });
+  return lines;
+}
+
+/* ─── Constructor PDF ─── */
 function buildPDF(imgDataURL, modeLabel) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  const PAGE_W = 297, PAGE_H = 210;
-  const MARGIN = 12;
-  const company = AppState.company;
+  const PAGE_W = 297, PAGE_H = 210, MARGIN = 12;
+  const company   = AppState.company;
+  const eventName = document.getElementById('inventory-event-name')?.value || '';
 
   // ═══ CABECERA ═══
   let headX = MARGIN;
@@ -165,9 +199,7 @@ function buildPDF(imgDataURL, modeLabel) {
 
   if (company.logo) {
     try {
-      const fmt = company.logo.startsWith('data:image/png')  ? 'PNG'
-                : company.logo.startsWith('data:image/jpeg') ? 'JPEG'
-                : 'PNG';
+      const fmt = company.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
       const tempImg = new Image();
       tempImg.src = company.logo;
       if (tempImg.complete && tempImg.naturalWidth) {
@@ -189,87 +221,107 @@ function buildPDF(imgDataURL, modeLabel) {
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(100);
-  pdf.text('Planificador 3D de Eventos · ' + modeLabel, MARGIN, MARGIN + 11);
+  const subtitle = eventName
+    ? `Planificador 3D · ${modeLabel} · ${eventName}`
+    : `Planificador 3D de Eventos · ${modeLabel}`;
+  pdf.text(subtitle, MARGIN, MARGIN + 11);
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
                 + ' · ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   pdf.setFontSize(8); pdf.setTextColor(100);
   pdf.text(dateStr, PAGE_W - MARGIN, MARGIN + 6, { align: 'right' });
-  if (company.email) {
-    pdf.text(company.email, PAGE_W - MARGIN, MARGIN + 11, { align: 'right' });
-  }
+  if (company.email) pdf.text(company.email, PAGE_W - MARGIN, MARGIN + 11, { align: 'right' });
 
-  pdf.setDrawColor(0);
-  pdf.setLineWidth(0.3);
+  pdf.setDrawColor(0); pdf.setLineWidth(0.3);
   pdf.line(MARGIN, MARGIN + 14, PAGE_W - MARGIN, MARGIN + 14);
 
-  // ═══ INVENTARIO ═══
-  const totalPax  = AppState.items.reduce((s, i) => s + (i.chairs || 0), 0);
-  const numMesas  = AppState.items.filter(i => i.type === 'mesa').length;
-  const numBuffets = AppState.items.filter(i => i.type === 'buffet').length;
-  const numCarpas = AppState.items.filter(i => i.type === 'carpa').length;
+  // ═══ COLUMNA INVENTARIO (derecha) ═══
+  const INV_X = PAGE_W - MARGIN - 68;
+  let iy = MARGIN + 20;
 
-  const RIGHT_X = PAGE_W - MARGIN - 60;
-  let y = MARGIN + 22;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(0);
+  pdf.text('INVENTARIO', INV_X, iy); iy += 3;
+  pdf.setDrawColor(180); pdf.setLineWidth(0.2);
+  pdf.line(INV_X, iy, PAGE_W - MARGIN, iy); iy += 4;
 
-  pdf.setFontSize(8); pdf.setTextColor(100);
-  pdf.text('INVENTARIO', RIGHT_X, y); y += 5;
-  pdf.setDrawColor(180); pdf.line(RIGHT_X, y - 2, PAGE_W - MARGIN, y - 2);
+  // PAX total grande
+  const totalPax = AppState.items.reduce((s, i) => s + (i.chairs || 0), 0);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(26);
+  pdf.setTextColor(0);
+  pdf.text(String(totalPax), INV_X, iy + 8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(100);
+  pdf.text('PAX TOTAL', INV_X + 22, iy + 8);
+  iy += 14;
 
-  pdf.setFontSize(28); pdf.setTextColor(0); pdf.setFont('helvetica', 'bold');
-  pdf.text(String(totalPax), RIGHT_X, y + 9);
-  pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100);
-  pdf.text('PAX TOTAL', RIGHT_X + 28, y + 9);
+  // Desglose por categorías
+  const lines = buildInventoryLines();
+  CATEGORY_GROUPS.forEach(group => {
+    const groupLines = Object.values(lines).filter(l => group.types.includes(l.type));
+    if (!groupLines.length) return;
 
-  y += 16;
-  pdf.setFontSize(9); pdf.setTextColor(0);
-  pdf.text(`Mesas: ${numMesas}`, RIGHT_X, y); y += 4.5;
-  pdf.text(`Buffets: ${numBuffets}`, RIGHT_X, y); y += 4.5;
-  if (numCarpas > 0) {
-    pdf.text(`Carpas: ${numCarpas}`, RIGHT_X, y); y += 4.5;
-  }
-  y += 2;
+    // Cabecera categoría
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(120);
+    pdf.text(group.label.toUpperCase(), INV_X, iy);
+    pdf.setDrawColor(200); pdf.setLineWidth(0.1);
+    pdf.line(INV_X, iy + 0.8, PAGE_W - MARGIN, iy + 0.8);
+    iy += 4;
 
-  const mesasByType = {};
-  AppState.items.filter(i => i.type === 'mesa').forEach(m => {
-    const k = m.subtype === 'presi'
-            ? `Presi. (${m.dims.length}×${m.dims.width}m)`
-            : `${m.subtype} Ø${m.dims.diameter}m`;
-    mesasByType[k] = (mesasByType[k] || 0) + 1;
+    groupLines.forEach(line => {
+      if (iy > PAGE_H - 20) return; // evitar overflow
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(0);
+      pdf.text(`${line.count}×`, INV_X, iy);
+      // Label truncado si es muy largo
+      const maxW = 44;
+      let lbl = line.label;
+      while (pdf.getTextWidth(lbl) > maxW && lbl.length > 8) lbl = lbl.slice(0, -1);
+      if (lbl !== line.label) lbl += '…';
+      pdf.text(lbl, INV_X + 6, iy);
+      if (line.pax > 0) {
+        pdf.setTextColor(120);
+        pdf.text(`${line.pax}p`, PAGE_W - MARGIN, iy, { align: 'right' });
+        pdf.setTextColor(0);
+      }
+      iy += 3.8;
+    });
+    iy += 1.5;
   });
-  pdf.setFontSize(7); pdf.setTextColor(80);
-  Object.entries(mesasByType).forEach(([k, n]) => {
-    pdf.text(`· ${k}`, RIGHT_X, y);
-    pdf.text(String(n), PAGE_W - MARGIN, y, { align: 'right' });
-    y += 4;
-  });
 
-  const buffsByCat = {};
-  AppState.items.filter(i => i.type === 'buffet').forEach(b => {
-    buffsByCat[b.subtype] = (buffsByCat[b.subtype] || 0) + 1;
-  });
-  if (Object.keys(buffsByCat).length) y += 2;
-  Object.entries(buffsByCat).forEach(([k, n]) => {
-    pdf.text(`· Buffet ${k}`, RIGHT_X, y);
-    pdf.text(String(n), PAGE_W - MARGIN, y, { align: 'right' });
-    y += 4;
-  });
+  // Total elementos
+  iy += 1;
+  pdf.setDrawColor(0); pdf.setLineWidth(0.2);
+  pdf.line(INV_X, iy, PAGE_W - MARGIN, iy); iy += 3.5;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(0);
+  pdf.text(`Total elementos: ${AppState.items.length}`, INV_X, iy); iy += 4;
+  pdf.text('Precio total:', INV_X, iy);
+  pdf.setTextColor(120);
+  pdf.text('—', PAGE_W - MARGIN, iy, { align: 'right' });
 
-  if (numCarpas > 0) {
-    y += 2;
-    const totalArea = AppState.items
-      .filter(i => i.type === 'carpa')
-      .reduce((s, c) => s + c.dims.length * c.dims.width, 0);
-    pdf.text(`· Cobertura total`, RIGHT_X, y);
-    pdf.text(`${totalArea.toFixed(1)}m²`, PAGE_W - MARGIN, y, { align: 'right' });
-  }
+  // Nota precio
+  iy += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(6);
+  pdf.setTextColor(160);
+  pdf.text('* Precios pendientes de tarifa.', INV_X, iy);
+  pdf.text('Conecta con tu CRM/Excel para', INV_X, iy + 3.5);
+  pdf.text('generar presupuesto automático.', INV_X, iy + 7);
 
-  // ═══ IMAGEN ═══
+  // ═══ IMAGEN (izquierda) ═══
   const imgArea = {
     x: MARGIN,
     y: MARGIN + 22,
-    w: RIGHT_X - MARGIN - 8,
+    w: INV_X - MARGIN - 8,
     h: PAGE_H - MARGIN * 2 - 22
   };
 
@@ -279,11 +331,9 @@ function buildPDF(imgDataURL, modeLabel) {
     const areaRatio = imgArea.w / imgArea.h;
     let drawW, drawH;
     if (imgRatio > areaRatio) {
-      drawW = imgArea.w;
-      drawH = drawW / imgRatio;
+      drawW = imgArea.w; drawH = drawW / imgRatio;
     } else {
-      drawH = imgArea.h;
-      drawW = drawH * imgRatio;
+      drawH = imgArea.h; drawW = drawH * imgRatio;
     }
     const drawX = imgArea.x + (imgArea.w - drawW) / 2;
     const drawY = imgArea.y + (imgArea.h - drawH) / 2;
@@ -292,6 +342,7 @@ function buildPDF(imgDataURL, modeLabel) {
     pdf.rect(drawX - 1, drawY - 1, drawW + 2, drawH + 2);
     pdf.addImage(imgDataURL, 'PNG', drawX, drawY, drawW, drawH);
 
+    // Pie de página
     pdf.setFontSize(7); pdf.setTextColor(120);
     const leftFoot = company.name
       ? `E-scale · ${company.name}${company.email ? ' · ' + company.email : ''}`

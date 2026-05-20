@@ -161,6 +161,23 @@ function showTooltip(item) {
       <div class="text-sm">${item.dims.length.toFixed(1)} × ${item.dims.width.toFixed(1)}m</div>
       <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
     `;
+  } else if (item.type === 'barraLibre') {
+    const n = item.cubiteras ?? 1;
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">Barra Libre</div>
+      <div class="text-sm">${item.dims.length.toFixed(1)}m · ${n} cubitera${n>1?'s':''}</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'ambiente') {
+    const sub = item.subtype;
+    const dimText = sub === 'alfombra' ? `${item.dims.length}×${item.dims.width}m`
+                  : sub === 'planta'   ? `H ${item.dims.height}m`
+                  : `H ${item.dims.height}m`;
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">${sub === 'alfombra' ? 'Alfombra' : sub === 'planta' ? 'Planta' : 'Spot'}</div>
+      <div class="text-sm">${dimText}</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
   } else if (item.type === 'poste') {
     content.innerHTML = `
       <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#6b4423">Poste</div>
@@ -236,6 +253,11 @@ function showTooltip(item) {
         <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color</span>
         <input data-input="color" type="color" value="${item.color}" class="input-field" style="padding:2px;height:36px"/>
       </label>
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+
       <div class="rule"></div>
       <div class="flex gap-2">
         <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
@@ -305,6 +327,8 @@ function updateTooltipPosition() {
                 : item.type === 'carpaTipi'        ? (A.camera === 'top' ? 0.3 : (item.dims.height + 0.5))
                 : item.type === 'carpaDomo'        ? (A.camera === 'top' ? 0.3 : (item.dims.height + 0.5))
                 : item.type === 'poste' ? item.dims.height + 0.4
+				: item.type === 'barraLibre' ? (item.dims.height ?? 0.9) + 0.5
+                : item.type === 'ambiente'   ? (item.subtype === 'alfombra' ? 0.4 : (item.dims.height ?? 1) + 0.4)
                 : 2.4;
 
   const vec = new THREE.Vector3(item.x, yHeight, item.z);
@@ -500,6 +524,11 @@ function showDetail(item) {
         <div class="flex justify-between"><span style="color:var(--muted)">Posición Z</span><span class="mono">${item.z.toFixed(2)}m</span></div>
       </div>
 
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+
       <div class="rule"></div>
       <div class="flex gap-2">
         <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
@@ -511,6 +540,8 @@ function showDetail(item) {
       height: v => ({ dims: { ...item.dims, height: clampNum(v, 0.3, 6) } }),
       color:  v => ({ color: v }),
     });
+    const cbLabel = panel.querySelector('[data-input="showLabel"]');
+    cbLabel?.addEventListener('change', () => { A.update(item.id, { showLabel: cbLabel.checked }); });
 
   } else if (item.type === 'arbol') {
     content.innerHTML = `
@@ -544,6 +575,11 @@ function showDetail(item) {
         <div class="flex justify-between"><span style="color:var(--muted)">Posición Z</span><span class="mono">${item.z.toFixed(2)}m</span></div>
       </div>
 
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+
       <div class="rule"></div>
       <div class="flex gap-2">
         <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
@@ -556,6 +592,8 @@ function showDetail(item) {
       crownColor: v => ({ crownColor: v }),
       trunkColor: v => ({ trunkColor: v }),
     });
+    const cbLabel = panel.querySelector('[data-input="showLabel"]');
+    cbLabel?.addEventListener('change', () => { A.update(item.id, { showLabel: cbLabel.checked }); });
 
   } else if (item.type === 'cableLuces') {
     const totalLength = (item.count ?? 8) * (item.spacing ?? 1.0);
@@ -599,6 +637,11 @@ function showDetail(item) {
         <div class="flex justify-between"><span style="color:var(--muted)">Posición Z</span><span class="mono">${item.z.toFixed(2)}m</span></div>
       </div>
 
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+
       <div class="rule"></div>
       <div class="flex gap-2">
         <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
@@ -612,6 +655,8 @@ function showDetail(item) {
       lightColor: v => ({ lightColor: v }),
       cableColor: v => ({ cableColor: v }),
     });
+    const cbLabel = panel.querySelector('[data-input="showLabel"]');
+    cbLabel?.addEventListener('change', () => { A.update(item.id, { showLabel: cbLabel.checked }); });
 
   } else if (item.type === 'room') {
     content.innerHTML = `
@@ -651,6 +696,11 @@ function showDetail(item) {
         <div class="flex justify-between"><span style="color:var(--muted)">Área</span><span class="mono">${(item.dims.length * item.dims.width).toFixed(1)} m²</span></div>
       </div>
 
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+
       <div class="rule"></div>
       <div class="flex gap-2">
         <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
@@ -664,6 +714,8 @@ function showDetail(item) {
       thickness: v => ({ dims: { ...item.dims, thickness: clampNum(v, 0.04, 0.5) } }),
       color:     v => ({ color: v }),
     });
+    const cbLabel = panel.querySelector('[data-input="showLabel"]');
+    cbLabel?.addEventListener('change', () => { A.update(item.id, { showLabel: cbLabel.checked }); });
 
 } else if (item.type === 'mesaRect' || item.type === 'mesaImperial') {
     const label = item.type === 'mesaImperial' ? 'Mesa Imperial' : 'Mesa Rectangular';
@@ -1075,7 +1127,163 @@ function showDetail(item) {
       });
     }
 
-} else if (item.type === 'sillaCatering') {
+  } else if (item.type === 'poste') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Poste</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ø (m)</span>
+          <input data-input="diameter" type="number" min="0.04" max="0.5" step="0.01" value="${item.dims.diameter}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="0.5" max="8" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color</span>
+        <input data-input="color" type="color" value="${item.color}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      diameter: v => ({ dims: { ...item.dims, diameter: clampNum(v, 0.04, 0.5) } }),
+      height:   v => ({ dims: { ...item.dims, height:   clampNum(v, 0.5, 8) } }),
+      color:    v => ({ color: v }),
+    });
+    const cbLabel = panel.querySelector('[data-input="showLabel"]');
+    cbLabel?.addEventListener('change', () => { A.update(item.id, { showLabel: cbLabel.checked }); });
+
+} else if (item.type === 'barraLibre') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">Barra Libre</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="1" max="10" step="0.5" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="0.5" max="1.5" step="0.05" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Nº cubiteras</span>
+          <input data-input="cubiteras" type="number" min="1" max="10" step="1" value="${item.cubiteras ?? 2}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Separación (m)</span>
+          <input data-input="cubSep" type="number" min="0.3" max="2" step="0.1" value="${item.cubSep ?? 1.0}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color cuerpo</span>
+        <input data-input="color" type="color" value="${item.color || '#1a1a1c'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      length:    v => ({ dims: { ...item.dims, length: clampNum(v, 1, 10) } }),
+      width:     v => ({ dims: { ...item.dims, width:  clampNum(v, 0.5, 1.5) } }),
+      cubiteras: v => ({ cubiteras: Math.round(clampNum(v, 1, 10)) }),
+      cubSep:    v => ({ cubSep: clampNum(v, 0.3, 2) }),
+      color:     v => ({ color: v }),
+    });
+
+  } else if (item.type === 'ambiente') {
+    const sub = item.subtype;
+    const title = sub === 'alfombra' ? 'Alfombra' : sub === 'planta' ? 'Planta' : 'Spot de Luz';
+    const dimInputs = sub === 'alfombra' ? `
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="0.5" max="20" step="0.5" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="0.5" max="10" step="0.25" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color alfombra</span>
+        <input data-input="color" type="color" value="${item.color}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color borde</span>
+        <input data-input="borderColor" type="color" value="${item.borderColor || '#c9a55a'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+    ` : sub === 'planta' ? `
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+        <input data-input="height" type="number" min="0.3" max="3" step="0.1" value="${item.dims.height}" class="input-field"/>
+      </label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color planta</span>
+          <input data-input="color" type="color" value="${item.color}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color maceta</span>
+          <input data-input="potColor" type="color" value="${item.potColor || '#8b5e3c'}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+    ` : `
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura trípode (m)</span>
+        <input data-input="height" type="number" min="0.5" max="4" step="0.1" value="${item.dims.height}" class="input-field"/>
+      </label>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color luz</span>
+        <input data-input="color" type="color" value="${item.color || '#fffbe8'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+    `;
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">${title}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">Ambiente · ID #${item.id}</div>
+      ${dimInputs}
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Mostrar medidas</span>
+        <input data-input="showLabel" type="checkbox" ${item.showLabel ? 'checked' : ''}/>
+      </label>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    const recipes = sub === 'alfombra' ? {
+      length:      v => ({ dims: { ...item.dims, length: clampNum(v, 0.5, 20) } }),
+      width:       v => ({ dims: { ...item.dims, width:  clampNum(v, 0.5, 10) } }),
+      color:       v => ({ color: v }),
+      borderColor: v => ({ borderColor: v }),
+    } : sub === 'planta' ? {
+      height:   v => ({ dims: { ...item.dims, height: clampNum(v, 0.3, 3) } }),
+      color:    v => ({ color: v }),
+      potColor: v => ({ potColor: v }),
+    } : {
+      height: v => ({ dims: { ...item.dims, height: clampNum(v, 0.5, 4) } }),
+      color:  v => ({ color: v }),
+    };
+    wireSimpleInputs(panel, item, A, recipes);
+    const cbAmb = panel.querySelector('[data-input="showLabel"]');
+    cbAmb?.addEventListener('change', () => { A.update(item.id, { showLabel: cbAmb.checked }); });
+
+  } else if (item.type === 'sillaCatering') {
     content.innerHTML = `
       <div class="display-font text-2xl mb-1 leading-tight">Silla</div>
       <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">${item.subtype} · ID #${item.id}</div>

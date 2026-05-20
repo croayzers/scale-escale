@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head><link rel="icon" href="data:,">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>E-scale</title>
@@ -29,9 +29,41 @@
 
 <canvas id="scene-canvas"></canvas>
 
+<!-- ============ MODAL BIENVENIDA ============ -->
+<div id="welcome-modal" class="fixed inset-0 z-[200] flex items-center justify-center" style="background:rgba(245,243,238,0.92);backdrop-filter:blur(12px)">
+  <div class="glass-mac p-10 max-w-xl w-full mx-6 text-center anim-in">
+    <div class="display-font text-4xl font-medium mb-2 leading-tight">E-scale</div>
+    <div class="mono text-[11px] tracking-widest uppercase mb-8" style="color:var(--muted)">Planificador 3D de Eventos</div>
+
+    <p class="text-[14px] mb-8" style="color:var(--muted)">¿Cómo quieres empezar?</p>
+
+    <div class="grid grid-cols-3 gap-3">
+      <button id="welcome-plano" class="p-5 text-left border border-black/15 hover:border-black hover:bg-black hover:text-white transition-all" style="border-radius:10px">
+        <i data-lucide="image-up" class="w-7 h-7 mb-3"></i>
+        <div class="display-font text-lg mb-1">Plano 2D</div>
+        <div class="text-[11px] opacity-70 leading-relaxed">Importa un plano del recinto y coloca los elementos encima.</div>
+      </button>
+
+      <button id="welcome-plantilla" class="p-5 text-left border border-black/15 hover:border-black hover:bg-black hover:text-white transition-all" style="border-radius:10px">
+        <i data-lucide="layout-template" class="w-7 h-7 mb-3"></i>
+        <div class="display-font text-lg mb-1">Plantilla</div>
+        <div class="text-[11px] opacity-70 leading-relaxed">Carga una plantilla guardada con estructuras y decoración.</div>
+      </button>
+
+      <button id="welcome-libre" class="p-5 text-left border border-black/15 hover:border-black hover:bg-black hover:text-white transition-all" style="border-radius:10px">
+        <i data-lucide="sparkles" class="w-7 h-7 mb-3"></i>
+        <div class="display-font text-lg mb-1">Diseño libre</div>
+        <div class="text-[11px] opacity-70 leading-relaxed">Empieza desde cero sin plano de referencia.</div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ HEADER MAC ============ -->
-<header id="header-mac" class="fixed top-3 left-1/2 -translate-x-1/2 z-30 anim-in glass-mac flex items-center gap-2 px-2 py-1.5">
-  <!-- Logo / empresa -->
+<header id="header-mac" class="fixed z-30 anim-in glass-mac px-2 py-1.5" style="top:12px;left:12px;right:12px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;">
+  <div style="display:flex;align-items:center;gap:8px;width:max-content;min-width:100%;">
+  
+  <!-- Logo -->
   <button id="btn-company" class="hdr-chip" title="Datos de empresa">
     <img id="company-logo-preview" class="h-5 w-5 rounded hidden" alt=""/>
     <span id="brand-name" class="display-font text-[14px] font-medium">E-scale</span>
@@ -45,21 +77,45 @@
     <span>Subir Plano</span>
   </button>
 
-  <div class="hdr-sep"></div>
-
-  <!-- Cámara -->
-  <div class="hdr-segmented">
-    <button id="cam-iso" class="hdr-seg active" title="Isométrica"><i data-lucide="box" class="w-3.5 h-3.5"></i></button>
-    <button id="cam-top" class="hdr-seg" title="Cenital"><i data-lucide="square" class="w-3.5 h-3.5"></i></button>
+  <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
+    <button id="btn-calibrate" class="hdr-icon" title="Paso 1 · Medir plano" style="width:28px;height:28px">
+      <i data-lucide="ruler" class="w-3.5 h-3.5"></i>
+    </button>
+    <span id="step-dot-1" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
   </div>
 
   <div class="hdr-sep"></div>
 
-  <!-- Zoom -->
-  <div class="hdr-chip" title="Zoom">
-    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-    <span id="zoom-pct" class="mono text-[11px]">100%</span>
-    <input id="zoom-range" type="range" min="40" max="180" step="5" value="100" style="width:80px;accent-color:var(--ink)"/>
+  <!-- Área canvas -->
+  <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
+    <div class="flex items-center gap-1">
+      <span class="mono text-[10px]" style="color:var(--muted)">Área</span>
+      <input id="canvas-w" type="number" min="5" max="200" step="1" value="30"
+        title="Paso 2 · Definir área"
+        style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
+      <span class="mono text-[10px]" style="color:var(--muted)">×</span>
+      <input id="canvas-l" type="number" min="5" max="200" step="1" value="30"
+        title="Paso 2 · Definir área"
+        style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
+      <span class="mono text-[10px]" style="color:var(--muted)">m</span>
+    </div>
+    <span id="step-dot-2" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Plano mover/bloquear -->
+  <div class="flex items-center gap-1">
+    <span class="mono text-[10px]" style="color:var(--muted)">Plano</span>
+    <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
+      <button id="btn-move-plan" class="hdr-icon" title="Paso 3 · Mover plano" style="width:28px;height:28px">
+        <i data-lucide="move" class="w-3.5 h-3.5"></i>
+      </button>
+      <span id="step-dot-3" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
+    </div>
+    <button id="btn-lock-plan" class="hdr-icon" title="Bloquear plano" style="width:28px;height:28px">
+      <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+    </button>
   </div>
 
   <div class="hdr-sep"></div>
@@ -73,24 +129,120 @@
 
   <div class="hdr-sep"></div>
 
-  <!-- Export + ajustes a la derecha -->
+  <!-- Export -->
+
   <button id="btn-export" class="hdr-icon" title="Exportar PDF"><i data-lucide="file-down" class="w-3.5 h-3.5"></i></button>
   <button id="btn-print" class="hdr-icon" title="Imprimir"><i data-lucide="printer" class="w-3.5 h-3.5"></i></button>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Ajustes -->
   <button id="btn-settings" class="hdr-icon" title="Ajustes"><i data-lucide="settings" class="w-3.5 h-3.5"></i></button>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Zoom -->
+  <div class="hdr-chip" title="Zoom">
+    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+    <span id="zoom-pct" class="mono text-[11px]">100%</span>
+    <input id="zoom-range" type="range" min="40" max="180" step="5" value="100" style="width:80px;accent-color:var(--ink)"/>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+<!-- Cámara -->
+  <div class="hdr-segmented">
+    <button id="cam-iso" class="hdr-seg active" title="Isométrica"><i data-lucide="box" class="w-3.5 h-3.5"></i></button>
+    <button id="cam-top" class="hdr-seg" title="Cenital"><i data-lucide="square" class="w-3.5 h-3.5"></i></button>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+  <button id="btn-inventory" class="hdr-icon" title="Inventario / Presupuesto">
+    <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+  </button>
+
+  <input type="file" id="file-plan-img" accept="image/*" class="hidden"/>
+  <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
+  <input type="file" id="file-plan-dwg" accept=".dwg,.dxf" class="hidden"/>
+  </div>
+</header>
+
+<!-- Canvas área -->
+  <div class="hdr-sep"></div>
+  <div class="flex items-center gap-1">
+    <span class="mono text-[10px]" style="color:var(--muted)">Área</span>
+    <input id="canvas-w" type="number" min="5" max="200" step="1" value="30"
+      title="Ancho (m)"
+      style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
+    <span class="mono text-[10px]" style="color:var(--muted)">×</span>
+    <input id="canvas-l" type="number" min="5" max="200" step="1" value="30"
+      title="Largo (m)"
+      style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
+    <span class="mono text-[10px]" style="color:var(--muted)">m</span>
+  </div>
+
+  <!-- Plano controles -->
+  <div class="hdr-sep"></div>
+  <div class="flex items-center gap-1">
+    <span class="mono text-[10px]" style="color:var(--muted)">Plano</span>
+    <button id="btn-move-plan" class="hdr-icon" title="Mover plano" style="width:28px;height:28px">
+      <i data-lucide="move" class="w-3.5 h-3.5"></i>
+    </button>
+    <button id="btn-lock-plan" class="hdr-icon" title="Bloquear plano" style="width:28px;height:28px">
+      <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="hdr-chip" style="background:rgba(10,10,11,0.08)">
+    <span class="mono text-[10.5px] tracking-wider"><span id="hdr-pax">0</span> PAX</span>
+    <span style="color:var(--muted)">·</span>
+    <span class="mono text-[10.5px] tracking-wider"><span id="hdr-area">0</span> m²</span>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Export + ajustes -->
+  <!-- Export -->
+  <button id="btn-export" class="hdr-icon" title="Exportar PDF"><i data-lucide="file-down" class="w-3.5 h-3.5"></i></button>
+  <button id="btn-print" class="hdr-icon" title="Imprimir"><i data-lucide="printer" class="w-3.5 h-3.5"></i></button>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Ajustes -->
+  <button id="btn-settings" class="hdr-icon" title="Ajustes"><i data-lucide="settings" class="w-3.5 h-3.5"></i></button>
+
+  <div class="hdr-sep"></div>
+
+  <!-- Zoom -->
+  <div class="hdr-chip" title="Zoom">
+    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+    <span id="zoom-pct" class="mono text-[11px]">100%</span>
+    <input id="zoom-range" type="range" min="40" max="180" step="5" value="100" style="width:80px;accent-color:var(--ink)"/>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+<!-- Cámara -->
+  <div class="hdr-segmented">
+    <button id="cam-iso" class="hdr-seg active" title="Isométrica"><i data-lucide="box" class="w-3.5 h-3.5"></i></button>
+    <button id="cam-top" class="hdr-seg" title="Cenital"><i data-lucide="square" class="w-3.5 h-3.5"></i></button>
+  </div>
+
+  <div class="hdr-sep"></div>
+
+  <button id="btn-inventory" class="hdr-icon" title="Inventario / Presupuesto">
+    <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+  </button>
 
   <input type="file" id="file-plan-img" accept="image/*" class="hidden"/>
   <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
   <input type="file" id="file-plan-dwg" accept=".dwg,.dxf" class="hidden"/>
 </header>
 
-<!-- ============ MENSAJE CENTRAL ============ -->
-<div id="empty-hint" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-center pointer-events-none anim-in">
-  <div class="w-16 h-16 mx-auto mb-3 flex items-center justify-center" style="background:var(--ink);color:var(--paper);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,0.25)">
-    <span class="display-font text-2xl font-medium">E</span>
-  </div>
-  <p class="text-sm" style="color:var(--muted)">Selecciona elementos del catálogo para comenzar</p>
-</div>
 
+  
 <!-- ============ DOCK INFERIOR ============ -->
 <div id="dock" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 glass-mac anim-in delay-1">
   <div class="flex items-center gap-1 px-2 py-2" id="dock-items">
@@ -128,6 +280,13 @@
   <span class="blink-dot"></span>
   <span class="mono text-[11px] tracking-widest uppercase">Modo calibración · <span id="cal-step">Click en el primer punto</span></span>
   <button id="cancel-calibration" class="ml-2 text-[10px] underline opacity-70 hover:opacity-100">Cancelar</button>
+</div>
+
+<!-- BANNER MOVER PLANO -->
+<div id="plan-move-banner" class="glass-dark" style="display:none;position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:40;padding:10px 20px;display:none;align-items:center;gap:10px;border-radius:8px">
+  <span class="blink-dot" style="background:#4a90ff"></span>
+  <span class="mono text-[11px] tracking-widest uppercase">Modo mover plano · Arrastra para reposicionar</span>
+  <button id="plan-move-done" class="ml-2 text-[10px] underline opacity-70 hover:opacity-100">Listo</button>
 </div>
 
 <!-- STATUS BAR -->
@@ -176,10 +335,6 @@
       <!-- Plano -->
       <section>
         <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Plano base</div>
-        <button id="btn-calibrate" class="btn ghost w-full justify-center mb-3">
-          <i data-lucide="ruler" class="w-4 h-4"></i>
-          Calibrar escala
-        </button>
         <label class="block mb-2">
           <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Ancho X (m)</span>
           <input id="plan-width" type="number" min="1" max="200" step="0.5" value="30" class="input-field"/>
@@ -192,36 +347,6 @@
           <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Opacidad</span>
           <input id="plan-opacity" type="range" min="0" max="1" step="0.05" value="0.7"/>
         </label>
-      </section>
-
-      <!-- Empresa -->
-      <section class="col-span-2">
-        <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Empresa</div>
-        <div class="grid grid-cols-3 gap-3">
-          <label class="block">
-            <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre</span>
-            <input id="company-name" type="text" class="input-field"/>
-          </label>
-          <label class="block">
-            <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Mail</span>
-            <input id="company-email" type="email" class="input-field"/>
-          </label>
-          <div>
-            <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Logo</span>
-            <div class="flex gap-2 items-center">
-              <div class="w-10 h-10 border border-black/15 flex items-center justify-center" style="background:rgba(255,255,255,0.5)">
-                <img id="company-logo-thumb-img" class="max-w-full max-h-full p-1 hidden" alt="logo"/>
-                <span id="company-logo-empty" class="mono text-[8px] uppercase" style="color:var(--muted)">—</span>
-              </div>
-              <button id="company-logo-load" class="btn ghost flex-1 justify-center" style="padding:6px 10px">
-                <i data-lucide="upload" class="w-3 h-3"></i>
-                <span id="company-logo-label" class="text-[10px]">Cargar</span>
-              </button>
-              <button id="company-logo-clear" class="icon-btn hidden" style="width:32px;height:32px"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-            </div>
-            <input type="file" id="company-logo-input" accept="image/*" class="hidden"/>
-          </div>
-        </div>
       </section>
 
       <!-- Acciones -->
@@ -259,7 +384,80 @@
 </div>
 
 <!-- Modal datos empresa (legacy, no usado) -->
-<div id="company-modal" class="modal-bg"><div></div></div>
+<div id="company-modal" class="modal-bg">
+  <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
+    <div class="flex items-start justify-between mb-5">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Empresa</div>
+        <h3 class="display-font text-3xl leading-tight">Datos de empresa</h3>
+      </div>
+      <button id="company-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre</span>
+        <input id="company-name" type="text" placeholder="Nombre de tu empresa" class="input-field"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Email</span>
+        <input id="company-email" type="email" placeholder="contacto@empresa.com" class="input-field"/>
+      </label>
+    </div>
+
+    <!-- Logo -->
+    <div class="mb-4">
+      <span class="mono text-[10px] uppercase tracking-widest block mb-2" style="color:var(--muted)">Logo</span>
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 border border-black/15 flex items-center justify-center" style="background:rgba(255,255,255,0.5);border-radius:8px">
+          <img id="company-logo-thumb-img" class="max-w-full max-h-full p-1 hidden" alt="logo"/>
+          <span id="company-logo-empty" class="mono text-[9px] uppercase" style="color:var(--muted)">—</span>
+        </div>
+        <button id="company-logo-load" class="btn ghost justify-center">
+          <i data-lucide="upload" class="w-3 h-3"></i>
+          <span id="company-logo-label">Cargar logo</span>
+        </button>
+        <button id="company-logo-clear" class="btn ghost hidden">
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+        </button>
+        <input type="file" id="company-logo-input" accept="image/*" class="hidden"/>
+      </div>
+    </div>
+
+    <!-- Colores corporativos -->
+    <div class="mb-5">
+      <span class="mono text-[10px] uppercase tracking-widest block mb-2" style="color:var(--muted)">Colores corporativos</span>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color primario</span>
+          <div class="flex items-center gap-2">
+            <input id="company-color-primary" type="color" value="#2563eb" class="input-field" style="padding:2px;height:36px;width:48px"/>
+            <span id="company-color-primary-hex" class="mono text-[11px]">#2563eb</span>
+          </div>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color secundario / acento</span>
+          <div class="flex items-center gap-2">
+            <input id="company-color-secondary" type="color" value="#d4ff3a" class="input-field" style="padding:2px;height:36px;width:48px"/>
+            <span id="company-color-secondary-hex" class="mono text-[11px]">#d4ff3a</span>
+          </div>
+        </label>
+      </div>
+      <div class="mt-2 text-[10.5px]" style="color:var(--muted)">
+        El color primario se aplica al dock, botones activos y borde del área de trabajo.
+      </div>
+    </div>
+
+    <div class="rule"></div>
+    <div class="flex justify-end gap-2">
+      <button id="company-cancel" class="btn ghost">Cancelar</button>
+      <button id="company-save" class="btn primary">
+        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+        Guardar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal formato plano -->
 <div id="plan-format-modal" class="modal-bg">
@@ -356,5 +554,57 @@
 </div>
 
 <script type="module" src="src/main.js"></script>
+<!-- ============ PANEL INVENTARIO ============ -->
+<div id="inventory-panel" style="
+  display:none;
+  position:fixed;
+  top:72px; right:16px; bottom:80px;
+  width:320px;
+  z-index:35;
+  overflow-y:auto;
+  border-radius:14px;
+">
+  <div class="glass-mac p-5 h-full flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="display-font text-xl leading-tight">Inventario</div>
+        <div class="mono text-[9.5px] tracking-widest uppercase mt-0.5" style="color:var(--muted)">Resumen del evento</div>
+      </div>
+      <button id="inventory-close" class="hdr-icon"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+    </div>
+
+    <!-- Nombre evento (editable) -->
+    <input id="inventory-event-name" type="text" placeholder="Nombre del evento…"
+      class="input-field mb-4" style="font-size:12px"/>
+
+    <!-- Lista desglose -->
+    <div id="inventory-list" class="flex-1 overflow-y-auto space-y-4 mb-4">
+      <!-- generado por JS -->
+    </div>
+
+    <!-- Totales -->
+    <div class="border-t border-black/10 pt-3 mb-4">
+      <div class="flex justify-between mono text-[11.5px] mb-1">
+        <span style="color:var(--muted)">Total PAX</span>
+        <span id="inv-total-pax" class="font-medium">0</span>
+      </div>
+      <div class="flex justify-between mono text-[11.5px] mb-1">
+        <span style="color:var(--muted)">Total elementos</span>
+        <span id="inv-total-items" class="font-medium">0</span>
+      </div>
+      <div class="flex justify-between mono text-[12px] mt-2 pt-2 border-t border-black/10">
+        <span class="font-semibold">Total precio</span>
+        <span id="inv-total-price" class="font-semibold">—</span>
+      </div>
+    </div>
+
+    <!-- Botón exportar -->
+    <button id="inv-export-btn" class="btn primary w-full justify-center">
+      <i data-lucide="file-down" class="w-4 h-4"></i>
+      Exportar presupuesto PDF
+    </button>
+  </div>
+</div>
 </body>
 </html>

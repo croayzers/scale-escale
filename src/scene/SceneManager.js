@@ -314,11 +314,19 @@ function drawCotas() {
   }
   if (!_appState?.showCotas) return;
 
+  const COTAS_ALWAYS = ['mesa', 'buffet', 'carpa', 'mesaRect', 'mesaImperial',
+    'mesaCocktail', 'mesaCurva', 'mesaSerpentina', 'barraLibre',
+    'sillaCatering', 'sillaLineal', 'carpaCuadrada', 'carpaStar',
+    'carpaPabellon', 'carpaTransparente', 'carpaBeduina',
+    'carpaSailcloth', 'carpaTipi', 'carpaDomo'];
+
   _appState.items.forEach(item => {
+    if (!COTAS_ALWAYS.includes(item.type) && !item.showLabel) return;
+
     let label, kind, yOffset;
 
     switch (item.type) {
-case 'carpa':
+      case 'carpa':
       case 'carpaPabellon':
       case 'carpaTransparente':
       case 'carpaBeduina':
@@ -326,108 +334,104 @@ case 'carpa':
         const L = item.dims.length ?? item.dims.size ?? 0;
         const W = item.dims.width  ?? item.dims.size ?? 0;
         label = `${L.toFixed(1)}×${W.toFixed(1)}m · ${(L*W).toFixed(0)}m²`;
-        kind = 'carpa';
-        yOffset = _appState.camera === 'top' ? 0.5 : 4.5;
+        kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 4.5;
         break;
       }
       case 'carpaCuadrada': {
         const S = item.dims.size ?? 6;
         label = `${S.toFixed(1)}×${S.toFixed(1)}m · ${(S*S).toFixed(0)}m²`;
-        kind = 'carpa';
-        yOffset = _appState.camera === 'top' ? 0.5 : 4.8;
+        kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 4.8;
         break;
       }
       case 'carpaStar': {
         const S = item.dims.size ?? 8;
         label = `Ø ${S.toFixed(1)}m · star`;
-        kind = 'carpa';
-        yOffset = _appState.camera === 'top' ? 0.5 : 5.2;
+        kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 5.2;
         break;
       }
       case 'carpaTipi': {
         const D = item.dims.diameter ?? 6;
         label = `Ø ${D.toFixed(1)}m · tipi`;
-        kind = 'carpa';
-        yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
+        kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
         break;
       }
       case 'carpaDomo': {
         const D = item.dims.diameter ?? 8;
         label = `Ø ${D.toFixed(1)}m · domo`;
-        kind = 'carpa';
-        yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
+        kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
         break;
       }
       case 'mesa':
-        if (item.subtype === 'presi') {
-          label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
-        } else {
-          label = `Ø ${item.dims.diameter.toFixed(2)}m · ${item.chairs}p`;
-        }
-        kind = 'mesa';
-        yOffset = 1.55;
+        label = item.subtype === 'presi'
+          ? `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`
+          : `Ø ${item.dims.diameter.toFixed(2)}m · ${item.chairs}p`;
+        kind = 'mesa'; yOffset = 1.55;
         break;
       case 'arbusto':
         label = `${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
-        kind = 'green';
-        yOffset = item.dims.height + 0.4;
+        kind = 'green'; yOffset = item.dims.height + 0.4;
         break;
       case 'arbol':
         label = `H ${item.dims.height.toFixed(1)}m · Ø ${item.dims.crownWidth.toFixed(1)}m`;
-        kind = 'green';
-        yOffset = item.dims.height + 0.4;
+        kind = 'green'; yOffset = item.dims.height + 0.4;
         break;
       case 'cableLuces': {
         const total = (item.count * item.spacing).toFixed(2);
         label = `${item.count} luces · ${total}m`;
-        kind = 'lights';
-        yOffset = item.height + 0.4;
+        kind = 'lights'; yOffset = item.height + 0.4;
         break;
       }
       case 'room':
         label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
-        kind = 'room';
-        yOffset = item.dims.height + 0.4;
+        kind = 'room'; yOffset = item.dims.height + 0.4;
         break;
       case 'sillaCatering':
         label = `Silla · ${item.subtype}`;
-        kind = 'mesa';
-        yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
+        kind = 'mesa'; yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
         break;
       case 'sillaLineal': {
         const n = item.count ?? 6;
         const span = (n - 1) * (item.gap ?? 0.55);
         label = `${n} sillas · ${span.toFixed(2)}m`;
-        kind = 'mesa';
-        yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
+        kind = 'mesa'; yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
         break;
       }
       case 'mesaRect':
       case 'mesaImperial':
         label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
-        kind = 'mesa';
-        yOffset = 1.55;
+        kind = 'mesa'; yOffset = 1.55;
         break;
       case 'mesaCocktail':
         label = `Ø ${item.dims.diameter.toFixed(2)}m · alta`;
-        kind = 'mesa';
-        yOffset = (item.dims.height || 1.1) + 0.3;
+        kind = 'mesa'; yOffset = (item.dims.height || 1.1) + 0.3;
         break;
       case 'mesaCurva':
       case 'mesaSerpentina':
         label = `R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs}p`;
-        kind = 'mesa';
-        yOffset = 1.55;
+        kind = 'mesa'; yOffset = 1.55;
         break;
       case 'poste':
         label = `Ø ${(item.dims.diameter*100).toFixed(0)}cm · H ${item.dims.height.toFixed(1)}m`;
-        kind = 'carpa';
-        yOffset = item.dims.height + 0.4;
+        kind = 'carpa'; yOffset = item.dims.height + 0.4;
         break;
+      case 'barraLibre': {
+        const n = item.cubiteras ?? 1;
+        label = `${item.dims.length.toFixed(1)}m · ${n} cubiter${n>1?'as':'a'}`;
+        kind = 'buffet'; yOffset = (item.dims.height ?? 0.9) + 0.5;
+        break;
+      }
+      case 'ambiente': {
+        const subLabel = item.subtype === 'alfombra' ? `${item.dims.length}×${item.dims.width}m`
+                       : item.subtype === 'planta'   ? `H ${item.dims.height}m`
+                       : `Spot · H ${item.dims.height}m`;
+        label = subLabel;
+        kind = 'lights';
+        yOffset = item.subtype === 'alfombra' ? 0.4 : (item.dims.height ?? 1) + 0.4;
+        break;
+      }
       default:
         label = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;
-        kind = 'buffet';
-        yOffset = 2.55;
+        kind = 'buffet'; yOffset = 2.55;
     }
 
     const sprite = makeTextSprite(label, kind);
@@ -516,18 +520,21 @@ function setPlanTexture(texture) {
     planMesh.material.dispose();
   }
   const geo = new THREE.PlaneGeometry(_appState.plan.widthM, _appState.plan.lengthM);
-  const mat = new THREE.MeshStandardMaterial({
+  const mat = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
     opacity: _appState.plan.opacity,
-    roughness: 1.0,
-    metalness: 0,
-    depthWrite: false
+    side: THREE.FrontSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
   });
   planMesh = new THREE.Mesh(geo, mat);
   planMesh.rotation.x = -Math.PI / 2;
-  planMesh.position.y = 0.005;
-  planMesh.receiveShadow = true;
+  planMesh.position.y = 0.006;
+  planMesh.renderOrder = 1;
+  planMesh.receiveShadow = false;
   scene.add(planMesh);
   _appState.plan.mesh = planMesh;
   _appState.plan.texture = texture;
@@ -539,11 +546,10 @@ function updatePlanSize() {
   planMesh.geometry = new THREE.PlaneGeometry(_appState.plan.widthM, _appState.plan.lengthM);
 }
 
-function updatePlanOpacity(v) {
-  if (planMesh) {
-    planMesh.material.opacity = v;
-    planMesh.material.needsUpdate = true;
-  }
+function updatePlanOpacity(val) {
+  if (!planMesh) return;
+  planMesh.material.opacity = val;
+  _appState.plan.opacity = val;
 }
 
 function setControlsEnabled(enabled) {
@@ -576,6 +582,70 @@ function setZoomPercent(pct) {
 }
 
 /* ─── API exportada ─── */
+
+/* ─── Canvas boundary (rectángulo de área de trabajo) ─── */
+let canvasBoundary = null;
+
+function setCanvasSize(wM, lM) {
+  if (!_appState) return;
+  if (canvasBoundary) { scene.remove(canvasBoundary); canvasBoundary = null; }
+  const points = [
+    new THREE.Vector3(-wM/2, 0.02, -lM/2),
+    new THREE.Vector3( wM/2, 0.02, -lM/2),
+    new THREE.Vector3( wM/2, 0.02,  lM/2),
+    new THREE.Vector3(-wM/2, 0.02,  lM/2),
+    new THREE.Vector3(-wM/2, 0.02, -lM/2),
+  ];
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  canvasBoundary = new THREE.Line(geo,
+    new THREE.LineBasicMaterial({ color: 0x00c853, linewidth: 3, transparent: true, opacity: 1.0, depthTest: false })
+  );
+  canvasBoundary.renderOrder = 999;
+  scene.add(canvasBoundary);
+  rebuildGrids();
+}
+
+/* ─── Modo mover plano ─── */
+let planMoving = false;
+let planLocked = false;
+let planMoveStart = null;
+let planMeshStart = null;
+
+function setPlanMoving(active) {
+  planMoving = active && !planLocked;
+}
+
+function setPlanLocked(locked) {
+  planLocked = locked;
+  if (locked) planMoving = false;
+}
+
+function isPlanLocked() { return planLocked; }
+function isPlanMoving() { return planMoving; }
+
+function startPlanMove(point) {
+  if (!planMoving) return;
+  planMoveStart = { x: point.x, z: point.z };
+  // Guardamos posición actual del boundary
+  planMeshStart = {
+    x: canvasBoundary?.position.x ?? 0,
+    z: canvasBoundary?.position.z ?? 0
+  };
+}
+
+function updatePlanMove(point) {
+  if (!planMoving || !planMoveStart || !canvasBoundary) return;
+  const dx = point.x - planMoveStart.x;
+  const dz = point.z - planMoveStart.z;
+  canvasBoundary.position.x = planMeshStart.x + dx;
+  canvasBoundary.position.z = planMeshStart.z + dz;
+}
+
+function endPlanMove() {
+  planMoveStart = null;
+  planMeshStart = null;
+}
+
 export const SceneManager = {
   async init() {
     await bindDeps();
@@ -590,6 +660,9 @@ export const SceneManager = {
   rebuildGrids,
   applyShadowState,
   setPlanTexture, updatePlanSize, updatePlanOpacity,
+  setCanvasSize,
+  setPlanMoving, setPlanLocked, isPlanLocked, isPlanMoving,
+  startPlanMove, updatePlanMove, endPlanMove,
   get scene() { return scene; },
   get renderer() { return renderer; },
   get activeCam() { return activeCam; },
