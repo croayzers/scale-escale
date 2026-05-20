@@ -175,6 +175,24 @@ function showTooltip(item) {
       <div class="text-[10.5px] opacity-70 mt-0.5">grosor ${(item.dims.thickness * 100).toFixed(0)}cm</div>
       <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
     `;
+  } else if (item.type === 'mesaRect' || item.type === 'mesaImperial') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">Mesa · ${item.type === 'mesaImperial' ? 'imperial' : 'rectangular'}</div>
+      <div class="text-sm">${item.dims.length.toFixed(2)} × ${item.dims.width.toFixed(2)}m · ${item.chairs} pax</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'mesaCocktail') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">Mesa cocktail</div>
+      <div class="text-sm">Ø ${item.dims.diameter.toFixed(2)}m · H ${item.dims.height.toFixed(2)}m</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'mesaCurva' || item.type === 'mesaSerpentina') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">${item.type === 'mesaCurva' ? 'Curva' : 'Serpentina'}</div>
+      <div class="text-sm">R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs} pax</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
   } else if (item.type === 'sillaCatering') {
     content.innerHTML = `
       <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">Silla · ${item.subtype}</div>
@@ -221,7 +239,11 @@ function updateTooltipPosition() {
                 : item.type === 'room'       ? (item.dims.height || 3) + 0.4
                 : item.type === 'sillaCatering' ? (item.dims?.totalHeight || 0.9) + 0.3
                 : item.type === 'sillaLineal'   ? (item.dims?.totalHeight || 0.9) + 0.3
+                : item.type === 'mesaCocktail'  ? (item.dims?.height || 1.1) + 0.4
+                : item.type === 'mesaRect' || item.type === 'mesaImperial' ? 1.2
+                : item.type === 'mesaCurva' || item.type === 'mesaSerpentina' ? 1.2
                 : 2.4;
+
   const vec = new THREE.Vector3(item.x, yHeight, item.z);
   vec.project(S.activeCam);
   const x = (vec.x * 0.5 + 0.5) * window.innerWidth;
@@ -577,6 +599,126 @@ function showDetail(item) {
       width:     v => ({ dims: { ...item.dims, width:     clampNum(v, 1,    50) } }),
       height:    v => ({ dims: { ...item.dims, height:    clampNum(v, 1,    10) } }),
       thickness: v => ({ dims: { ...item.dims, thickness: clampNum(v, 0.04, 0.5) } }),
+      color:     v => ({ color: v }),
+    });
+
+} else if (item.type === 'mesaRect' || item.type === 'mesaImperial') {
+    const label = item.type === 'mesaImperial' ? 'Mesa Imperial' : 'Mesa Rectangular';
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">${label}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="1" max="20" step="0.1" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="0.5" max="2" step="0.05" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Separación sillas (m)</span>
+        <input data-input="chairSep" type="number" min="0.45" max="1.0" step="0.05" value="${item.chairSep ?? 0.60}" class="input-field"/>
+      </label>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color</span>
+        <input data-input="color" type="color" value="${item.color || '#4a4744'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <div class="text-[12px] mb-3 flex justify-between"><span style="color:var(--muted)">Sillas calculadas</span><span class="mono">${item.chairs}p</span></div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      length:   v => ({ dims: { ...item.dims, length: clampNum(v, 1, 20) } }),
+      width:    v => ({ dims: { ...item.dims, width:  clampNum(v, 0.5, 2) } }),
+      chairSep: v => ({ chairSep: clampNum(v, 0.45, 1.0) }),
+      color:    v => ({ color: v }),
+    });
+
+  } else if (item.type === 'mesaCocktail') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">Mesa Cocktail</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Diámetro (m)</span>
+          <input data-input="diameter" type="number" min="0.5" max="1.5" step="0.05" value="${item.dims.diameter}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="0.7" max="1.3" step="0.05" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color falda</span>
+        <input data-input="color" type="color" value="${item.color || '#ffffff'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      diameter: v => ({ dims: { ...item.dims, diameter: clampNum(v, 0.5, 1.5) } }),
+      height:   v => ({ dims: { ...item.dims, height:   clampNum(v, 0.7, 1.3) } }),
+      color:    v => ({ color: v }),
+    });
+
+  } else if (item.type === 'mesaCurva' || item.type === 'mesaSerpentina') {
+    const label = item.type === 'mesaCurva' ? 'Mesa Curva' : 'Mesa Serpentina';
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">${label}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Radio interno (m)</span>
+          <input data-input="radioInt" type="number" min="0.5" max="8" step="0.1" value="${item.dims.radioInt}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho tablero (m)</span>
+          <input data-input="anchoTab" type="number" min="0.4" max="1.5" step="0.05" value="${item.dims.anchoTab}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ángulo (°)</span>
+          <input data-input="anguloDeg" type="number" min="15" max="180" step="5" value="${item.dims.anguloDeg}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Sep. sillas (m)</span>
+          <input data-input="chairSep" type="number" min="0.45" max="1.0" step="0.05" value="${item.chairSep ?? 0.60}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Distribución sillas</span>
+        <select data-input="distrib" class="input-field">
+          <option value="interna" ${item.distrib==='interna'?'selected':''}>Interna</option>
+          <option value="externa" ${item.distrib==='externa'?'selected':''}>Externa</option>
+          <option value="ambas"   ${item.distrib==='ambas'  ?'selected':''}>Ambas</option>
+        </select>
+      </label>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color</span>
+        <input data-input="color" type="color" value="${item.color || '#4a4744'}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <div class="text-[12px] mb-3 flex justify-between"><span style="color:var(--muted)">Sillas calculadas</span><span class="mono">${item.chairs}p</span></div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      radioInt:  v => ({ dims: { ...item.dims, radioInt:  clampNum(v, 0.5, 8) } }),
+      anchoTab:  v => ({ dims: { ...item.dims, anchoTab:  clampNum(v, 0.4, 1.5) } }),
+      anguloDeg: v => ({ dims: { ...item.dims, anguloDeg: clampNum(v, 15, 180) } }),
+      chairSep:  v => ({ chairSep: clampNum(v, 0.45, 1.0) }),
+      distrib:   v => ({ distrib: v }),
       color:     v => ({ color: v }),
     });
 

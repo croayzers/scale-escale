@@ -74,11 +74,19 @@
   ],
   "tables": [
     {
-      "id": "table_standard_180",
-      "name": "Mesa",
+      "id": "mesa_redonda_20",
+      "name": "Mesa Ø 2.0m",
       "category": "tables",
-      "icon": "circle-dot",
-      "style": "primary",
+      "type": "mesa",
+      "subtype": "standard",
+      "dims": { "diameter": 2.0 },
+      "chairs": 10,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_redonda_18",
+      "name": "Mesa Ø 1.8m",
+      "category": "tables",
       "type": "mesa",
       "subtype": "standard",
       "dims": { "diameter": 1.8 },
@@ -86,17 +94,91 @@
       "defaultRotation": 0
     },
     {
-      "id": "table_presi_20x12",
-      "name": "Mesa Presidencial",
+      "id": "mesa_redonda_15",
+      "name": "Mesa Ø 1.5m",
       "category": "tables",
-      "icon": "armchair",
-      "style": "ghost",
+      "type": "mesa",
+      "subtype": "standard",
+      "dims": { "diameter": 1.5 },
+      "chairs": 6,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_napoleon_20",
+      "name": "Napoleón Ø 2.0m",
+      "category": "tables",
+      "type": "mesa",
+      "subtype": "napoleon",
+      "dims": { "diameter": 2.0 },
+      "chairs": 10,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_rect_180",
+      "name": "Mesa Rectangular",
+      "category": "tables",
+      "type": "mesaRect",
+      "dims": { "length": 1.8, "width": 0.8 },
+      "chairs": 6,
+      "chairSep": 0.60,
+      "color": "#4a4744",
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_cocktail",
+      "name": "Cocktail Alta",
+      "category": "tables",
+      "type": "mesaCocktail",
+      "dims": { "diameter": 0.80, "height": 1.10 },
+      "color": "#ffffff",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_presi_20x12",
+      "name": "Presidencial",
+      "category": "tables",
       "type": "mesa",
       "subtype": "presi",
       "dims": { "length": 2.0, "width": 1.2 },
       "chairs": 10,
       "endHead": true,
       "endFoot": true,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_imperial",
+      "name": "Imperial",
+      "category": "tables",
+      "type": "mesaImperial",
+      "dims": { "length": 6.0, "width": 1.2 },
+      "color": "#4a4744",
+      "chairSep": 0.60,
+      "chairs": 20,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_curva_90",
+      "name": "Curva 90°",
+      "category": "tables",
+      "type": "mesaCurva",
+      "dims": { "radioInt": 2.0, "anchoTab": 0.7, "anguloDeg": 90, "alto": 0.74 },
+      "distrib": "externa",
+      "chairSep": 0.60,
+      "color": "#4a4744",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "mesa_serpentina",
+      "name": "Serpentina",
+      "category": "tables",
+      "type": "mesaSerpentina",
+      "dims": { "radioInt": 2.0, "anchoTab": 0.7, "anguloDeg": 60, "alto": 0.74 },
+      "distrib": "externa",
+      "chairSep": 0.60,
+      "color": "#4a4744",
+      "chairs": 0,
       "defaultRotation": 0
     }
   ],

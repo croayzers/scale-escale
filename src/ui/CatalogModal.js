@@ -75,14 +75,19 @@ function thumbSVG(def) {
     if (def.subtype === 'presi') return svgRect('#e6e2da');
     return svgCircle('#e6e2da');
   }
-  if (t === 'buffet')        return svgLongRect('#e6e2da');
-  if (t === 'carpa')         return svgTent('#d4b78b');
-  if (t === 'arbusto')       return svgBush('#6fa86a');
-  if (t === 'arbol')         return svgTree('#4a8d50', '#7a4f2a');
-  if (t === 'cableLuces')    return svgLights('#f4c95d');
-  if (t === 'room')          return svgRoom('#dddddd');
-  if (t === 'sillaCatering') return svgChair(def.color || '#cccccc', def.subtype);
-  if (t === 'sillaLineal')   return svgChairLineal(def.color || '#cccccc');
+  if (t === 'mesaRect')        return svgMesaRect();
+  if (t === 'mesaCocktail')    return svgMesaCocktail();
+  if (t === 'mesaImperial')    return svgMesaImperial();
+  if (t === 'mesaCurva')       return svgMesaCurva();
+  if (t === 'mesaSerpentina')  return svgMesaSerpentina();
+  if (t === 'buffet')          return svgLongRect('#e6e2da');
+  if (t === 'carpa')           return svgTent('#d4b78b');
+  if (t === 'arbusto')         return svgBush('#6fa86a');
+  if (t === 'arbol')           return svgTree('#4a8d50', '#7a4f2a');
+  if (t === 'cableLuces')      return svgLights('#f4c95d');
+  if (t === 'room')            return svgRoom('#dddddd');
+  if (t === 'sillaCatering')   return svgChair(def.color || '#cccccc', def.subtype);
+  if (t === 'sillaLineal')     return svgChairLineal(def.color || '#cccccc');
   return svgPlaceholder();
 }
 
@@ -185,6 +190,58 @@ function svgChairLineal(fill) {
       <line x1="${x-5}" y1="56" x2="${x-5}" y2="76" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
       <line x1="${x+5}" y1="56" x2="${x+5}" y2="76" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
     `).join('')}
+  </svg>`;
+}
+
+function svgMesaRect() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="62" width="60" height="4" fill="rgba(0,0,0,0.1)"/>
+    <rect x="22" y="42" width="56" height="20" fill="#e6e2da" stroke="rgba(0,0,0,0.18)" stroke-width="0.7" rx="2"/>
+    ${[30,46,62,78].flatMap(x => [
+      `<rect x="${x-5}" y="28" width="10" height="10" fill="#bbb" rx="1"/>`,
+      `<rect x="${x-5}" y="66" width="10" height="10" fill="#bbb" rx="1"/>`
+    ]).join('')}
+  </svg>`;
+}
+
+function svgMesaCocktail() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="86" rx="22" ry="3" fill="rgba(0,0,0,0.15)"/>
+    <rect x="46" y="40" width="8" height="38" fill="#888"/>
+    <polygon points="30,40 70,40 78,76 22,76" fill="#fff" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    <ellipse cx="50" cy="36" rx="22" ry="6" fill="#fff" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    <ellipse cx="44" cy="32" rx="10" ry="2" fill="#fff" opacity="0.6"/>
+  </svg>`;
+}
+
+function svgMesaImperial() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="58" width="88" height="4" fill="rgba(0,0,0,0.1)"/>
+    <rect x="8" y="42" width="84" height="18" fill="#e6e2da" stroke="rgba(0,0,0,0.18)" stroke-width="0.7" rx="2"/>
+    ${[14,26,38,50,62,74,86].flatMap(x => [
+      `<rect x="${x-3.5}" y="30" width="7" height="9" fill="#bbb" rx="1"/>`,
+      `<rect x="${x-3.5}" y="63" width="7" height="9" fill="#bbb" rx="1"/>`
+    ]).join('')}
+  </svg>`;
+}
+
+function svgMesaCurva() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 16 75 A 40 40 0 0 1 84 75 L 80 58 A 28 28 0 0 0 20 58 Z" fill="#e6e2da" stroke="rgba(0,0,0,0.2)" stroke-width="0.7"/>
+    ${[25,40,50,60,75].map((x,i) => {
+      const cy = 75 - Math.sin((i-2)*0.5)*4 - 12;
+      return `<rect x="${x-4}" y="${cy}" width="8" height="8" fill="#bbb" rx="1"/>`;
+    }).join('')}
+  </svg>`;
+}
+
+function svgMesaSerpentina() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 8 70 Q 28 48 50 60 Q 72 72 92 50 L 90 38 Q 72 58 50 48 Q 28 38 10 58 Z" fill="#e6e2da" stroke="rgba(0,0,0,0.2)" stroke-width="0.7"/>
+    ${[18,32,48,62,78].map((x,i) => {
+      const y = i%2 ? 70 : 38;
+      return `<rect x="${x-3.5}" y="${y}" width="7" height="7" fill="#bbb" rx="1"/>`;
+    }).join('')}
   </svg>`;
 }
 

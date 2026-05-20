@@ -10,6 +10,11 @@ import { createCableLuces }     from './cableLuces.js';
 import { createRoom }           from './room.js';
 import { createSillaCatering }  from './sillaCatering.js';
 import { createSillaLineal }    from './sillaLineal.js';
+import { createMesaRect }      from './mesaRect.js';
+import { createMesaCocktail }  from './mesaCocktail.js';
+import { createMesaImperial }  from './mesaImperial.js';
+import { createMesaCurva }       from './mesaCurva.js';
+import { createMesaSerpentina }  from './mesaSerpentina.js';
 
 const builders = {
   mesa:           createMesa,
@@ -21,6 +26,11 @@ const builders = {
   room:           createRoom,
   sillaCatering:  createSillaCatering,
   sillaLineal:    createSillaLineal,
+  mesaRect:      createMesaRect,
+  mesaCocktail:  createMesaCocktail,
+  mesaImperial:  createMesaImperial,
+  mesaCurva:      createMesaCurva,
+  mesaSerpentina: createMesaSerpentina,
 };
 
 export const ModelFactory = {

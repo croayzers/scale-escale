@@ -367,6 +367,23 @@ function drawCotas() {
         yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
         break;
       }
+      case 'mesaRect':
+      case 'mesaImperial':
+        label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
+        kind = 'mesa';
+        yOffset = 1.55;
+        break;
+      case 'mesaCocktail':
+        label = `Ø ${item.dims.diameter.toFixed(2)}m · alta`;
+        kind = 'mesa';
+        yOffset = (item.dims.height || 1.1) + 0.3;
+        break;
+      case 'mesaCurva':
+      case 'mesaSerpentina':
+        label = `R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs}p`;
+        kind = 'mesa';
+        yOffset = 1.55;
+        break;
       default:
         label = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;
         kind = 'buffet';
