@@ -81,13 +81,22 @@ function thumbSVG(def) {
   if (t === 'mesaCurva')       return svgMesaCurva();
   if (t === 'mesaSerpentina')  return svgMesaSerpentina();
   if (t === 'buffet')          return svgLongRect('#e6e2da');
-  if (t === 'carpa')           return svgTent('#d4b78b');
+  if (t === 'carpa')              return svgTent('#d4b78b');
+  if (t === 'carpaCuadrada')      return svgTentSquare();
+  if (t === 'carpaStar')          return svgTentStar();
+  if (t === 'carpaPabellon')      return svgTentPabellon();
+  if (t === 'carpaTransparente')  return svgTentTransparent();
+  if (t === 'carpaBeduina')       return svgTentBeduina();
+  if (t === 'carpaSailcloth')     return svgTentSailcloth();
+  if (t === 'carpaTipi')          return svgTentTipi();
+  if (t === 'carpaDomo')          return svgTentDomo();
   if (t === 'arbusto')         return svgBush('#6fa86a');
   if (t === 'arbol')           return svgTree('#4a8d50', '#7a4f2a');
   if (t === 'cableLuces')      return svgLights('#f4c95d');
   if (t === 'room')            return svgRoom('#dddddd');
   if (t === 'sillaCatering')   return svgChair(def.color || '#cccccc', def.subtype);
   if (t === 'sillaLineal')     return svgChairLineal(def.color || '#cccccc');
+  if (t === 'poste')              return svgPoste();
   return svgPlaceholder();
 }
 
@@ -242,6 +251,97 @@ function svgMesaSerpentina() {
       const y = i%2 ? 70 : 38;
       return `<rect x="${x-3.5}" y="${y}" width="7" height="7" fill="#bbb" rx="1"/>`;
     }).join('')}
+  </svg>`;
+}
+
+function svgTentSquare() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="38" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="20,60 80,60 50,18" fill="#f5f1e8" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    <polygon points="20,60 50,18 50,72" fill="rgba(0,0,0,0.06)"/>
+    <line x1="20" y1="60" x2="20" y2="78" stroke="#6b4423" stroke-width="1.5"/>
+    <line x1="80" y1="60" x2="80" y2="78" stroke="#6b4423" stroke-width="1.5"/>
+    <circle cx="50" cy="18" r="2" fill="#2a1810"/>
+  </svg>`;
+}
+
+function svgTentStar() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="82" rx="38" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <path d="M 50 20 L 80 50 L 70 70 L 50 60 L 30 70 L 20 50 Z" fill="#ede7d6" stroke="rgba(0,0,0,0.18)" stroke-width="0.6"/>
+    <path d="M 50 20 L 50 60 L 30 70 Z" fill="rgba(0,0,0,0.06)"/>
+    <circle cx="50" cy="56" r="2" fill="#6b4423"/>
+  </svg>`;
+}
+
+function svgTentPabellon() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="40" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="10,60 90,60 80,30 20,30" fill="#f0ead8" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    <line x1="10" y1="60" x2="20" y2="30" stroke="#3a4d5c" stroke-width="1.2"/>
+    <line x1="90" y1="60" x2="80" y2="30" stroke="#3a4d5c" stroke-width="1.2"/>
+    <line x1="20" y1="30" x2="80" y2="30" stroke="#3a4d5c" stroke-width="1.4"/>
+    <line x1="10" y1="60" x2="10" y2="78" stroke="#3a4d5c" stroke-width="1.5"/>
+    <line x1="90" y1="60" x2="90" y2="78" stroke="#3a4d5c" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function svgTentTransparent() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="40" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="10,60 90,60 80,30 20,30" fill="rgba(168,216,232,0.35)" stroke="white" stroke-width="1.5"/>
+    <rect x="20" y="60" width="60" height="18" fill="rgba(168,216,232,0.25)" stroke="white" stroke-width="1.2"/>
+    <line x1="10" y1="60" x2="90" y2="60" stroke="white" stroke-width="1.4"/>
+    <line x1="20" y1="30" x2="80" y2="30" stroke="white" stroke-width="1.4"/>
+  </svg>`;
+}
+
+function svgTentBeduina() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="42" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <path d="M 8 70 Q 25 60 35 30 Q 50 50 65 30 Q 75 60 92 70 L 88 78 L 12 78 Z" fill="#d9b88a" stroke="rgba(0,0,0,0.18)" stroke-width="0.6"/>
+    <line x1="35" y1="30" x2="35" y2="78" stroke="#3a2d1f" stroke-width="1.5"/>
+    <line x1="65" y1="30" x2="65" y2="78" stroke="#3a2d1f" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function svgTentSailcloth() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="42" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <path d="M 8 70 Q 30 56 35 20 Q 50 56 65 20 Q 70 56 92 70 L 92 78 L 8 78 Z" fill="#f8f5ec" stroke="rgba(0,0,0,0.18)" stroke-width="0.6"/>
+    <line x1="35" y1="20" x2="35" y2="78" stroke="#5d4a36" stroke-width="1.4"/>
+    <line x1="65" y1="20" x2="65" y2="78" stroke="#5d4a36" stroke-width="1.4"/>
+  </svg>`;
+}
+
+function svgTentTipi() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="32" ry="3" fill="rgba(0,0,0,0.12)"/>
+    <polygon points="50,12 22,80 78,80" fill="#e8dcc4" stroke="rgba(0,0,0,0.18)" stroke-width="0.6"/>
+    <polygon points="50,12 40,80 50,80" fill="rgba(0,0,0,0.08)"/>
+    <line x1="50" y1="12" x2="45" y2="6" stroke="#3a2d1f" stroke-width="1.4"/>
+    <line x1="50" y1="12" x2="55" y2="6" stroke="#3a2d1f" stroke-width="1.4"/>
+    <line x1="50" y1="12" x2="50" y2="6" stroke="#3a2d1f" stroke-width="1.4"/>
+    <polygon points="48,60 52,60 52,80 48,80" fill="rgba(0,0,0,0.4)"/>
+  </svg>`;
+}
+
+function svgTentDomo() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="80" rx="38" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <path d="M 12 76 A 38 38 0 0 1 88 76 Z" fill="#e8e2d0" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    ${[22,32,42,52,62,72,82].map(x => `<path d="M ${x} 76 Q ${x} 40 50 30" stroke="rgba(58,77,92,0.5)" stroke-width="0.6" fill="none"/>`).join('')}
+    ${[68,58,48,38].map(y => `<path d="M ${50 - Math.sqrt(38*38 - (76-y)*(76-y))} ${y} A ${Math.sqrt(38*38 - (76-y)*(76-y))} ${Math.sqrt(38*38 - (76-y)*(76-y))} 0 0 1 ${50 + Math.sqrt(38*38 - (76-y)*(76-y))} ${y}" stroke="rgba(58,77,92,0.4)" stroke-width="0.5" fill="none"/>`).join('')}
+    <rect x="46" y="58" width="8" height="18" fill="#3a4d5c"/>
+  </svg>`;
+}
+
+function svgPoste() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="86" rx="10" ry="2.5" fill="rgba(0,0,0,0.18)"/>
+    <rect x="46" y="14" width="8" height="68" fill="#6b4423" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
+    <ellipse cx="50" cy="14" rx="4" ry="1.2" fill="#5a3a1f"/>
+    <ellipse cx="50" cy="82" rx="14" ry="3" fill="#5a3a1f"/>
   </svg>`;
 }
 

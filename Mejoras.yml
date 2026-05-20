@@ -10,11 +10,6 @@ Tiene un menu a parte con todo el inventario por categorias (botones de Sillas, 
 -Barra libre: Mesa con una cubitera en el centro, editables el nombre, dimension, cantidad de cubiteras y distancia entre las cubiteras
 -Estructuras: Pared, pared con hueco de ventana, Gris transparente, Cristal, puerta, puerta doble, escalera normal, escalera radial) medidas editables de (largo,ancho,alto,grosor y tambien de la pared con hueco interno).
 -Ambiente: Luces, alfombras, y mas que se te ocurra (medidas rapdias y tambien editables)
-3. Seleccion multiple de objetos (manteniendo la tecla Shift al hacer click y arrastras con el raton) para mover multiples objetos de sitio manteniendo la distribucion.
-4. En las opciones del objeto (boton bloquear "icono candado") para no moverlo sin querer
-5. Agregar seccion de ajustes (estructuras e iluminacion) para poder bloquearlos todos.
-6. El boton de cargar/guardar plantilla. (podre crear plantillas de lugares con el plano cargado, estructuras, iluminacion y decoracion 3d; guardarla para reutilizarla en otra ocasion) de manera que el usuario solo tiene que poner lo propio de un catering/evento
-7. Mesa presidencial en su menu de Click derecho, tambien podra ser editada su dimension "largo y ancho"
 
 ##UPDATES
 
@@ -30,4 +25,13 @@ Tiene un menu a parte con todo el inventario por categorias (botones de Sillas, 
 -Importante: No eliminar la funcionalidad actual del logo. Mantener el diseño coherente con la interfaz existente. 
 -Validar que los colores introducidos manualmente sean correctos. 
 -Mostrar una pequeña vista previa del color seleccionado junto a cada campo.
-2. 
+
+2. Box de botones superior e inferior no estan centrados
+3. Color con opcion de transparancia en las carpas, invisible parte superior y bloquear objetos para no poder ser marcados (cuando pongo la carpa, desde arriba no puedo manipular las mesas y sillas sin pinchar en la carpa)
+4. Mesas: modificar numero sillas por lado independientemente, falta menu click derecho
+-Imperial: las sillas miran alreves
+-Presidencial:
+-Rectangular:  las sillas miran alreves
+-Curva: las sillas miran alreves, corregir altura de la mesa y sillas, estan levitando.
+5. Click derecho raton: En cualquier items, debe mostrar un menu de edicion con 4 medidas estandar, Cantidad de sillas si procede, medidas personalizada, Check de mostrar cartel con detalles, edicion nombre de mesa "en vez de - MESA- que muestre el texto escrito", si/no cabecera y pie, Tipo, BLoquear, duplicar, eliminar.
+6. Sistema de Cargar/Guardar y visualizar plantillas en el directorio designado. (Sharepoint, Local, Google Drive)

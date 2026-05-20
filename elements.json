@@ -197,30 +197,118 @@
     }
   ],
   "stages": [],
-  "decor": [
+"decor": [
     {
-      "id": "tent_8x4",
-      "name": "Añadir Carpa",
+      "id": "tent_cuadrada",
+      "name": "Cuadrada",
       "category": "decor",
-      "icon": "tent",
-      "style": "ghost",
+      "type": "carpaCuadrada",
+      "dims": { "size": 6.0, "height": 3.0, "ridgeRise": 1.6 },
+      "tarpColor": "#f5f1e8",
+      "poleColor": "#6b4423",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_star",
+      "name": "Star",
+      "category": "decor",
+      "type": "carpaStar",
+      "dims": { "size": 8.0, "height": 2.6, "peakRise": 2.2 },
+      "tarpColor": "#ede7d6",
+      "poleColor": "#6b4423",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_pabellon",
+      "name": "Pabellón",
+      "category": "decor",
+      "type": "carpaPabellon",
+      "dims": { "length": 12.0, "width": 6.0, "height": 3.0, "ridgeRise": 1.8, "modSpacing": 3.0 },
+      "tarpColor": "#f0ead8",
+      "poleColor": "#3a4d5c",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_transparente",
+      "name": "Transparente",
+      "category": "decor",
+      "type": "carpaTransparente",
+      "dims": { "length": 10.0, "width": 5.0, "height": 3.0, "ridgeRise": 1.5 },
+      "glassColor": "#a8d8e8",
+      "poleColor": "#ffffff",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_beduina",
+      "name": "Beduina",
+      "category": "decor",
+      "type": "carpaBeduina",
+      "dims": { "length": 12.0, "width": 7.0, "cornerHeight": 2.2, "peakHeight": 4.0, "sideDrop": 1.4 },
+      "tarpColor": "#d9b88a",
+      "poleColor": "#3a2d1f",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_sailcloth",
+      "name": "Sailcloth",
+      "category": "decor",
+      "type": "carpaSailcloth",
+      "dims": { "length": 14.0, "width": 8.0, "eaveHeight": 2.6, "peakHeight": 5.0, "peaks": 2 },
+      "tarpColor": "#f8f5ec",
+      "poleColor": "#5d4a36",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_tipi",
+      "name": "Tipi",
+      "category": "decor",
+      "type": "carpaTipi",
+      "dims": { "diameter": 6.0, "height": 5.5 },
+      "tarpColor": "#e8dcc4",
+      "poleColor": "#3a2d1f",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_domo",
+      "name": "Domo",
+      "category": "decor",
+      "type": "carpaDomo",
+      "dims": { "diameter": 8.0, "height": 4.0 },
+      "tarpColor": "#e8e2d0",
+      "poleColor": "#3a4d5c",
+      "transparent": false,
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
+      "id": "tent_rect_8x4",
+      "name": "Rectangular (clásica)",
+      "category": "decor",
       "type": "carpa",
       "dims": { "length": 8.0, "width": 4.0 },
       "chairs": 0,
-      "posts": {
-        "enabled": true,
-        "diameter": 0.10,
-        "spacing": 2.0,
-        "height": 3.0
-      },
-      "columns": {
-        "enabled": false,
-        "rows": 1,
-        "cols": 2,
-        "diameter": 0.15
-      },
+      "posts": { "enabled": true, "diameter": 0.10, "spacing": 2.0, "height": 3.0 },
+      "columns": { "enabled": false, "rows": 1, "cols": 2, "diameter": 0.15 },
+      "defaultRotation": 0
+    },
+    {
+      "id": "poste_individual",
+      "name": "Poste",
+      "category": "decor",
+      "type": "poste",
+      "dims": { "diameter": 0.12, "height": 3.0 },
+      "color": "#6b4423",
+      "chairs": 0,
       "defaultRotation": 0
     }
+    
   ],
   "structures": [
     {

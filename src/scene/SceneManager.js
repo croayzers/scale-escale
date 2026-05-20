@@ -318,11 +318,46 @@ function drawCotas() {
     let label, kind, yOffset;
 
     switch (item.type) {
-      case 'carpa':
-        label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${(item.dims.length*item.dims.width).toFixed(0)}m²`;
+case 'carpa':
+      case 'carpaPabellon':
+      case 'carpaTransparente':
+      case 'carpaBeduina':
+      case 'carpaSailcloth': {
+        const L = item.dims.length ?? item.dims.size ?? 0;
+        const W = item.dims.width  ?? item.dims.size ?? 0;
+        label = `${L.toFixed(1)}×${W.toFixed(1)}m · ${(L*W).toFixed(0)}m²`;
         kind = 'carpa';
         yOffset = _appState.camera === 'top' ? 0.5 : 4.5;
         break;
+      }
+      case 'carpaCuadrada': {
+        const S = item.dims.size ?? 6;
+        label = `${S.toFixed(1)}×${S.toFixed(1)}m · ${(S*S).toFixed(0)}m²`;
+        kind = 'carpa';
+        yOffset = _appState.camera === 'top' ? 0.5 : 4.8;
+        break;
+      }
+      case 'carpaStar': {
+        const S = item.dims.size ?? 8;
+        label = `Ø ${S.toFixed(1)}m · star`;
+        kind = 'carpa';
+        yOffset = _appState.camera === 'top' ? 0.5 : 5.2;
+        break;
+      }
+      case 'carpaTipi': {
+        const D = item.dims.diameter ?? 6;
+        label = `Ø ${D.toFixed(1)}m · tipi`;
+        kind = 'carpa';
+        yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
+        break;
+      }
+      case 'carpaDomo': {
+        const D = item.dims.diameter ?? 8;
+        label = `Ø ${D.toFixed(1)}m · domo`;
+        kind = 'carpa';
+        yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
+        break;
+      }
       case 'mesa':
         if (item.subtype === 'presi') {
           label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
@@ -383,6 +418,11 @@ function drawCotas() {
         label = `R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs}p`;
         kind = 'mesa';
         yOffset = 1.55;
+        break;
+      case 'poste':
+        label = `Ø ${(item.dims.diameter*100).toFixed(0)}cm · H ${item.dims.height.toFixed(1)}m`;
+        kind = 'carpa';
+        yOffset = item.dims.height + 0.4;
         break;
       default:
         label = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;

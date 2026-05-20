@@ -148,6 +148,31 @@ function showTooltip(item) {
       <div class="text-[10.5px] opacity-70 mt-0.5">${postCount} postes · ${(item.dims.length*item.dims.width).toFixed(1)}m²</div>
       <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
     `;
+  } else if (item.type === 'carpaCuadrada' || item.type === 'carpaStar') {
+    const s = item.dims.size;
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#d4a574">Carpa · ${item.type.replace('carpa','').toLowerCase()}</div>
+      <div class="text-sm">${s.toFixed(1)} × ${s.toFixed(1)}m</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'carpaPabellon' || item.type === 'carpaTransparente' || item.type === 'carpaBeduina' || item.type === 'carpaSailcloth') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#d4a574">Carpa · ${item.type.replace('carpa','').toLowerCase()}</div>
+      <div class="text-sm">${item.dims.length.toFixed(1)} × ${item.dims.width.toFixed(1)}m</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'poste') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#6b4423">Poste</div>
+      <div class="text-sm">Ø ${(item.dims.diameter*100).toFixed(0)}cm · H ${item.dims.height.toFixed(2)}m</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
+  } else if (item.type === 'carpaTipi' || item.type === 'carpaDomo') {
+    content.innerHTML = `
+      <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#d4a574">${item.type === 'carpaTipi' ? 'Tipi' : 'Domo'}</div>
+      <div class="text-sm">Ø ${item.dims.diameter.toFixed(1)}m · H ${item.dims.height.toFixed(1)}m</div>
+      <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
+    `;
   } else if (item.type === 'arbusto') {
     content.innerHTML = `
       <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase" style="color:#3e7a3a">Arbusto</div>
@@ -193,6 +218,35 @@ function showTooltip(item) {
       <div class="text-sm">R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs} pax</div>
       <div class="text-[10px] opacity-50 mt-1">ID #${item.id}</div>
     `;
+  } else if (item.type === 'poste') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Poste</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ø (m)</span>
+          <input data-input="diameter" type="number" min="0.04" max="0.5" step="0.01" value="${item.dims.diameter}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="0.5" max="8" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color</span>
+        <input data-input="color" type="color" value="${item.color}" class="input-field" style="padding:2px;height:36px"/>
+      </label>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      diameter: v => ({ dims: { ...item.dims, diameter: clampNum(v, 0.04, 0.5) } }),
+      height:   v => ({ dims: { ...item.dims, height:   clampNum(v, 0.5, 8) } }),
+      color:    v => ({ color: v }),
+    });
   } else if (item.type === 'sillaCatering') {
     content.innerHTML = `
       <div class="mb-1 opacity-70 text-[9.5px] tracking-widest uppercase">Silla · ${item.subtype}</div>
@@ -242,6 +296,15 @@ function updateTooltipPosition() {
                 : item.type === 'mesaCocktail'  ? (item.dims?.height || 1.1) + 0.4
                 : item.type === 'mesaRect' || item.type === 'mesaImperial' ? 1.2
                 : item.type === 'mesaCurva' || item.type === 'mesaSerpentina' ? 1.2
+                : item.type === 'carpaCuadrada'    ? (A.camera === 'top' ? 0.3 : (item.dims.height + item.dims.ridgeRise + 0.5))
+                : item.type === 'carpaStar'        ? (A.camera === 'top' ? 0.3 : (item.dims.height + item.dims.peakRise + 0.5))
+                : item.type === 'carpaPabellon'    ? (A.camera === 'top' ? 0.3 : (item.dims.height + item.dims.ridgeRise + 0.5))
+                : item.type === 'carpaTransparente'? (A.camera === 'top' ? 0.3 : (item.dims.height + item.dims.ridgeRise + 0.5))
+                : item.type === 'carpaBeduina'     ? (A.camera === 'top' ? 0.3 : (item.dims.peakHeight + 0.5))
+                : item.type === 'carpaSailcloth'   ? (A.camera === 'top' ? 0.3 : (item.dims.peakHeight + 0.5))
+                : item.type === 'carpaTipi'        ? (A.camera === 'top' ? 0.3 : (item.dims.height + 0.5))
+                : item.type === 'carpaDomo'        ? (A.camera === 'top' ? 0.3 : (item.dims.height + 0.5))
+                : item.type === 'poste' ? item.dims.height + 0.4
                 : 2.4;
 
   const vec = new THREE.Vector3(item.x, yHeight, item.z);
@@ -721,6 +784,296 @@ function showDetail(item) {
       distrib:   v => ({ distrib: v }),
       color:     v => ({ color: v }),
     });
+
+  } else if (item.type === 'carpaCuadrada') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Carpa Cuadrada</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Lado (m)</span>
+          <input data-input="size" type="number" min="3" max="20" step="0.5" value="${item.dims.size}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="2" max="6" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Subida cima (m)</span>
+        <input data-input="ridgeRise" type="number" min="0.5" max="4" step="0.1" value="${item.dims.ridgeRise}" class="input-field"/>
+      </label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color tela</span>
+          <input data-input="tarpColor" type="color" value="${item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color postes</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      size:      v => ({ dims: { ...item.dims, size:      clampNum(v, 3, 20) } }),
+      height:    v => ({ dims: { ...item.dims, height:    clampNum(v, 2, 6) } }),
+      ridgeRise: v => ({ dims: { ...item.dims, ridgeRise: clampNum(v, 0.5, 4) } }),
+      tarpColor: v => ({ tarpColor: v }),
+      poleColor: v => ({ poleColor: v }),
+    });
+
+  } else if (item.type === 'carpaStar') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Carpa Star</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Diámetro (m)</span>
+          <input data-input="size" type="number" min="4" max="20" step="0.5" value="${item.dims.size}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura postes (m)</span>
+          <input data-input="height" type="number" min="2" max="5" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Subida pico (m)</span>
+        <input data-input="peakRise" type="number" min="1" max="5" step="0.1" value="${item.dims.peakRise}" class="input-field"/>
+      </label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color tela</span>
+          <input data-input="tarpColor" type="color" value="${item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color postes</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      size:      v => ({ dims: { ...item.dims, size:     clampNum(v, 4, 20) } }),
+      height:    v => ({ dims: { ...item.dims, height:   clampNum(v, 2, 5) } }),
+      peakRise:  v => ({ dims: { ...item.dims, peakRise: clampNum(v, 1, 5) } }),
+      tarpColor: v => ({ tarpColor: v }),
+      poleColor: v => ({ poleColor: v }),
+    });
+
+  } else if (item.type === 'carpaPabellon' || item.type === 'carpaTransparente') {
+    const isTrans = item.type === 'carpaTransparente';
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Carpa ${isTrans ? 'Transparente' : 'Pabellón'}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="4" max="40" step="0.5" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="3" max="20" step="0.5" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="2" max="6" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Subida cima (m)</span>
+          <input data-input="ridgeRise" type="number" min="0.5" max="4" step="0.1" value="${item.dims.ridgeRise}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">${isTrans ? 'Color cristal' : 'Color tela'}</span>
+          <input data-input="${isTrans ? 'glassColor' : 'tarpColor'}" type="color" value="${isTrans ? item.glassColor : item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color postes</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    const colorKey = isTrans ? 'glassColor' : 'tarpColor';
+    wireSimpleInputs(panel, item, A, {
+      length:    v => ({ dims: { ...item.dims, length:    clampNum(v, 4, 40) } }),
+      width:     v => ({ dims: { ...item.dims, width:     clampNum(v, 3, 20) } }),
+      height:    v => ({ dims: { ...item.dims, height:    clampNum(v, 2, 6) } }),
+      ridgeRise: v => ({ dims: { ...item.dims, ridgeRise: clampNum(v, 0.5, 4) } }),
+      [colorKey]: v => ({ [colorKey]: v }),
+      poleColor: v => ({ poleColor: v }),
+    });
+
+  } else if (item.type === 'carpaBeduina') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Carpa Beduina</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="4" max="30" step="0.5" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="3" max="20" step="0.5" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">H esquinas (m)</span>
+          <input data-input="cornerHeight" type="number" min="1.5" max="4" step="0.1" value="${item.dims.cornerHeight}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">H picos (m)</span>
+          <input data-input="peakHeight" type="number" min="3" max="8" step="0.1" value="${item.dims.peakHeight}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color tela</span>
+          <input data-input="tarpColor" type="color" value="${item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color mástiles</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      length:       v => ({ dims: { ...item.dims, length:       clampNum(v, 4, 30) } }),
+      width:        v => ({ dims: { ...item.dims, width:        clampNum(v, 3, 20) } }),
+      cornerHeight: v => ({ dims: { ...item.dims, cornerHeight: clampNum(v, 1.5, 4) } }),
+      peakHeight:   v => ({ dims: { ...item.dims, peakHeight:   clampNum(v, 3, 8) } }),
+      tarpColor:    v => ({ tarpColor: v }),
+      poleColor:    v => ({ poleColor: v }),
+    });
+
+  } else if (item.type === 'carpaSailcloth') {
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">Carpa Sailcloth</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input data-input="length" type="number" min="5" max="40" step="0.5" value="${item.dims.length}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input data-input="width" type="number" min="4" max="20" step="0.5" value="${item.dims.width}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">H aleros (m)</span>
+          <input data-input="eaveHeight" type="number" min="2" max="4" step="0.1" value="${item.dims.eaveHeight}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">H picos (m)</span>
+          <input data-input="peakHeight" type="number" min="3.5" max="8" step="0.1" value="${item.dims.peakHeight}" class="input-field"/>
+        </label>
+      </div>
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Nº picos centrales</span>
+        <input data-input="peaks" type="number" min="1" max="5" step="1" value="${item.dims.peaks}" class="input-field"/>
+      </label>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color tela</span>
+          <input data-input="tarpColor" type="color" value="${item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color mástiles</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      length:     v => ({ dims: { ...item.dims, length:     clampNum(v, 5, 40) } }),
+      width:      v => ({ dims: { ...item.dims, width:      clampNum(v, 4, 20) } }),
+      eaveHeight: v => ({ dims: { ...item.dims, eaveHeight: clampNum(v, 2, 4) } }),
+      peakHeight: v => ({ dims: { ...item.dims, peakHeight: clampNum(v, 3.5, 8) } }),
+      peaks:      v => ({ dims: { ...item.dims, peaks:      Math.round(clampNum(v, 1, 5)) } }),
+      tarpColor:  v => ({ tarpColor: v }),
+      poleColor:  v => ({ poleColor: v }),
+    });
+
+  } else if (item.type === 'carpaTipi' || item.type === 'carpaDomo') {
+    const isTipi = item.type === 'carpaTipi';
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight" style="color:#6b4423">${isTipi ? 'Carpa Tipi' : 'Carpa Domo'}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Diámetro (m)</span>
+          <input data-input="diameter" type="number" min="3" max="20" step="0.5" value="${item.dims.diameter}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input data-input="height" type="number" min="2.5" max="10" step="0.1" value="${item.dims.height}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color tela</span>
+          <input data-input="tarpColor" type="color" value="${item.tarpColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color ${isTipi ? 'palos' : 'estructura'}</span>
+          <input data-input="poleColor" type="color" value="${item.poleColor}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+      ${!isTipi ? `
+        <label class="flex items-center justify-between mb-3 cursor-pointer">
+          <span class="text-[13px]">Domo transparente</span>
+          <input data-input="transparent" type="checkbox" ${item.transparent ? 'checked' : ''}/>
+        </label>
+      ` : ''}
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    wireSimpleInputs(panel, item, A, {
+      diameter:    v => ({ dims: { ...item.dims, diameter: clampNum(v, 3, 20) } }),
+      height:      v => ({ dims: { ...item.dims, height:   clampNum(v, 2.5, 10) } }),
+      tarpColor:   v => ({ tarpColor: v }),
+      poleColor:   v => ({ poleColor: v }),
+      transparent: v => ({ transparent: v === 'on' || v === true }),
+    });
+    // El checkbox necesita wire manual porque wireSimpleInputs lee .value
+    if (!isTipi) {
+      const cb = panel.querySelector('[data-input="transparent"]');
+      cb?.addEventListener('change', () => {
+        A.update(item.id, { transparent: cb.checked });
+      });
+    }
 
 } else if (item.type === 'sillaCatering') {
     content.innerHTML = `

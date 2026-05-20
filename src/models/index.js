@@ -15,6 +15,15 @@ import { createMesaCocktail }  from './mesaCocktail.js';
 import { createMesaImperial }  from './mesaImperial.js';
 import { createMesaCurva }       from './mesaCurva.js';
 import { createMesaSerpentina }  from './mesaSerpentina.js';
+import { createCarpaCuadrada } from './carpaCuadrada.js';
+import { createCarpaStar }     from './carpaStar.js';
+import { createCarpaPabellon }  from './carpaPabellon.js';
+import { createCarpaSailcloth } from './carpaSailcloth.js';
+import { createCarpaBeduina } from './carpaBeduina.js';
+import { createCarpaTipi }    from './carpaTipi.js';
+import { createCarpaTransparente } from './carpaTransparente.js';
+import { createCarpaDomo }         from './carpaDomo.js';
+import { createPoste } from './poste.js';
 
 const builders = {
   mesa:           createMesa,
@@ -31,6 +40,15 @@ const builders = {
   mesaImperial:  createMesaImperial,
   mesaCurva:      createMesaCurva,
   mesaSerpentina: createMesaSerpentina,
+  carpaCuadrada: createCarpaCuadrada,
+  carpaStar:     createCarpaStar,
+  carpaPabellon:  createCarpaPabellon,
+  carpaSailcloth: createCarpaSailcloth,
+  carpaBeduina: createCarpaBeduina,
+  carpaTipi:    createCarpaTipi,
+  carpaTransparente: createCarpaTransparente,
+  carpaDomo:         createCarpaDomo,
+  poste: createPoste,
 };
 
 export const ModelFactory = {
