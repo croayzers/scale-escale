@@ -14,7 +14,6 @@ let mouseDownPos = null;
 let mouseDownTime = 0;
 let boxSelecting = null;      // { startX, startY, additive }
 
-let rotating = null;
 let rKeyDown = false;
 let shiftDown = false;
 
@@ -189,14 +188,6 @@ function onPointerMove(e) {
 
   if (boxSelecting) {
     updateBoxOverlay(boxSelecting.startX, boxSelecting.startY, e.clientX, e.clientY);
-    return;
-  }
-
-  if (rotating) {
-    const STEP = Math.PI / 12;
-    let newRotY = rotating.startRotY + (e.clientX - rotating.anchorX) * 0.012;
-    newRotY = Math.round(newRotY / STEP) * STEP;
-    SceneManager.rotateItem(rotating.id, newRotY);
     return;
   }
 
@@ -525,16 +516,7 @@ function onKeyDown(e) {
 
   if (e.key.toLowerCase() === 'r' && !rKeyDown) {
     rKeyDown = true;
-    if (AppState.selectedId !== null) {
-      const item = AppState.items.find(i => i.id === AppState.selectedId);
-      if (item && !item.locked) {
-        AppState.pushHistory();
-        const m = window._lastMousePos || { x: window.innerWidth/2, y: window.innerHeight/2 };
-        rotating = { id: item.id, anchorX: m.x, lastX: m.x, lastY: m.y, startRotY: item.rotY || 0 };
-        SceneManager.setControlsEnabled(false);
-        document.getElementById('status-mode').textContent = AppState.camera === 'iso' ? 'ISO · ROTANDO…' : 'TOP · ROTANDO…';
-      }
-    }
+    rotateSelectionStep();
     return;
   }
 
@@ -556,16 +538,33 @@ function onKeyUp(e) {
   if (e.key === 'Shift') shiftDown = false;
   if (e.key.toLowerCase() === 'r') {
     rKeyDown = false;
-    if (rotating) {
-      const item = AppState.items.find(i => i.id === rotating.id);
-      if (item) {
-        UIManager.refresh();
-        if (AppState.selectedId === item.id) UIManager.showDetail?.(item);
-      }
-      rotating = null;
-      SceneManager.setControlsEnabled(true);
-      document.getElementById('status-mode').textContent = AppState.camera === 'iso' ? 'ISO · 45°' : 'TOP · CENITAL';
-    }
+  }
+}
+
+function rotateSelectionStep() {
+  if (AppState.selectedIds.size === 0) return;
+
+  const ids = [...AppState.selectedIds].filter(id => {
+    const item = AppState.items.find(entry => entry.id === id);
+    return item && !item.locked;
+  });
+
+  if (!ids.length) return;
+
+  const step = Math.PI / 12;
+  AppState.pushHistory();
+
+  ids.forEach(id => {
+    const item = AppState.items.find(entry => entry.id === id);
+    if (!item) return;
+    const nextRot = (item.rotY || 0) + step;
+    SceneManager.rotateItem(id, nextRot);
+  });
+
+  UIManager.refresh();
+  if (AppState.selectedIds.size === 1 && AppState.selectedId !== null) {
+    const item = AppState.items.find(entry => entry.id === AppState.selectedId);
+    if (item) UIManager.showDetail?.(item);
   }
 }
 

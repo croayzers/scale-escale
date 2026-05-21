@@ -47,13 +47,22 @@ function open(categoryKey) {
         const def = items.find(d => d.id === card.dataset.elementId);
         if (def) {
           const item = ElementLibrary.toItem(def);
-          // Colocar en centro visible de la cámara
-          const target = SceneManager.activeCam?.position ? 
-            SceneManager.activeControls?.target || new THREE.Vector3(0,0,0) : 
-            new THREE.Vector3(0,0,0);
-          item.x = target.x + (Math.random() - 0.5) * 2;
-          item.z = target.z + (Math.random() - 0.5) * 2;
-          AppState.add(item);
+          const mousePos = window._lastMousePos;
+          const modalBounds = modal.getBoundingClientRect();
+          const mouseIsOverModal = mousePos
+            && mousePos.x >= modalBounds.left
+            && mousePos.x <= modalBounds.right
+            && mousePos.y >= modalBounds.top
+            && mousePos.y <= modalBounds.bottom;
+          const groundPoint = mousePos && !mouseIsOverModal
+            ? SceneManager.screenToGround(mousePos.x, mousePos.y)
+            : null;
+          const target = groundPoint || SceneManager.activeControls?.target || new THREE.Vector3(0, 0, 0);
+
+          item.x = target.x;
+          item.z = target.z;
+          const placed = AppState.add(item);
+          SceneManager.focusPoint(placed.x, placed.z, 250);
           document.body.classList.add('has-items');
           close();
         }
@@ -68,8 +77,9 @@ function close() {
   const modal = document.getElementById('catalog-modal');
   if (modal) modal.classList.add('hidden');
   currentCategory = null;
-  // Quitar active del dock
-  document.querySelectorAll('#dock-items button').forEach(b => b.classList.remove('active'));
+  document
+    .querySelectorAll('#dock-items button[data-dock-kind="category"]')
+    .forEach(button => button.classList.remove('active'));
 }
 
 function isOpen() {

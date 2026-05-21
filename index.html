@@ -153,7 +153,7 @@
   <div class="hdr-chip" title="Zoom">
     <i data-lucide="eye" class="w-3.5 h-3.5"></i>
     <span id="zoom-pct" class="mono text-[11px]">100%</span>
-    <input id="zoom-range" type="range" min="40" max="180" step="5" value="100" style="width:80px;accent-color:var(--ink)"/>
+    <input id="zoom-range" type="range" min="40" max="300" step="5" value="100" style="width:88px;accent-color:var(--ink)"/>
   </div>
 
   <div class="hdr-sep"></div>
@@ -163,12 +163,6 @@
     <button id="cam-iso" class="hdr-seg active" title="Isométrica"><i data-lucide="box" class="w-3.5 h-3.5"></i></button>
     <button id="cam-top" class="hdr-seg" title="Cenital"><i data-lucide="square" class="w-3.5 h-3.5"></i></button>
   </div>
-
-  <div class="hdr-sep"></div>
-
-  <button id="btn-inventory" class="hdr-icon" title="Inventario / Presupuesto">
-    <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
-  </button>
 
   </div>
 </header>
@@ -392,6 +386,10 @@
         <input id="company-email" type="email" placeholder="contacto@empresa.com" class="input-field"/>
       </label>
     </div>
+    <label class="block mb-4">
+      <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento</span>
+      <input id="company-venue" type="text" placeholder="Finca, hotel, playa, salón…" class="input-field"/>
+    </label>
 
     <!-- Logo -->
     <div class="mb-4">
@@ -507,6 +505,31 @@
   </div>
 </div>
 
+<!-- Modal vista previa PDF -->
+<div id="export-preview-modal" class="modal-bg">
+  <div class="glass p-7 max-w-5xl w-full mx-6 export-preview-shell" style="border-radius:14px">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Vista previa</div>
+        <h3 class="display-font text-3xl leading-tight">Contenido del PDF</h3>
+        <p id="export-preview-meta" class="text-[12px] mt-2" style="color:var(--muted)">Generando vista previa…</p>
+      </div>
+      <button id="export-preview-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="export-preview-pages" class="export-preview-pages">
+      <div class="export-preview-loading mono text-[11px] tracking-widest uppercase">Preparando PDF…</div>
+    </div>
+    <div class="rule"></div>
+    <div class="flex justify-end gap-2">
+      <button id="export-preview-cancel" class="btn ghost">Cancelar</button>
+      <button id="export-preview-download" class="btn primary">
+        <i data-lucide="file-down" class="w-4 h-4"></i>
+        Descargar PDF
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Overlay área cenital -->
 <div id="area-overlay" class="fixed inset-0 z-[90] hidden" style="cursor:crosshair">
   <div class="glass-dark px-5 py-3 fixed top-6 left-1/2 -translate-x-1/2 flex items-center gap-3">
@@ -544,9 +567,8 @@
   <button id="btn-shadows"></button>
 </div>
 
-<input id="file-template" type="file" accept=".json,.escale.json" class="hidden"/>
 <!-- ============ PANEL INVENTARIO ============ -->
-<div id="inventory-panel" style="display:none;position:fixed;top:72px;right:16px;bottom:80px;width:320px;z-index:35;overflow-y:auto;border-radius:14px;">
+<div id="inventory-panel" style="display:none;position:fixed;right:18px;bottom:102px;width:320px;height:min(62vh,560px);z-index:35;overflow:hidden;border-radius:14px;">
   <div class="glass-mac p-5 h-full flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
@@ -583,11 +605,11 @@
     </div>
 
     <!-- Botón exportar -->
-    <button id="inv-export-btn" class="btn primary w-full justify-center">
-      <i data-lucide="file-down" class="w-4 h-4"></i>
-      Exportar presupuesto PDF
-    </button>
-  </div>
+      <button id="inv-export-btn" class="btn primary w-full justify-center">
+        <i data-lucide="file-down" class="w-4 h-4"></i>
+        Exportar presupuesto PDF
+      </button>
+    </div>
 </div>
 
 <input id="file-template" type="file" accept=".json,.escale.json" class="hidden"/>

@@ -19,6 +19,8 @@ const meshes = new Map();
 let dragPlane;
 let directionalLight, ambientLight, fillLight;
 let cotasGroup;
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 
 function init() {
   const canvas = document.getElementById('scene-canvas');
@@ -83,7 +85,7 @@ function init() {
     RIGHT: THREE.MOUSE.PAN
   };
   controlsTop.minZoom = 0.3;
-  controlsTop.maxZoom = 4;
+  controlsTop.maxZoom = 6;
   controlsTop.enabled = false;
 
   activeControls = controlsIso;
@@ -574,13 +576,41 @@ function applyShadowState() {
 }
 
 function setZoomPercent(pct) {
-  const factor = pct / 100;
+  const percent = Math.max(40, Math.min(300, pct));
+  const factor = percent / 100;
   if (_appState.camera === 'iso') {
-    controlsIso.object.position.setLength(28 / factor);
+    const offset = perspectiveCam.position.clone().sub(controlsIso.target);
+    offset.setLength(28 / factor);
+    perspectiveCam.position.copy(controlsIso.target.clone().add(offset));
   } else {
     orthoCam.zoom = factor;
     orthoCam.updateProjectionMatrix();
   }
+  document.dispatchEvent(new CustomEvent('escale:zoom-changed', { detail: { percent } }));
+}
+
+function screenToGround(clientX, clientY) {
+  pointer.x = (clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, activeCam);
+  const point = new THREE.Vector3();
+  return raycaster.ray.intersectPlane(dragPlane, point) ? point : null;
+}
+
+function focusPoint(x, z, zoomPercent = 250) {
+  if (_appState.camera === 'iso') {
+    const offset = perspectiveCam.position.clone().sub(controlsIso.target);
+    controlsIso.target.set(x, 0, z);
+    offset.setLength(28 / Math.max(0.4, zoomPercent / 100));
+    perspectiveCam.position.copy(controlsIso.target.clone().add(offset));
+  } else {
+    controlsTop.target.set(x, 0, z);
+    orthoCam.position.x = x;
+    orthoCam.position.z = z;
+    orthoCam.lookAt(x, 0, z);
+  }
+  setZoomPercent(zoomPercent);
+  activeControls.update();
 }
 
 /* ─── API exportada ─── */
@@ -659,6 +689,8 @@ export const SceneManager = {
   setCamera,
   setControlsEnabled,
   setZoomPercent,
+  screenToGround,
+  focusPoint,
   rebuildGrids,
   applyShadowState,
   setPlanTexture, updatePlanSize, updatePlanOpacity,

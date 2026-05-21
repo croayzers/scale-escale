@@ -1,21 +1,23 @@
-/* ─────────────────────────────────────────────────────────
-   EXPORT MANAGER — Exportación a PDF (3D / Plano cenital)
-   ───────────────────────────────────────────────────────── */
-
-import { AppState }     from '../core/AppState.js';
+import { AppState } from '../core/AppState.js';
+import {
+  getInventoryTotalItems,
+  getInventoryTotalPax,
+  groupInventoryLines
+} from '../core/InventoryRules.js';
 import { SceneManager } from '../scene/SceneManager.js';
-import { UIManager }    from '../ui/UIManager.js';
+import { UIManager } from '../ui/UIManager.js';
 
 let areaSelecting = false;
 let areaStart = null;
 let areaEnd = null;
+let previewState = null;
 
 function parseColor(value, fallback) {
   const raw = String(value || '').trim();
   const hex = raw.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (hex) {
     const full = hex[1].length === 3
-      ? hex[1].split('').map(ch => ch + ch).join('')
+      ? hex[1].split('').map(char => char + char).join('')
       : hex[1];
     return [
       parseInt(full.slice(0, 2), 16),
@@ -27,7 +29,7 @@ function parseColor(value, fallback) {
   const rgb = raw.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
   if (rgb) {
     const parts = rgb.slice(1).map(Number);
-    if (parts.every(n => n >= 0 && n <= 255)) return parts;
+    if (parts.every(valuePart => valuePart >= 0 && valuePart <= 255)) return parts;
   }
 
   return fallback;
@@ -44,33 +46,64 @@ function init() {
   document.getElementById('export-choice-3d')?.addEventListener('click', export3D);
   document.getElementById('export-choice-plano')?.addEventListener('click', startPlanoSelection);
 
+  document.getElementById('export-preview-close')?.addEventListener('click', closePreview);
+  document.getElementById('export-preview-cancel')?.addEventListener('click', closePreview);
+  document.getElementById('export-preview-download')?.addEventListener('click', downloadPreview);
+
   const overlay = document.getElementById('area-overlay');
   if (overlay) {
     overlay.addEventListener('pointerdown', onAreaStart);
     overlay.addEventListener('pointermove', onAreaMove);
-    overlay.addEventListener('pointerup',   onAreaEnd);
+    overlay.addEventListener('pointerup', onAreaEnd);
   }
+
   document.getElementById('area-cancel')?.addEventListener('click', cancelArea);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) cancelArea();
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) cancelArea();
   });
 }
 
-function openModal()  { document.getElementById('export-modal')?.classList.add('visible'); }
-function closeModal() { document.getElementById('export-modal')?.classList.remove('visible'); }
+function openModal() {
+  document.getElementById('export-modal')?.classList.add('visible');
+}
 
-function export3D() {
+function closeModal() {
+  document.getElementById('export-modal')?.classList.remove('visible');
+}
+
+function openPreviewShell(message = 'Preparando vista previa...') {
+  const modal = document.getElementById('export-preview-modal');
+  const pages = document.getElementById('export-preview-pages');
+  const meta = document.getElementById('export-preview-meta');
+
+  if (!modal || !pages || !meta) return;
+
+  modal.classList.add('visible');
+  pages.innerHTML = `<div class="export-preview-loading mono text-[11px] tracking-widest uppercase">${message}</div>`;
+  meta.textContent = 'Generando PDF para revisión previa.';
+}
+
+async function export3D() {
   closeModal();
+  openPreviewShell();
   SceneManager.renderer.render(SceneManager.scene, SceneManager.activeCam);
-  requestAnimationFrame(() => {
-    const src = SceneManager.renderer.domElement;
-    const out = document.createElement('canvas');
-    out.width = src.width; out.height = src.height;
-    const ctx = out.getContext('2d');
-    ctx.fillStyle = '#f5f3ee';
-    ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(src, 0, 0);
-    buildPDF(out.toDataURL('image/png'), '3D · Vista isométrica');
+
+  requestAnimationFrame(async () => {
+    try {
+      const src = SceneManager.renderer.domElement;
+      const out = document.createElement('canvas');
+      out.width = src.width;
+      out.height = src.height;
+
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#f5f3ee';
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(src, 0, 0);
+
+      await buildAndPreview(out.toDataURL('image/png'), '3D · Vista isometrica');
+    } catch (error) {
+      handlePreviewError(error);
+    }
   });
 }
 
@@ -81,45 +114,55 @@ function startPlanoSelection() {
   document.getElementById('cam-iso')?.classList.remove('active');
   UIManager.hideTooltip();
   UIManager.hideDetail();
+
   setTimeout(() => {
     document.getElementById('area-overlay')?.classList.remove('hidden');
-    areaStart = areaEnd = null;
+    areaStart = null;
+    areaEnd = null;
     updateHole(0, 0, 0, 0);
   }, 150);
 }
 
 function cancelArea() {
   document.getElementById('area-overlay')?.classList.add('hidden');
-  areaSelecting = false; areaStart = areaEnd = null;
+  areaSelecting = false;
+  areaStart = null;
+  areaEnd = null;
 }
 
-function onAreaStart(e) {
+function onAreaStart(event) {
   areaSelecting = true;
-  areaStart = { x: e.clientX, y: e.clientY };
-  areaEnd   = { x: e.clientX, y: e.clientY };
+  areaStart = { x: event.clientX, y: event.clientY };
+  areaEnd = { x: event.clientX, y: event.clientY };
   document.getElementById('area-help').textContent = 'Suelta para confirmar';
   document.getElementById('area-dims').style.display = 'block';
 }
 
-function onAreaMove(e) {
+function onAreaMove(event) {
   if (!areaSelecting) return;
-  areaEnd = { x: e.clientX, y: e.clientY };
+
+  areaEnd = { x: event.clientX, y: event.clientY };
   const rect = computeRect();
+
   updateHole(rect.x, rect.y, rect.w, rect.h);
-  const dimsEl = document.getElementById('area-dims');
-  dimsEl.textContent = `${Math.round(rect.w)} × ${Math.round(rect.h)} px`;
-  dimsEl.style.left = (rect.x + rect.w + 12) + 'px';
-  dimsEl.style.top  = rect.y + 'px';
+
+  const dims = document.getElementById('area-dims');
+  dims.textContent = `${Math.round(rect.w)} x ${Math.round(rect.h)} px`;
+  dims.style.left = `${rect.x + rect.w + 12}px`;
+  dims.style.top = `${rect.y}px`;
 }
 
-function onAreaEnd(e) {
+function onAreaEnd() {
   if (!areaSelecting) return;
+
   areaSelecting = false;
   const rect = computeRect();
+
   if (rect.w < 20 || rect.h < 20) {
-    document.getElementById('area-help').textContent = 'Área demasiado pequeña, intenta de nuevo';
+    document.getElementById('area-help').textContent = 'Area demasiado pequena, intenta de nuevo';
     return;
   }
+
   capturePlanoArea(rect);
 }
 
@@ -133,259 +176,322 @@ function computeRect() {
 
 function updateHole(x, y, w, h) {
   ['hole', 'select-rect'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.setAttribute('x', x); el.setAttribute('y', y);
-    el.setAttribute('width', w); el.setAttribute('height', h);
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.setAttribute('x', x);
+    element.setAttribute('y', y);
+    element.setAttribute('width', w);
+    element.setAttribute('height', h);
   });
 }
 
 function capturePlanoArea(rect) {
   document.getElementById('area-overlay')?.classList.add('hidden');
+  openPreviewShell();
   SceneManager.renderer.render(SceneManager.scene, SceneManager.activeCam);
-  requestAnimationFrame(() => {
-    const dpr = window.devicePixelRatio || 1;
-    const src = SceneManager.renderer.domElement;
-    const out = document.createElement('canvas');
-    out.width  = Math.round(rect.w * dpr);
-    out.height = Math.round(rect.h * dpr);
-    const ctx = out.getContext('2d');
-    ctx.fillStyle = '#f5f3ee';
-    ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(src,
-      rect.x * dpr, rect.y * dpr, rect.w * dpr, rect.h * dpr,
-      0, 0, out.width, out.height);
-    buildPDF(out.toDataURL('image/png'), 'PLANO · Vista cenital');
+
+  requestAnimationFrame(async () => {
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const src = SceneManager.renderer.domElement;
+      const out = document.createElement('canvas');
+
+      out.width = Math.round(rect.w * dpr);
+      out.height = Math.round(rect.h * dpr);
+
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#f5f3ee';
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(
+        src,
+        rect.x * dpr,
+        rect.y * dpr,
+        rect.w * dpr,
+        rect.h * dpr,
+        0,
+        0,
+        out.width,
+        out.height
+      );
+
+      await buildAndPreview(out.toDataURL('image/png'), 'PLANO · Vista cenital');
+    } catch (error) {
+      handlePreviewError(error);
+    }
   });
 }
 
-/* ─── Helpers inventario ─── */
-const CATEGORY_GROUPS = [
-  { label: 'Mesas',              types: ['mesa','mesaRect','mesaImperial','mesaCocktail','mesaCurva','mesaSerpentina'] },
-  { label: 'Sillas',             types: ['sillaCatering','sillaLineal'] },
-  { label: 'Barra & Buffet',     types: ['buffet','barraLibre'] },
-  { label: 'Carpas',             types: ['carpa','carpaCuadrada','carpaStar','carpaPabellon','carpaTransparente','carpaBeduina','carpaSailcloth','carpaTipi','carpaDomo'] },
-  { label: 'Estructuras',        types: ['room','poste'] },
-  { label: 'Decoración',         types: ['arbusto','arbol','cableLuces','ambiente'] },
-];
-
-function getItemLabel(item) {
-  if (item.type === 'mesa') {
-    if (item.subtype === 'presi') return `Presidencial ${item.dims.length}×${item.dims.width}m`;
-    return `Mesa ${item.subtype} Ø${item.dims.diameter?.toFixed(1) ?? '?'}m`;
-  }
-  if (item.type === 'mesaRect')       return `Rect. ${item.dims.length}×${item.dims.width}m`;
-  if (item.type === 'mesaImperial')   return `Imperial ${item.dims.length}×${item.dims.width}m`;
-  if (item.type === 'mesaCocktail')   return `Cocktail Ø${item.dims.diameter}m H${item.dims.height}m`;
-  if (item.type === 'mesaCurva')      return `Curva R${item.dims.radioInt}m ${item.dims.anguloDeg}°`;
-  if (item.type === 'mesaSerpentina') return `Serpentina R${item.dims.radioInt}m`;
-  if (item.type === 'buffet')         return `Buffet ${item.dims.length}m · ${item.subtype || ''}`;
-  if (item.type === 'barraLibre')     return `Barra ${item.dims.length}m · ${item.cubiteras ?? 1} cub.`;
-  if (item.type === 'sillaCatering')  return `Silla ${item.subtype}`;
-  if (item.type === 'sillaLineal')    return `Lineal ${item.count}× ${item.subtype}`;
-  if (item.type === 'carpa')          return `Carpa ${item.dims.length}×${item.dims.width}m`;
-  if (item.type.startsWith('carpa'))  return `${item.type.replace('carpa','Carpa ')} ${item.dims.size ?? item.dims.length ?? '?'}m`;
-  if (item.type === 'arbusto')        return `Arbusto Ø${item.dims.width}m`;
-  if (item.type === 'arbol')          return `Árbol H${item.dims.height}m`;
-  if (item.type === 'cableLuces')     return `Cable ${item.count} luces`;
-  if (item.type === 'room')           return `4 Paredes ${item.dims.length}×${item.dims.width}m`;
-  if (item.type === 'poste')          return `Poste H${item.dims.height}m`;
-  if (item.type === 'ambiente') {
-    const s = item.subtype;
-    const dim = s === 'alfombra' ? `${item.dims.length}×${item.dims.width}m` : `H${item.dims.height}m`;
-    return `${s === 'alfombra' ? 'Alfombra' : s === 'planta' ? 'Planta' : 'Spot'} ${dim}`;
-  }
-  return item.type;
+async function buildAndPreview(imageDataUrl, modeLabel) {
+  const result = await buildPdfBlob(imageDataUrl, modeLabel);
+  await renderPreview(result, modeLabel);
 }
 
-function buildInventoryLines() {
-  const lines = {};
-  AppState.items.forEach(item => {
-    const key = getItemLabel(item);
-    if (!lines[key]) lines[key] = { label: key, type: item.type, count: 0, pax: 0 };
-    lines[key].count++;
-    lines[key].pax += (item.chairs || 0);
+function handlePreviewError(error) {
+  console.error(error);
+  closePreview();
+  alert('No se pudo generar la vista previa del PDF.');
+}
+
+function closePreview() {
+  document.getElementById('export-preview-modal')?.classList.remove('visible');
+  document.getElementById('export-preview-pages').innerHTML = '';
+  document.getElementById('export-preview-meta').textContent = '';
+
+  if (previewState?.url) URL.revokeObjectURL(previewState.url);
+  previewState = null;
+}
+
+function downloadPreview() {
+  if (!previewState?.url || !previewState?.filename) return;
+
+  const link = document.createElement('a');
+  link.href = previewState.url;
+  link.download = previewState.filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function renderPreview(result, modeLabel) {
+  if (previewState?.url) URL.revokeObjectURL(previewState.url);
+
+  previewState = {
+    ...result,
+    url: URL.createObjectURL(result.blob)
+  };
+
+  const pagesHost = document.getElementById('export-preview-pages');
+  const meta = document.getElementById('export-preview-meta');
+  if (!pagesHost || !meta) return;
+
+  meta.textContent = `${modeLabel} · ${result.filename}`;
+  pagesHost.innerHTML = '';
+
+  const pdfData = await result.blob.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const viewport = page.getViewport({ scale: 1.35 });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    await page.render({ canvasContext: context, viewport }).promise;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'export-preview-page';
+    wrapper.innerHTML = `<div class="export-preview-caption">Pagina ${pageNumber} de ${pdf.numPages}</div>`;
+    wrapper.appendChild(canvas);
+    pagesHost.appendChild(wrapper);
+  }
+}
+
+async function loadImage(source) {
+  return await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = source;
   });
-  return lines;
 }
 
-/* ─── Constructor PDF ─── */
-function buildPDF(imgDataURL, modeLabel) {
+function truncateLabel(pdf, label, maxWidth) {
+  let output = label;
+  while (pdf.getTextWidth(output) > maxWidth && output.length > 8) {
+    output = output.slice(0, -1);
+  }
+  return output === label ? output : `${output}...`;
+}
+
+async function buildPdfBlob(imageDataUrl, modeLabel) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  const PAGE_W = 297, PAGE_H = 210, MARGIN = 12;
-  const company   = AppState.company;
-  const eventName = document.getElementById('inventory-event-name')?.value || '';
-  const brandPrimary = parseColor(company.colorPrimary, [0, 0, 0]);
+  const pageWidth = 297;
+  const pageHeight = 210;
+  const margin = 12;
+  const company = AppState.company;
+  const eventName = document.getElementById('inventory-event-name')?.value?.trim() || '';
+  const brandPrimary = parseColor(company.colorPrimary, [37, 99, 235]);
   const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
 
-  // ═══ CABECERA ═══
-  let headX = MARGIN;
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(20);
   setPdfColor(pdf, brandPrimary);
-  pdf.text('E-scale', headX, MARGIN + 6);
-  headX += pdf.getTextWidth('E-scale') + 5;
+  pdf.text('E-scale', margin, margin + 6);
 
+  let headX = margin + pdf.getTextWidth('E-scale') + 5;
   if (company.logo) {
     try {
-      const fmt = company.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-      const tempImg = new Image();
-      tempImg.src = company.logo;
-      if (tempImg.complete && tempImg.naturalWidth) {
-        const logoH = 9;
-        const logoW = (tempImg.naturalWidth / tempImg.naturalHeight) * logoH;
-        pdf.addImage(company.logo, fmt, headX, MARGIN, logoW, logoH);
-        headX += logoW + 4;
-      }
-    } catch (e) { /* logo no válido */ }
+      const logoImage = await loadImage(company.logo);
+      const logoHeight = 9;
+      const logoWidth = (logoImage.naturalWidth / logoImage.naturalHeight) * logoHeight;
+      const format = company.logo.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      pdf.addImage(company.logo, format, headX, margin, logoWidth, logoHeight);
+      headX += logoWidth + 4;
+    } catch (error) {
+      console.warn('No se pudo cargar el logo para el PDF:', error);
+    }
   }
 
   if (company.name) {
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(13);
     setPdfColor(pdf, brandPrimary);
-    pdf.text(company.name, headX, MARGIN + 6);
+    pdf.text(company.name, headX, margin + 6);
   }
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(100);
-  const subtitle = eventName
-    ? `Planificador 3D · ${modeLabel} · ${eventName}`
-    : `Planificador 3D de Eventos · ${modeLabel}`;
-  pdf.text(subtitle, MARGIN, MARGIN + 11);
+  pdf.text(`Planificador 3D · ${modeLabel}`, margin, margin + 11);
+
+  let infoY = margin + 15;
+  if (eventName) {
+    pdf.text(`Evento: ${eventName}`, margin, infoY);
+    infoY += 4;
+  }
+  if (company.venue) {
+    pdf.text(`Lugar: ${company.venue}`, margin, infoY);
+    infoY += 4;
+  }
 
   const now = new Date();
-  const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                + ' · ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  pdf.setFontSize(8); pdf.setTextColor(100);
-  pdf.text(dateStr, PAGE_W - MARGIN, MARGIN + 6, { align: 'right' });
-  if (company.email) pdf.text(company.email, PAGE_W - MARGIN, MARGIN + 11, { align: 'right' });
+  const dateText = `${now.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })} · ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
 
-  setPdfColor(pdf, brandPrimary, 'draw'); pdf.setLineWidth(0.3);
-  pdf.line(MARGIN, MARGIN + 14, PAGE_W - MARGIN, MARGIN + 14);
+  pdf.text(dateText, pageWidth - margin, margin + 6, { align: 'right' });
+  if (company.email) pdf.text(company.email, pageWidth - margin, margin + 11, { align: 'right' });
 
-  // ═══ COLUMNA INVENTARIO (derecha) ═══
-  const INV_X = PAGE_W - MARGIN - 68;
-  let iy = MARGIN + 20;
+  const separatorY = Math.max(margin + 18, infoY + 1);
+  setPdfColor(pdf, brandPrimary, 'draw');
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, separatorY, pageWidth - margin, separatorY);
+
+  const inventoryX = pageWidth - margin - 68;
+  let inventoryY = separatorY + 6;
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7.5);
   setPdfColor(pdf, brandPrimary);
-  pdf.text('INVENTARIO', INV_X, iy); iy += 3;
-  setPdfColor(pdf, brandSecondary, 'draw'); pdf.setLineWidth(0.2);
-  pdf.line(INV_X, iy, PAGE_W - MARGIN, iy); iy += 4;
+  pdf.text('INVENTARIO', inventoryX, inventoryY);
+  inventoryY += 3;
 
-  // PAX total grande
-  const totalPax = AppState.items.reduce((s, i) => s + (i.chairs || 0), 0);
+  setPdfColor(pdf, brandSecondary, 'draw');
+  pdf.setLineWidth(0.2);
+  pdf.line(inventoryX, inventoryY, pageWidth - margin, inventoryY);
+  inventoryY += 4;
+
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(26);
   setPdfColor(pdf, brandPrimary);
-  pdf.text(String(totalPax), INV_X, iy + 8);
+  pdf.text(String(getInventoryTotalPax(AppState.items)), inventoryX, inventoryY + 8);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(7);
   pdf.setTextColor(100);
-  pdf.text('PAX TOTAL', INV_X + 22, iy + 8);
-  iy += 14;
+  pdf.text('PAX TOTAL', inventoryX + 22, inventoryY + 8);
+  inventoryY += 14;
 
-  // Desglose por categorías
-  const lines = buildInventoryLines();
-  CATEGORY_GROUPS.forEach(group => {
-    const groupLines = Object.values(lines).filter(l => group.types.includes(l.type));
-    if (!groupLines.length) return;
-
-    // Cabecera categoría
+  groupInventoryLines(AppState.items).forEach(group => {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(6.5);
     setPdfColor(pdf, brandSecondary);
-    pdf.text(group.label.toUpperCase(), INV_X, iy);
-    setPdfColor(pdf, brandSecondary, 'draw'); pdf.setLineWidth(0.1);
-    pdf.line(INV_X, iy + 0.8, PAGE_W - MARGIN, iy + 0.8);
-    iy += 4;
+    pdf.text(group.label.toUpperCase(), inventoryX, inventoryY);
+    setPdfColor(pdf, brandSecondary, 'draw');
+    pdf.setLineWidth(0.1);
+    pdf.line(inventoryX, inventoryY + 0.8, pageWidth - margin, inventoryY + 0.8);
+    inventoryY += 4;
 
-    groupLines.forEach(line => {
-      if (iy > PAGE_H - 20) return; // evitar overflow
+    group.lines.forEach(line => {
+      if (inventoryY > pageHeight - 24) return;
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(7);
       setPdfColor(pdf, brandPrimary);
-      pdf.text(`${line.count}×`, INV_X, iy);
-      // Label truncado si es muy largo
-      const maxW = 44;
-      let lbl = line.label;
-      while (pdf.getTextWidth(lbl) > maxW && lbl.length > 8) lbl = lbl.slice(0, -1);
-      if (lbl !== line.label) lbl += '…';
-      pdf.text(lbl, INV_X + 6, iy);
-      if (line.pax > 0) {
-        setPdfColor(pdf, brandSecondary);
-        pdf.text(`${line.pax}p`, PAGE_W - MARGIN, iy, { align: 'right' });
-        setPdfColor(pdf, brandPrimary);
-      }
-      iy += 3.8;
+      pdf.text(`${line.count}x`, inventoryX, inventoryY);
+      pdf.text(truncateLabel(pdf, line.label, 44), inventoryX + 6, inventoryY);
+
+      setPdfColor(pdf, brandSecondary);
+      pdf.text(line.pax > 0 ? `${line.pax}p` : '-', pageWidth - margin, inventoryY, { align: 'right' });
+      inventoryY += 3.8;
     });
-    iy += 1.5;
+
+    inventoryY += 1.5;
   });
 
-  // Total elementos
-  iy += 1;
-  setPdfColor(pdf, brandPrimary, 'draw'); pdf.setLineWidth(0.2);
-  pdf.line(INV_X, iy, PAGE_W - MARGIN, iy); iy += 3.5;
+  inventoryY += 1;
+  setPdfColor(pdf, brandPrimary, 'draw');
+  pdf.setLineWidth(0.2);
+  pdf.line(inventoryX, inventoryY, pageWidth - margin, inventoryY);
+  inventoryY += 3.5;
+
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   setPdfColor(pdf, brandPrimary);
-  pdf.text(`Total elementos: ${AppState.items.length}`, INV_X, iy); iy += 4;
-  pdf.text('Precio total:', INV_X, iy);
+  pdf.text(`Total elementos: ${getInventoryTotalItems(AppState.items)}`, inventoryX, inventoryY);
+  inventoryY += 4;
+  pdf.text('Precio total:', inventoryX, inventoryY);
   setPdfColor(pdf, brandSecondary);
-  pdf.text('—', PAGE_W - MARGIN, iy, { align: 'right' });
+  pdf.text('-', pageWidth - margin, inventoryY, { align: 'right' });
 
-  // Nota precio
-  iy += 5;
+  inventoryY += 5;
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(6);
   pdf.setTextColor(160);
-  pdf.text('* Precios pendientes de tarifa.', INV_X, iy);
-  pdf.text('Conecta con tu CRM/Excel para', INV_X, iy + 3.5);
-  pdf.text('generar presupuesto automático.', INV_X, iy + 7);
+  pdf.text('* Ambiente y estructuras se mantienen fuera del inventario.', inventoryX, inventoryY);
+  pdf.text('Conecta tu tarifa despues para completar presupuesto.', inventoryX, inventoryY + 3.5);
 
-  // ═══ IMAGEN (izquierda) ═══
-  const imgArea = {
-    x: MARGIN,
-    y: MARGIN + 22,
-    w: INV_X - MARGIN - 8,
-    h: PAGE_H - MARGIN * 2 - 22
+  const imageArea = {
+    x: margin,
+    y: separatorY + 8,
+    w: inventoryX - margin - 8,
+    h: pageHeight - margin * 2 - (separatorY - margin) - 8
   };
 
-  const img = new Image();
-  img.onload = () => {
-    const imgRatio  = img.width / img.height;
-    const areaRatio = imgArea.w / imgArea.h;
-    let drawW, drawH;
-    if (imgRatio > areaRatio) {
-      drawW = imgArea.w; drawH = drawW / imgRatio;
-    } else {
-      drawH = imgArea.h; drawW = drawH * imgRatio;
-    }
-    const drawX = imgArea.x + (imgArea.w - drawW) / 2;
-    const drawY = imgArea.y + (imgArea.h - drawH) / 2;
+  const image = await loadImage(imageDataUrl);
+  const imageRatio = image.width / image.height;
+  const areaRatio = imageArea.w / imageArea.h;
+  let drawWidth;
+  let drawHeight;
 
-    setPdfColor(pdf, brandPrimary, 'draw'); pdf.setLineWidth(0.2);
-    pdf.rect(drawX - 1, drawY - 1, drawW + 2, drawH + 2);
-    pdf.addImage(imgDataURL, 'PNG', drawX, drawY, drawW, drawH);
+  if (imageRatio > areaRatio) {
+    drawWidth = imageArea.w;
+    drawHeight = drawWidth / imageRatio;
+  } else {
+    drawHeight = imageArea.h;
+    drawWidth = drawHeight * imageRatio;
+  }
 
-    // Pie de página
-    pdf.setFontSize(7); setPdfColor(pdf, brandSecondary);
-    const leftFoot = company.name
-      ? `E-scale · ${company.name}${company.email ? ' · ' + company.email : ''}`
-      : 'E-scale · planificador 3D · v3.0';
-    pdf.text(leftFoot, MARGIN, PAGE_H - 5);
-    pdf.text('Página 1 / 1', PAGE_W - MARGIN, PAGE_H - 5, { align: 'right' });
+  const drawX = imageArea.x + (imageArea.w - drawWidth) / 2;
+  const drawY = imageArea.y + (imageArea.h - drawHeight) / 2;
 
-    const safeName = (company.name || 'escale').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const filename = `${safeName || 'escale'}_${modeLabel.toLowerCase().split(' ')[0]}_${Date.now()}.pdf`;
-    pdf.save(filename);
-  };
-  img.src = imgDataURL;
+  setPdfColor(pdf, brandPrimary, 'draw');
+  pdf.setLineWidth(0.2);
+  pdf.rect(drawX - 1, drawY - 1, drawWidth + 2, drawHeight + 2);
+  pdf.addImage(imageDataUrl, 'PNG', drawX, drawY, drawWidth, drawHeight);
+
+  pdf.setFontSize(7);
+  setPdfColor(pdf, brandSecondary);
+  const footerBits = ['E-scale'];
+  if (company.name) footerBits.push(company.name);
+  if (company.venue) footerBits.push(company.venue);
+  if (company.email) footerBits.push(company.email);
+  pdf.text(footerBits.join(' · '), margin, pageHeight - 5);
+  pdf.text('Pagina 1 / 1', pageWidth - margin, pageHeight - 5, { align: 'right' });
+
+  const safeName = (company.name || 'escale')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const filename = `${safeName || 'escale'}_${modeLabel.toLowerCase().split(' ')[0]}_${Date.now()}.pdf`;
+  const blob = pdf.output('blob');
+
+  return { blob, filename };
 }
 
 export const ExportManager = { init };

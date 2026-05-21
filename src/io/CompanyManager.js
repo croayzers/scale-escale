@@ -9,6 +9,7 @@ const PALETTE = [
 ];
 
 let pending = null;
+let welcomePromptQueued = false;
 
 function normalizeColor(value) {
   const raw = String(value || '').trim();
@@ -93,6 +94,9 @@ function init() {
   });
   document.getElementById('company-email')?.addEventListener('input', e => {
     if (pending) pending.email = e.target.value.trim();
+  });
+  document.getElementById('company-venue')?.addEventListener('input', e => {
+    if (pending) pending.venue = e.target.value.trim();
   });
 
   document.getElementById('company-logo-load')?.addEventListener('click', () => {
@@ -230,6 +234,7 @@ function syncModalUI() {
   if (!pending) return;
   document.getElementById('company-name').value = pending.name || '';
   document.getElementById('company-email').value = pending.email || '';
+  document.getElementById('company-venue').value = pending.venue || '';
 
   const primary = colorFor(pending, 'colorPrimary');
   const secondary = colorFor(pending, 'colorSecondary');
@@ -272,4 +277,40 @@ function syncBrandUI() {
   }
 }
 
-export const CompanyManager = { init, syncBrandUI, applyBrandColors };
+function requestAfterWelcome() {
+  if (welcomePromptQueued) return;
+  welcomePromptQueued = true;
+
+  const tryOpen = () => {
+    const companyModal = document.getElementById('company-modal');
+    const blockingModalVisible = [
+      'plan-format-modal',
+      'dwg-info-modal',
+      'export-modal',
+      'export-preview-modal'
+    ].some(id => document.getElementById(id)?.classList.contains('visible'));
+
+    if (companyModal?.classList.contains('visible')) {
+      welcomePromptQueued = false;
+      return;
+    }
+
+    if (blockingModalVisible) {
+      setTimeout(tryOpen, 220);
+      return;
+    }
+
+    welcomePromptQueued = false;
+    openModal();
+  };
+
+  setTimeout(tryOpen, 180);
+}
+
+export const CompanyManager = {
+  init,
+  openModal,
+  requestAfterWelcome,
+  syncBrandUI,
+  applyBrandColors
+};

@@ -24,7 +24,14 @@ export const AppState = {
   },
   calibration: { active: false, p1: null, p2: null },
 
-  company: { name: '', email: '', logo: null, colorPrimary: null, colorSecondary: null },
+  company: {
+    name: '',
+    email: '',
+    venue: '',
+    logo: null,
+    colorPrimary: null,
+    colorSecondary: null
+  },
 
   snap: { enabled: true, spacing: 0.25 },
 

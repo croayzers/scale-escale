@@ -140,6 +140,117 @@ input[type=range]::-webkit-slider-thumb {
   display: block;
 }
 
+/* ============== INVENTORY PANEL ============== */
+.inventory-empty {
+  display: grid;
+  gap: 6px;
+  padding: 18px 14px;
+  border: 1px dashed rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+}
+.inventory-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.inventory-empty p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.inventory-group {
+  display: grid;
+  gap: 8px;
+}
+.inventory-group-head {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.inventory-group-lines {
+  display: grid;
+  gap: 6px;
+}
+.inventory-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.inventory-line-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.inventory-line-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.inventory-line-label {
+  min-width: 0;
+  line-height: 1.25;
+}
+.inventory-line-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* ============== EXPORT PREVIEW ============== */
+.export-preview-shell {
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+.export-preview-pages {
+  min-height: 240px;
+  max-height: min(68vh, 760px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.48);
+}
+.export-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: var(--muted);
+}
+.export-preview-page {
+  display: grid;
+  gap: 10px;
+}
+.export-preview-page + .export-preview-page {
+  margin-top: 18px;
+}
+.export-preview-page canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+  box-shadow: 0 18px 40px -24px rgba(10, 10, 11, 0.35);
+  background: white;
+}
+.export-preview-caption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 /* ============== CONTEXT MENU (preparado para Entrega 2) ============== */
 #context-menu {
   position: fixed;
