@@ -87,3 +87,27 @@ e-scale/
 | Toggle snap | S |
 | Undo (3 niveles) | Ctrl + Z |
 | Cancelar / deseleccionar | Esc |
+
+## Preparacion SaaS
+
+El repo ya incluye una base de planificacion para pasar de prototipo local a SaaS:
+
+- hoja de ruta: [docs/SAAS_ROADMAP.md](/C:/Users/rafa2/Documents/GitHub/E_scale/docs/SAAS_ROADMAP.md)
+- checklist de plataformas: [docs/PLATFORM_SETUP.md](/C:/Users/rafa2/Documents/GitHub/E_scale/docs/PLATFORM_SETUP.md)
+- variables de entorno: [.env.example](/C:/Users/rafa2/Documents/GitHub/E_scale/.env.example)
+- esquema inicial Supabase: [supabase/schema.sql](/C:/Users/rafa2/Documents/GitHub/E_scale/supabase/schema.sql)
+- catalogo de planes: [src/core/PlanCatalog.js](/C:/Users/rafa2/Documents/GitHub/E_scale/src/core/PlanCatalog.js)
+- configuracion base Vercel: [vercel.json](/C:/Users/rafa2/Documents/GitHub/E_scale/vercel.json)
+
+### Integracion API
+
+Ademas de la hoja de ruta, el proyecto ya incluye una primera capa tecnica para servicios externos:
+
+- runtime config publica: `api/public-config.js`
+- bootstrap y sync cloud: `api/app/*`
+- billing Stripe: `api/billing/*`
+- email transaccional Resend: `api/email/*`
+- analitica PostHog: `api/analytics/capture.js`
+- servicios frontend: `src/services/*`
+
+La app sigue funcionando en local sin esos servicios. Cuando faltan claves o endpoints, hace fallback limpio a modo local.

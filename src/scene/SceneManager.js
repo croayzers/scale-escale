@@ -361,7 +361,7 @@ function createTopCableSymbol(item) {
   hit.userData.isMain = true;
   group.add(hit);
 
-    for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const t = count === 1 ? 0.5 : (i + 0.5) / count;
     const x = -totalLength / 2 + totalLength * t;
     function addPostCircle(group, x, z, diameter, color) {
@@ -372,8 +372,6 @@ function createTopCableSymbol(item) {
   post.renderOrder = 30;
   post.userData.baseColor = color;
   group.add(post);
-}
-  }
 }
   }
   return group;

@@ -1,5 +1,9 @@
 import { AppState } from '../core/AppState.js';
 import { SceneManager } from '../scene/SceneManager.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
+import { ServiceConfig } from '../services/ServiceConfig.js';
+import { CloudSync } from '../services/CloudSync.js';
+import { AnalyticsManager } from '../services/AnalyticsManager.js';
 
 const TABLE_TYPES = ['mesa', 'mesaRect', 'mesaImperial', 'mesaCurva', 'mesaSerpentina'];
 
@@ -560,6 +564,8 @@ function prepareEmails() {
   if (!previewState) return;
   downloadPreview();
 
+  if (!SubscriptionManager.ensureFeature('emailPdfToClient')) return;
+
   const recipients = previewState.recipients.map(guest => guest.email).filter(Boolean);
   if (!recipients.length) {
     alert('PDF descargado. No hay invitados con email asignado.');
@@ -574,6 +580,36 @@ function prepareEmails() {
     ? `Hola,\n\nTe compartimos el planning de mesas del evento ${eventName}.\n\nPDF: ${link}\n\nEn el plano podras localizar tu mesa, tu silla y las personas con las que compartes mesa.\n\n${company.name || 'E-scale'}`
     : `Hola,\n\nTe compartimos el planning de mesas del evento ${eventName}.\n\nAdjuntamos el PDF generado con la ubicacion de sillas y nombres.\n\nEn el plano podras localizar tu mesa, tu silla y las personas con las que compartes mesa.\n\n${company.name || 'E-scale'}`;
 
+  if (ServiceConfig.hasFeature('emailDelivery')) {
+    void CloudSync.sendGuestPlanningEmail({
+      blob: previewState.blob,
+      filename: previewState.filename,
+      recipients,
+      eventName,
+      publicLink: link
+    }).then(response => {
+      if (response?.ok) {
+        alert(`Emails enviados a ${recipients.length} destinatarios.`);
+      }
+    }).catch(error => {
+      console.warn('No se pudo enviar el planning por email desde cloud, se usa fallback mailto:', error);
+      fallbackMailto(recipients, subject, bodyText);
+    });
+    void AnalyticsManager.track('share_email_requested', {
+      recipientCount: recipients.length,
+      cloudDelivery: true
+    });
+    return;
+  }
+
+  void AnalyticsManager.track('share_email_requested', {
+    recipientCount: recipients.length,
+    cloudDelivery: false
+  });
+  fallbackMailto(recipients, subject, bodyText);
+}
+
+function fallbackMailto(recipients, subject, bodyText) {
   const chunks = chunk(recipients, 30);
   chunks.forEach((emails, index) => {
     const mailto = `mailto:?bcc=${encodeURIComponent(emails.join(','))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;

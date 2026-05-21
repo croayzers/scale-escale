@@ -1,5 +1,7 @@
 import { AppState } from '../core/AppState.js';
 import { DashboardSync } from './DashboardSync.js';
+import { CloudSync } from '../services/CloudSync.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
 
 const STORAGE_KEY = 'escale_company';
 const DEFAULT_PRIMARY = '#2563EB';
@@ -190,22 +192,37 @@ async function savePending() {
   const secondaryOk = commitColor('secondary', 'colorSecondary', document.getElementById('company-color-secondary')?.value, { syncText: true });
   if (!primaryOk || !secondaryOk) return;
 
+  if (pending.logo && !SubscriptionManager.hasFeature('ownLogo')) {
+    SubscriptionManager.ensureFeature('ownLogo');
+    pending.logo = null;
+    pending.logoAssetId = '';
+    pending.logoFileName = '';
+    pending.logoRelativePath = '';
+  }
+
   AppState.company = { ...pending };
-  let syncError = null;
+  const syncErrors = [];
 
   try {
     await DashboardSync.syncCompany(AppState.company);
   } catch (error) {
-    syncError = error;
+    syncErrors.push(`dashboard local: ${error.message}`);
     console.warn('No se pudo sincronizar la empresa con el dashboard local:', error);
+  }
+
+  try {
+    await CloudSync.syncCompany(AppState.company);
+  } catch (error) {
+    syncErrors.push(`cloud sync: ${error.message}`);
+    console.warn('No se pudo sincronizar la empresa con servicios cloud:', error);
   }
 
   save();
   syncBrandUI();
   closeModal({ keepPreview: true });
 
-  if (syncError) {
-    alert(`Los datos se guardaron en la app, pero no se pudieron registrar en el dashboard local.\n\n${syncError.message}`);
+  if (syncErrors.length) {
+    alert(`Los datos se guardaron en la app, pero hubo sincronizaciones pendientes.\n\n${syncErrors.join('\n')}`);
   }
 }
 

@@ -7,6 +7,9 @@ import {
 import { DashboardSync } from './DashboardSync.js';
 import { SceneManager } from '../scene/SceneManager.js';
 import { UIManager } from '../ui/UIManager.js';
+import { CloudSync } from '../services/CloudSync.js';
+import { AnalyticsManager } from '../services/AnalyticsManager.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
 
 let areaSelecting = false;
 let areaStart = null;
@@ -65,6 +68,10 @@ function init() {
 }
 
 function openModal() {
+  if (!SubscriptionManager.ensureFeature('pdfExport')) return;
+  void AnalyticsManager.track('export_modal_opened', {
+    planCode: SubscriptionManager.currentPlanCode()
+  });
   document.getElementById('export-modal')?.classList.add('visible');
 }
 
@@ -224,17 +231,41 @@ function capturePlanoArea(rect) {
 
 async function buildAndPreview(imageDataUrl, modeLabel) {
   const result = await buildPdfBlob(imageDataUrl, modeLabel);
-  const syncPromise = persistDashboardExport(modeLabel, result.filename);
+  const syncPromise = persistExport(modeLabel, result);
   await renderPreview(result, modeLabel);
   await syncPromise;
 }
 
-async function persistDashboardExport(modeLabel, filename) {
+async function persistExport(modeLabel, result) {
   try {
-    await DashboardSync.recordExport({ modeLabel, filename });
+    await DashboardSync.recordExport({ modeLabel, filename: result.filename });
   } catch (error) {
     console.warn('No se pudo registrar la exportacion en el dashboard local:', error);
     alert(`El PDF se generó, pero no se pudo registrar la exportación en el dashboard local.\n\n${error.message}`);
+  }
+  try {
+    await CloudSync.recordExport({
+      modeLabel,
+      filename: result.filename,
+      blob: result.blob
+    });
+  } catch (error) {
+    console.warn('No se pudo registrar la exportacion en cloud:', error);
+  }
+
+  if (SubscriptionManager.hasFeature('emailPdfToOwner')) {
+    try {
+      const delivery = await CloudSync.sendOwnerExportEmail({
+        blob: result.blob,
+        filename: result.filename,
+        modeLabel
+      });
+      if (delivery?.ok) {
+        alert(`PDF enviado por email a ${AppState.company.email}.`);
+      }
+    } catch (error) {
+      console.warn('No se pudo enviar el PDF al email del usuario:', error);
+    }
   }
 }
 
@@ -278,6 +309,10 @@ async function renderPreview(result, modeLabel) {
 
   meta.textContent = `${modeLabel} · ${result.filename}`;
   pagesHost.innerHTML = '';
+  void AnalyticsManager.track('export_preview_ready', {
+    modeLabel,
+    filename: result.filename
+  });
 
   const pdfData = await result.blob.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;

@@ -26,6 +26,10 @@ export const AppState = {
 
   company: {
     id: '',
+    organizationId: '',
+    authUserId: '',
+    authEmail: '',
+    billingCustomerId: '',
     name: '',
     email: '',
     venue: '',
@@ -35,10 +39,13 @@ export const AppState = {
     logoRelativePath: '',
     colorPrimary: null,
     colorSecondary: null,
-    subscriptionPlan: 'No informado',
-    subscriptionStatus: 'No informado',
+    subscriptionPlanCode: 'free_lite',
+    subscriptionPlan: 'Free Lite',
+    subscriptionStatus: 'Local',
     recordStatus: 'Activo',
-    dashboardSyncedAt: ''
+    dashboardSyncedAt: '',
+    lastCloudSyncAt: '',
+    cloudSyncStatus: 'local_only'
   },
 
   snap: { enabled: true, spacing: 0.25 },

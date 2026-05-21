@@ -12,12 +12,32 @@ import { ShareManager } from './io/ShareManager.js';
 import { Dock } from './ui/Dock.js';
 import { CatalogModal } from './ui/CatalogModal.js';
 import { TemplateManager } from './io/TemplateManager.js';
+import { ServiceConfig } from './services/ServiceConfig.js';
+import { AuthManager } from './services/AuthManager.js';
+import { SubscriptionManager } from './services/SubscriptionManager.js';
+import { AnalyticsManager } from './services/AnalyticsManager.js';
+import { SupportManager } from './services/SupportManager.js';
+
+async function safeInit(label, fn) {
+  try {
+    return await fn();
+  } catch (error) {
+    console.warn(`[E-scale] ${label} no se pudo inicializar:`, error);
+    return null;
+  }
+}
 
 async function bootstrap() {
   if (typeof THREE === 'undefined') {
     document.body.innerHTML = '<pre style="padding:24px;color:#b91c1c">Error: Three.js no se cargo.</pre>';
     return;
   }
+
+  await safeInit('ServiceConfig', () => ServiceConfig.init());
+  await safeInit('AuthManager', () => AuthManager.init());
+  await safeInit('SubscriptionManager', () => SubscriptionManager.init());
+  await safeInit('AnalyticsManager', () => AnalyticsManager.init());
+  await safeInit('SupportManager', () => SupportManager.init());
 
   await UIManager.init();
   await SceneManager.init();
@@ -354,14 +374,17 @@ async function bootstrap() {
     if (welcomeModal) welcomeModal.style.display = 'none';
     setTopCamera();
     document.getElementById('btn-upload-plan')?.click();
+    void AnalyticsManager.track('welcome_choice', { mode: 'plano_2d' });
     openAfterWelcome();
   });
   document.getElementById('welcome-libre')?.addEventListener('click', () => {
     if (welcomeModal) welcomeModal.style.display = 'none';
+    void AnalyticsManager.track('welcome_choice', { mode: 'diseno_libre' });
     openAfterWelcome();
   });
   document.getElementById('welcome-plantilla')?.addEventListener('click', () => {
     if (welcomeModal) welcomeModal.style.display = 'none';
+    void AnalyticsManager.track('welcome_choice', { mode: 'plantilla' });
     openAfterWelcome();
   });
 
