@@ -2,6 +2,8 @@ import { AppState } from '../core/AppState.js';
 import { DashboardSync } from './DashboardSync.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
+import { AuthManager } from '../services/AuthManager.js';
+import { ServiceConfig } from '../services/ServiceConfig.js';
 
 const STORAGE_KEY = 'escale_company';
 const DEFAULT_PRIMARY = '#2563EB';
@@ -36,6 +38,10 @@ function normalizeColor(value) {
   return null;
 }
 
+function cleanText(value) {
+  return String(value ?? '').trim().replace(/\s+/g, ' ');
+}
+
 function colorFor(company, key) {
   const fallback = key === 'colorPrimary' ? DEFAULT_PRIMARY : DEFAULT_SECONDARY;
   return normalizeColor(company?.[key]) || fallback;
@@ -49,6 +55,36 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
+function currentDraft() {
+  return pending || AppState.company;
+}
+
+function currentEmailDraft() {
+  const formValue = document.getElementById('company-email')?.value;
+  return cleanText(formValue || currentDraft().email || AppState.company.authEmail);
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(AppState.company));
+    applyBrandColors(AppState.company);
+  } catch (error) {
+    console.warn('No se pudo guardar empresa en localStorage:', error);
+  }
+}
+
+function persistDraftState() {
+  const draft = currentDraft();
+  if (!draft) return;
+
+  AppState.company = {
+    ...AppState.company,
+    ...draft,
+    email: cleanText(draft.email || AppState.company.authEmail || AppState.company.email)
+  };
+  save();
+}
+
 function applyBrandColors(company = AppState.company) {
   const primary = colorFor(company, 'colorPrimary');
   const secondary = colorFor(company, 'colorSecondary');
@@ -58,65 +94,6 @@ function applyBrandColors(company = AppState.company) {
   root.style.setProperty('--brand-primary-rgb', hexToRgb(primary));
   root.style.setProperty('--brand-secondary', secondary);
   root.style.setProperty('--accent', secondary);
-}
-
-function init() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      AppState.company = { ...AppState.company, ...data };
-    }
-  } catch (e) {
-    console.warn('No se pudo cargar el perfil de empresa:', e);
-  }
-
-  applyBrandColors(AppState.company);
-  syncBrandUI();
-  buildPalettes();
-  DashboardSync.flushPending().catch(error => {
-    console.warn('No se pudo vaciar la cola del dashboard local:', error);
-  });
-
-  document.getElementById('btn-company')?.addEventListener('click', openModal);
-  document.getElementById('company-close')?.addEventListener('click', closeModal);
-  document.getElementById('company-cancel')?.addEventListener('click', closeModal);
-
-  wireColorField('primary', 'colorPrimary');
-  wireColorField('secondary', 'colorSecondary');
-
-  document.getElementById('company-modal')?.addEventListener('click', e => {
-    if (e.target.id === 'company-modal') closeModal();
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.getElementById('company-modal')?.classList.contains('visible')) {
-      closeModal();
-    }
-  });
-
-  document.getElementById('company-name')?.addEventListener('input', e => {
-    if (pending) pending.name = e.target.value.trim();
-  });
-  document.getElementById('company-email')?.addEventListener('input', e => {
-    if (pending) pending.email = e.target.value.trim();
-  });
-  document.getElementById('company-venue')?.addEventListener('input', e => {
-    if (pending) pending.venue = e.target.value.trim();
-  });
-
-  document.getElementById('company-logo-load')?.addEventListener('click', () => {
-    document.getElementById('company-logo-input')?.click();
-  });
-  document.getElementById('company-logo-input')?.addEventListener('change', handleLogoFile);
-  document.getElementById('company-logo-clear')?.addEventListener('click', () => {
-    if (pending) {
-      pending.logo = null;
-      syncModalUI();
-    }
-  });
-
-  document.getElementById('company-save')?.addEventListener('click', savePending);
 }
 
 function buildPalettes() {
@@ -149,10 +126,10 @@ function wireColorField(kind, key) {
   picker?.addEventListener('input', () => {
     commitColor(kind, key, picker.value, { syncText: true });
   });
-  palette?.addEventListener('click', e => {
-    const btn = e.target.closest('[data-color]');
-    if (!btn) return;
-    commitColor(kind, key, btn.dataset.color, { syncText: true });
+  palette?.addEventListener('click', event => {
+    const button = event.target.closest('[data-color]');
+    if (!button) return;
+    commitColor(kind, key, button.dataset.color, { syncText: true });
   });
 }
 
@@ -177,8 +154,8 @@ function updateColorUI(kind, color, syncText = true) {
   if (syncText && text) text.value = color;
   if (picker) picker.value = color;
   if (preview) preview.style.background = color;
-  palette?.querySelectorAll('.brand-swatch').forEach(btn => {
-    btn.classList.toggle('active', normalizeColor(btn.dataset.color) === color);
+  palette?.querySelectorAll('.brand-swatch').forEach(button => {
+    button.classList.toggle('active', normalizeColor(button.dataset.color) === color);
   });
 }
 
@@ -186,11 +163,140 @@ function setColorError(kind, visible) {
   document.getElementById(`company-color-${kind}-error`)?.classList.toggle('visible', visible);
 }
 
+function setButtonRecommended(buttonId, recommended) {
+  document.getElementById(buttonId)?.classList.toggle('recommended', recommended);
+}
+
+function syncAuthUi() {
+  const authEnabled = ServiceConfig.hasFeature('auth');
+  const cloudEnabled = ServiceConfig.hasFeature('cloudSync');
+  const authenticated = AuthManager.isAuthenticated();
+  const hint = AuthManager.suggestProvider(currentEmailDraft());
+
+  const statusTitle = document.getElementById('company-auth-status-title');
+  const statusText = document.getElementById('company-auth-status-text');
+  const accountHint = document.getElementById('company-auth-hint');
+  const signOutButton = document.getElementById('company-auth-signout');
+  const portalButton = document.getElementById('company-auth-portal');
+  const licenseBanner = document.getElementById('company-license-banner');
+  const licenseBannerText = document.getElementById('company-license-banner-text');
+  const footerMeta = document.getElementById('company-auth-meta');
+
+  if (!authEnabled) {
+    statusTitle.textContent = 'Modo local';
+    statusText.textContent = 'En este entorno no hay autenticacion cloud disponible.';
+    accountHint.textContent = 'Puedes seguir trabajando en local y activar acceso cloud cuando publiques en Vercel.';
+    footerMeta.textContent = 'Sin validacion remota';
+    signOutButton?.classList.add('hidden');
+    portalButton?.classList.add('hidden');
+    licenseBanner?.classList.add('hidden');
+    return;
+  }
+
+  if (authenticated) {
+    const providerName = AuthManager.providerLabel(AppState.company.authProvider || 'email');
+    const planName = SubscriptionManager.currentPlan().name;
+    statusTitle.textContent = `Sesión activa · ${planName}`;
+    statusText.textContent = AppState.company.authEmail || 'Cuenta autenticada';
+    accountHint.textContent = AppState.company.licenseNeedsInvite && AppState.company.licenseDetectedOrganizationName
+      ? `Hemos detectado ${AppState.company.licenseDetectedOrganizationName}, pero tu licencia solo se desbloquea cuando el propietario te añade o cuando entras con el correo de compra.`
+      : `Licencia validada por ${providerName}. La app usa esta identidad para restaurar tu plan sin depender del navegador.`;
+    footerMeta.textContent = cloudEnabled
+      ? `Proveedor: ${providerName} · Estado ${AppState.company.cloudSyncStatus || 'connected'}`
+      : `Proveedor: ${providerName}`;
+    signOutButton?.classList.remove('hidden');
+    portalButton?.classList.toggle('hidden', !AppState.company.billingCustomerId || SubscriptionManager.currentPlanCode() === 'free_lite');
+  } else {
+    statusTitle.textContent = hint.title;
+    statusText.textContent = 'Tu plan se detecta al verificar la identidad del correo.';
+    accountHint.textContent = hint.description;
+    footerMeta.textContent = 'Sin iniciar sesión';
+    signOutButton?.classList.add('hidden');
+    portalButton?.classList.add('hidden');
+  }
+
+  setButtonRecommended('company-auth-google', hint.primaryProvider === 'google');
+  setButtonRecommended('company-auth-microsoft', hint.primaryProvider === 'azure');
+  setButtonRecommended('company-auth-email-link', hint.primaryProvider === 'email');
+
+  if (licenseBanner && licenseBannerText) {
+    if (AppState.company.licenseNeedsInvite && AppState.company.licenseDetectedOrganizationName) {
+      licenseBanner.classList.remove('hidden');
+      licenseBannerText.textContent = `Dominio detectado: ${AppState.company.licenseDetectedOrganizationName}. Aun no desbloqueamos esa licencia por seguridad.`;
+    } else {
+      licenseBanner.classList.add('hidden');
+      licenseBannerText.textContent = '';
+    }
+  }
+
+  syncAccountChip();
+}
+
+function syncAccountChip() {
+  const button = document.getElementById('btn-account');
+  const label = document.getElementById('account-chip-label');
+  const meta = document.getElementById('account-chip-meta');
+  if (!button || !label || !meta) return;
+
+  if (AuthManager.isAuthenticated()) {
+    label.textContent = AppState.company.authEmail || 'Cuenta conectada';
+    meta.textContent = SubscriptionManager.currentPlan().name;
+    button.classList.add('is-connected');
+    return;
+  }
+
+  label.textContent = 'Acceder';
+  meta.textContent = 'Licencia';
+  button.classList.remove('is-connected');
+}
+
+async function handleAuthAction(kind) {
+  try {
+    if (pending) {
+      pending.email = currentEmailDraft();
+      pending.name = cleanText(document.getElementById('company-name')?.value || pending.name);
+      pending.venue = cleanText(document.getElementById('company-venue')?.value || pending.venue);
+    }
+    persistDraftState();
+
+    if (kind === 'email') {
+      const email = currentEmailDraft();
+      if (!email) {
+        alert('Indica primero un correo para enviarte el enlace.');
+        document.getElementById('company-email')?.focus();
+        return;
+      }
+      const { error } = await AuthManager.signInWithOtp(email);
+      if (error) throw error;
+      alert(`Te hemos enviado un enlace de acceso a ${email}.`);
+      return;
+    }
+
+    const provider = kind === 'microsoft' ? 'azure' : kind;
+    const { error } = await AuthManager.signInWithProvider(provider, currentEmailDraft());
+    if (error) throw error;
+  } catch (error) {
+    alert(error.message || 'No se pudo iniciar el acceso.');
+  }
+}
+
+async function handleCustomerPortal() {
+  try {
+    await SubscriptionManager.openCustomerPortal();
+  } catch (error) {
+    alert(error.message || 'No se pudo abrir la gestion del plan.');
+  }
+}
+
 async function savePending() {
   if (!pending) return;
   const primaryOk = commitColor('primary', 'colorPrimary', document.getElementById('company-color-primary')?.value, { syncText: true });
   const secondaryOk = commitColor('secondary', 'colorSecondary', document.getElementById('company-color-secondary')?.value, { syncText: true });
   if (!primaryOk || !secondaryOk) return;
+
+  pending.email = cleanText(document.getElementById('company-email')?.value || pending.email || AppState.company.authEmail);
+  pending.name = cleanText(document.getElementById('company-name')?.value || pending.name);
+  pending.venue = cleanText(document.getElementById('company-venue')?.value || pending.venue);
 
   if (pending.logo && !SubscriptionManager.hasFeature('ownLogo')) {
     SubscriptionManager.ensureFeature('ownLogo');
@@ -200,7 +306,7 @@ async function savePending() {
     pending.logoRelativePath = '';
   }
 
-  AppState.company = { ...pending };
+  AppState.company = { ...AppState.company, ...pending };
   const syncErrors = [];
 
   try {
@@ -211,7 +317,10 @@ async function savePending() {
   }
 
   try {
-    await CloudSync.syncCompany(AppState.company);
+    const cloudResponse = await CloudSync.syncCompany(AppState.company);
+    if (cloudResponse?.reason === 'auth_required') {
+      AppState.company.cloudSyncStatus = 'needs_auth';
+    }
   } catch (error) {
     syncErrors.push(`cloud sync: ${error.message}`);
     console.warn('No se pudo sincronizar la empresa con servicios cloud:', error);
@@ -227,8 +336,12 @@ async function savePending() {
 }
 
 function openModal() {
-  pending = { ...AppState.company };
+  pending = {
+    ...AppState.company,
+    email: cleanText(AppState.company.email || AppState.company.authEmail)
+  };
   syncModalUI();
+  syncAuthUi();
   document.getElementById('company-modal')?.classList.add('visible');
 }
 
@@ -238,36 +351,27 @@ function closeModal({ keepPreview = false } = {}) {
   if (!keepPreview) applyBrandColors(AppState.company);
 }
 
-function handleLogoFile(e) {
-  const file = e.target.files[0];
+function handleLogoFile(event) {
+  const file = event.target.files[0];
   if (!file || !pending) return;
   if (file.size > 1_000_000) {
     alert('El logo es demasiado grande (max 1 MB). Comprime la imagen primero.');
-    e.target.value = '';
+    event.target.value = '';
     return;
   }
   const reader = new FileReader();
-  reader.onload = ev => {
-    pending.logo = ev.target.result;
+  reader.onload = readEvent => {
+    pending.logo = readEvent.target.result;
     syncModalUI();
   };
   reader.readAsDataURL(file);
-  e.target.value = '';
-}
-
-function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(AppState.company));
-    applyBrandColors(AppState.company);
-  } catch (e) {
-    console.warn('No se pudo guardar empresa en localStorage:', e);
-  }
+  event.target.value = '';
 }
 
 function syncModalUI() {
   if (!pending) return;
   document.getElementById('company-name').value = pending.name || '';
-  document.getElementById('company-email').value = pending.email || '';
+  document.getElementById('company-email').value = pending.email || AppState.company.authEmail || '';
   document.getElementById('company-venue').value = pending.venue || '';
 
   const primary = colorFor(pending, 'colorPrimary');
@@ -294,6 +398,8 @@ function syncModalUI() {
     clearBtn.classList.add('hidden');
     label.textContent = 'Cargar logo';
   }
+
+  syncAuthUi();
 }
 
 function syncBrandUI() {
@@ -302,13 +408,16 @@ function syncBrandUI() {
   if (brandEl) brandEl.textContent = name || 'E-scale';
 
   const preview = document.getElementById('company-logo-preview');
-  if (!preview) return;
-  if (logo) {
-    preview.classList.remove('hidden');
-    preview.src = logo;
-  } else {
-    preview.classList.add('hidden');
+  if (preview) {
+    if (logo) {
+      preview.classList.remove('hidden');
+      preview.src = logo;
+    } else {
+      preview.classList.add('hidden');
+    }
   }
+
+  syncAccountChip();
 }
 
 function requestAfterWelcome() {
@@ -339,6 +448,94 @@ function requestAfterWelcome() {
   };
 
   setTimeout(tryOpen, 180);
+}
+
+function init() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      AppState.company = { ...AppState.company, ...data };
+    }
+  } catch (error) {
+    console.warn('No se pudo cargar el perfil de empresa:', error);
+  }
+
+  if (!AppState.company.email && AppState.company.authEmail) {
+    AppState.company.email = AppState.company.authEmail;
+  }
+
+  applyBrandColors(AppState.company);
+  syncBrandUI();
+  buildPalettes();
+  DashboardSync.flushPending().catch(error => {
+    console.warn('No se pudo vaciar la cola del dashboard local:', error);
+  });
+
+  document.getElementById('btn-company')?.addEventListener('click', openModal);
+  document.getElementById('btn-account')?.addEventListener('click', openModal);
+  document.getElementById('company-close')?.addEventListener('click', closeModal);
+  document.getElementById('company-cancel')?.addEventListener('click', closeModal);
+
+  wireColorField('primary', 'colorPrimary');
+  wireColorField('secondary', 'colorSecondary');
+
+  document.getElementById('company-modal')?.addEventListener('click', event => {
+    if (event.target.id === 'company-modal') closeModal();
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && document.getElementById('company-modal')?.classList.contains('visible')) {
+      closeModal();
+    }
+  });
+
+  document.getElementById('company-name')?.addEventListener('input', event => {
+    if (pending) pending.name = event.target.value.trim();
+  });
+  document.getElementById('company-email')?.addEventListener('input', event => {
+    if (pending) pending.email = event.target.value.trim();
+    syncAuthUi();
+  });
+  document.getElementById('company-venue')?.addEventListener('input', event => {
+    if (pending) pending.venue = event.target.value.trim();
+  });
+
+  document.getElementById('company-logo-load')?.addEventListener('click', () => {
+    document.getElementById('company-logo-input')?.click();
+  });
+  document.getElementById('company-logo-input')?.addEventListener('change', handleLogoFile);
+  document.getElementById('company-logo-clear')?.addEventListener('click', () => {
+    if (pending) {
+      pending.logo = null;
+      syncModalUI();
+    }
+  });
+
+  document.getElementById('company-auth-google')?.addEventListener('click', () => void handleAuthAction('google'));
+  document.getElementById('company-auth-microsoft')?.addEventListener('click', () => void handleAuthAction('microsoft'));
+  document.getElementById('company-auth-email-link')?.addEventListener('click', () => void handleAuthAction('email'));
+  document.getElementById('company-auth-signout')?.addEventListener('click', async () => {
+    await AuthManager.signOut();
+    syncAuthUi();
+  });
+  document.getElementById('company-auth-portal')?.addEventListener('click', () => void handleCustomerPortal());
+
+  document.getElementById('company-save')?.addEventListener('click', () => void savePending());
+
+  document.addEventListener('escale:auth-changed', () => {
+    if (pending && !pending.email && AppState.company.authEmail) {
+      pending.email = AppState.company.authEmail;
+    }
+    save();
+    syncAuthUi();
+    syncBrandUI();
+  });
+
+  document.addEventListener('escale:license-state', () => {
+    syncAuthUi();
+    syncBrandUI();
+  });
 }
 
 export const CompanyManager = {

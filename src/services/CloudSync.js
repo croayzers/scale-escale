@@ -42,6 +42,11 @@ async function syncCompany(company = AppState.company) {
     }
   });
 
+  if (response?.ok === false && response?.reason === 'auth_required') {
+    AppState.company.cloudSyncStatus = 'needs_auth';
+    return response;
+  }
+
   if (response?.company) {
     AppState.company = {
       ...AppState.company,
@@ -50,6 +55,11 @@ async function syncCompany(company = AppState.company) {
       logoRelativePath: response.company.logoRelativePath || AppState.company.logoRelativePath,
       subscriptionPlanCode: response.company.subscriptionPlanCode || AppState.company.subscriptionPlanCode,
       subscriptionPlan: response.company.subscriptionPlan || AppState.company.subscriptionPlan,
+      subscriptionStatus: response.company.subscriptionStatus || AppState.company.subscriptionStatus,
+      organizationRole: response.license?.role || AppState.company.organizationRole,
+      licenseSource: response.license?.source || AppState.company.licenseSource,
+      licenseDetectedOrganizationName: response.license?.detectedOrganization?.displayName || '',
+      licenseNeedsInvite: Boolean(response.license?.needsInvite),
       cloudSyncStatus: response.ok === false ? 'pending' : 'connected',
       lastCloudSyncAt: response.syncedAt || new Date().toISOString()
     };

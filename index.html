@@ -68,6 +68,13 @@
     <span id="brand-name" class="display-font text-[14px] font-medium">E-scale</span>
   </button>
 
+  <button id="btn-account" class="hdr-chip hdr-account" title="Acceso y licencia">
+    <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
+    <span id="account-chip-label" class="mono text-[10.5px] tracking-wide">Acceder</span>
+    <span class="hdr-dot"></span>
+    <span id="account-chip-meta" class="mono text-[10px] tracking-wide" style="color:var(--muted)">Licencia</span>
+  </button>
+
   <div class="hdr-sep"></div>
 
   <!-- Plano -->
@@ -376,6 +383,50 @@
       <button id="company-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
 
+    <section class="company-auth-panel mb-5">
+      <div class="company-auth-head">
+        <div>
+          <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Acceso y licencia</div>
+          <div id="company-auth-status-title" class="company-auth-title">Pon tu correo para recuperar tu licencia</div>
+        </div>
+        <div id="company-auth-meta" class="company-auth-meta">Sin iniciar sesión</div>
+      </div>
+
+      <div id="company-auth-status-text" class="company-auth-status-text">Tu plan se detecta al verificar la identidad del correo.</div>
+      <div id="company-auth-hint" class="company-auth-hint">Si compraste con Google u Outlook, usa esa misma cuenta. Para correo libre, te mandamos un enlace.</div>
+
+      <div class="company-auth-actions">
+        <button id="company-auth-google" class="btn ghost company-auth-btn">
+          <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+          Google
+        </button>
+        <button id="company-auth-microsoft" class="btn ghost company-auth-btn">
+          <i data-lucide="briefcase-business" class="w-3.5 h-3.5"></i>
+          Microsoft
+        </button>
+        <button id="company-auth-email-link" class="btn ghost company-auth-btn">
+          <i data-lucide="link" class="w-3.5 h-3.5"></i>
+          Enlace al correo
+        </button>
+      </div>
+
+      <div id="company-license-banner" class="company-license-banner hidden">
+        <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+        <span id="company-license-banner-text">Dominio detectado.</span>
+      </div>
+
+      <div class="company-auth-footer">
+        <button id="company-auth-signout" class="btn ghost hidden">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          Cerrar sesión
+        </button>
+        <button id="company-auth-portal" class="btn ghost hidden">
+          <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+          Gestionar plan
+        </button>
+      </div>
+    </section>
+  
     <div class="grid grid-cols-2 gap-4 mb-4">
       <label class="block">
         <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre</span>
