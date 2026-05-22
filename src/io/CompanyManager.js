@@ -360,14 +360,16 @@ function openAccessModal() {
     return false;
   }
   onboardingActive = true;
-  document.getElementById('access-modal')?.classList.add('visible');
+  const accessModal = document.getElementById('access-modal');
+  if (accessModal) accessModal.style.display = 'flex';
   syncAccessUi();
   document.getElementById('access-email')?.focus();
   return true;
 }
 
 function closeAccessModal() {
-  document.getElementById('access-modal')?.classList.remove('visible');
+  const accessModal = document.getElementById('access-modal');
+  if (accessModal) accessModal.style.display = 'none';
 }
 
 function prefillPendingFromEmail(email) {
