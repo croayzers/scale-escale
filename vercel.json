@@ -3,10 +3,14 @@
   "buildCommand": "",
   "outputDirectory": ".",
   "functions": {
-    "api/*.js": {
-      "memory": 256,
-      "maxDuration": 10
-    }
+    "api/analytics/capture.js": { "memory": 256, "maxDuration": 10 },
+    "api/app/bootstrap.js": { "memory": 256, "maxDuration": 10 },
+    "api/app/export-sync.js": { "memory": 256, "maxDuration": 10 },
+    "api/billing/checkout.js": { "memory": 256, "maxDuration": 10 },
+    "api/billing/portal.js": { "memory": 256, "maxDuration": 10 },
+    "api/billing/webhook.js": { "memory": 256, "maxDuration": 10 },
+    "api/email/send-export.js": { "memory": 256, "maxDuration": 10 },
+    "api/email/send-share.js": { "memory": 256, "maxDuration": 10 }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }

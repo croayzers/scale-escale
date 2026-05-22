@@ -1,5 +1,5 @@
-const { json, methodNotAllowed, readJsonBody, serverError, badRequest } = require('../lib/http');
-const { upsertOrganization, findBillingCustomer, insertAuditEvent } = require('../lib/supabase');
+const { json, methodNotAllowed, readJsonBody, serverError, badRequest } = require('../../lib/http');
+const { upsertOrganization, findBillingCustomer, insertAuditEvent } = require('../../lib/supabase');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(req, res, ['POST']);

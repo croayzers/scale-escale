@@ -1,6 +1,6 @@
-const { env } = require('../lib/env');
-const { json, methodNotAllowed, serverError } = require('../lib/http');
-const { normalizePlanCode } = require('../lib/plans');
+const { env } = require('../../lib/env');
+const { json, methodNotAllowed, serverError } = require('../../lib/http');
+const { normalizePlanCode } = require('../../lib/plans');
 
 const PRICE_TO_TIER = {
   [env('ESCALE_STRIPE_PRICE_PRO')]:     'pro',

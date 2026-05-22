@@ -1,7 +1,7 @@
-const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../lib/http');
-const { normalizePlanCode } = require('../lib/plans');
-const { priceIdForPlan, stripeFormPost } = require('../lib/stripe');
-const { env } = require('../lib/env');
+const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../../lib/http');
+const { normalizePlanCode } = require('../../lib/plans');
+const { priceIdForPlan, stripeFormPost } = require('../../lib/stripe');
+const { env } = require('../../lib/env');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(req, res, ['POST']);

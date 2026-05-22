@@ -1,5 +1,5 @@
-const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../lib/http');
-const { sendEmail } = require('../lib/resend');
+const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../../lib/http');
+const { sendEmail } = require('../../lib/resend');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(req, res, ['POST']);

@@ -1,7 +1,7 @@
-const { json, methodNotAllowed, readJsonBody, serverError } = require('../lib/http');
-const { normalizePlanCode, planName } = require('../lib/plans');
-const { findBillingCustomer, upsertOrganization } = require('../lib/supabase');
-const { publicConfig } = require('../lib/env');
+const { json, methodNotAllowed, readJsonBody, serverError } = require('../../lib/http');
+const { normalizePlanCode, planName } = require('../../lib/plans');
+const { findBillingCustomer, upsertOrganization } = require('../../lib/supabase');
+const { publicConfig } = require('../../lib/env');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(req, res, ['POST']);

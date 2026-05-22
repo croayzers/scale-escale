@@ -1,7 +1,7 @@
-const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../lib/http');
-const { stripeFormPost } = require('../lib/stripe');
-const { env } = require('../lib/env');
-const { findBillingCustomer } = require('../lib/supabase');
+const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../../lib/http');
+const { stripeFormPost } = require('../../lib/stripe');
+const { env } = require('../../lib/env');
+const { findBillingCustomer } = require('../../lib/supabase');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(req, res, ['POST']);
