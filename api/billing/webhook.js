@@ -24,6 +24,9 @@ async function supabaseRest(path, method, body, query = '') {
     body: body ? JSON.stringify(body) : undefined
   });
   const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Supabase ${method} ${path} failed: ${text || `HTTP ${res.status}`}`);
+  }
   return text ? JSON.parse(text) : null;
 }
 
@@ -45,6 +48,21 @@ function verifySignature(rawBody, sigHeader, secret) {
   const payload = `${timestamp}.${rawBody}`;
   const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+}
+
+function cleanText(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function sanitizeSlug(value) {
+  return String(value || 'escale')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48) || 'escale';
 }
 
 module.exports = async function handler(req, res) {
@@ -81,8 +99,9 @@ module.exports = async function handler(req, res) {
         const email = session.customer_email 
           || session.customer_details?.email 
           || session.metadata?.company_email;
-        const planCode = session.metadata?.plan_code || 'pro';
-        const companyName = session.metadata?.company_name || session.customer_details?.business_name || '';
+        const planCode = normalizePlanCode(session.metadata?.plan_code || 'pro');
+        const companyName = cleanText(session.metadata?.company_name || session.customer_details?.name || '');
+        const slug = sanitizeSlug(companyName || email);
 
         console.log('[webhook] checkout.session.completed', { customerId, subscriptionId, email, planCode });
 
@@ -98,13 +117,15 @@ module.exports = async function handler(req, res) {
 
         // Buscar org por email
         let orgRows = await supabaseRest('organizations', 'GET', null,
-          `?select=id&billing_email=eq.${encodeURIComponent(email)}&limit=1`);
+          `?select=id,slug&billing_email=eq.${encodeURIComponent(email)}&limit=1`);
         let orgId = Array.isArray(orgRows) && orgRows[0] ? orgRows[0].id : null;
 
         // Si no existe, crear org
         if (!orgId) {
           const created = await supabaseRest('organizations', 'POST', {
+            slug,
             display_name: companyName || 'E-scale',
+            legal_name: companyName || 'E-scale',
             billing_email: email,
             current_tier_code: planCode
           });
@@ -125,7 +146,7 @@ module.exports = async function handler(req, res) {
 
         // Upsert billing_customer
         const existing = await supabaseRest('billing_customers', 'GET', null,
-          `?select=id&organization_id=eq.${orgId}&limit=1`);
+          `?select=organization_id&organization_id=eq.${orgId}&limit=1`);
 
         if (Array.isArray(existing) && existing[0]) {
           await supabaseRest('billing_customers', 'PATCH', {
@@ -134,7 +155,7 @@ module.exports = async function handler(req, res) {
             stripe_price_id: env(`ESCALE_STRIPE_PRICE_${planCode.toUpperCase()}`),
             subscription_status: 'active',
             updated_at: new Date().toISOString()
-          }, `?id=eq.${existing[0].id}`);
+          }, `?organization_id=eq.${orgId}`);
         } else {
           await supabaseRest('billing_customers', 'POST', {
             organization_id: orgId,
@@ -163,7 +184,7 @@ module.exports = async function handler(req, res) {
         const customerId = sub.customer;
 
         const rows = await supabaseRest('billing_customers', 'GET', null,
-          `?select=id,organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
+          `?select=organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
         const billing = Array.isArray(rows) && rows[0] ? rows[0] : null;
 
         if (billing) {
@@ -173,7 +194,7 @@ module.exports = async function handler(req, res) {
             current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
             cancel_at_period_end: sub.cancel_at_period_end || false,
             updated_at: new Date().toISOString()
-          }, `?id=eq.${billing.id}`);
+          }, `?organization_id=eq.${billing.organization_id}`);
 
           await supabaseRest('organizations', 'PATCH', {
             current_tier_code: tier,
@@ -189,14 +210,14 @@ module.exports = async function handler(req, res) {
         const customerId = sub.customer;
 
         const rows = await supabaseRest('billing_customers', 'GET', null,
-          `?select=id,organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
+          `?select=organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
         const billing = Array.isArray(rows) && rows[0] ? rows[0] : null;
 
         if (billing) {
           await supabaseRest('billing_customers', 'PATCH', {
             subscription_status: 'cancelled',
             updated_at: new Date().toISOString()
-          }, `?id=eq.${billing.id}`);
+          }, `?organization_id=eq.${billing.organization_id}`);
 
           await supabaseRest('organizations', 'PATCH', {
             current_tier_code: 'free_lite',
@@ -218,14 +239,14 @@ module.exports = async function handler(req, res) {
         const customerId = invoice.customer;
 
         const rows = await supabaseRest('billing_customers', 'GET', null,
-          `?select=id,organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
+          `?select=organization_id&stripe_customer_id=eq.${customerId}&limit=1`);
         const billing = Array.isArray(rows) && rows[0] ? rows[0] : null;
 
         if (billing) {
           await supabaseRest('billing_customers', 'PATCH', {
             subscription_status: 'past_due',
             updated_at: new Date().toISOString()
-          }, `?id=eq.${billing.id}`);
+          }, `?organization_id=eq.${billing.organization_id}`);
 
           await supabaseRest('audit_events', 'POST', {
             organization_id: billing.organization_id,
