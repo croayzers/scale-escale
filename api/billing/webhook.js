@@ -78,7 +78,9 @@ module.exports = async function handler(req, res) {
         const session = event.data.object;
         const customerId = session.customer;
         const subscriptionId = session.subscription;
-        const email = session.customer_email || session.metadata?.company_email;
+        const email = session.customer_email 
+        || session.customer_details?.email 
+        || session.metadata?.company_email;
         const planCode = session.metadata?.plan_code || 'pro';
         const companyName = session.metadata?.company_name || '';
 
