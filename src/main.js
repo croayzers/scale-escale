@@ -43,16 +43,16 @@ async function bootstrap() {
   await SceneManager.init();
   await ElementLibrary.load();
 
-  InteractionManager.init();
-  SnapManager.init();
-  PlanManager.init();
-  CompanyManager.init();
-  ExportManager.init();
-  ShareManager.init();
-  CatalogModal.init();
-  Dock.init();
-  TemplateManager.init();
-  InventoryPanel.init();
+  await safeInit('InteractionManager', () => InteractionManager.init());
+  await safeInit('SnapManager', () => SnapManager.init());
+  await safeInit('PlanManager', () => PlanManager.init());
+  await safeInit('CompanyManager', () => CompanyManager.init());
+  await safeInit('ExportManager', () => ExportManager.init());
+  await safeInit('ShareManager', () => ShareManager.init());
+  await safeInit('CatalogModal', () => CatalogModal.init());
+  await safeInit('Dock', () => Dock.init());
+  await safeInit('TemplateManager', () => TemplateManager.init());
+  await safeInit('InventoryPanel', () => InventoryPanel.init());
 
   const welcomeModal = document.getElementById('welcome-modal');
   const inventoryPanel = document.getElementById('inventory-panel');

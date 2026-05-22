@@ -16,6 +16,15 @@ const PALETTE = [
 let pending = null;
 let onboardingActive = false;
 
+function hasAccessScreen() {
+  return Boolean(
+    document.getElementById('access-modal') &&
+    document.getElementById('access-email') &&
+    document.getElementById('access-title') &&
+    document.getElementById('access-profile-summary')
+  );
+}
+
 function normalizeColor(value) {
   const raw = String(value || '').trim();
   const hexMatch = raw.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -247,14 +256,21 @@ function setButtonRecommended(buttonId, recommended) {
 }
 
 function syncAccessUi() {
+  if (!hasAccessScreen()) return;
   const email = currentEmailDraft();
   const hint = AuthManager.suggestProvider(email);
   const profile = findStoredProfile(email);
 
-  document.getElementById('access-email').value = email || '';
-  document.getElementById('access-title').textContent = hint.title;
-  document.getElementById('access-description').textContent = hint.description;
-  document.getElementById('access-profile-summary').textContent = profile
+  const emailInput = document.getElementById('access-email');
+  const title = document.getElementById('access-title');
+  const description = document.getElementById('access-description');
+  const summary = document.getElementById('access-profile-summary');
+  if (!emailInput || !title || !description || !summary) return;
+
+  emailInput.value = email || '';
+  title.textContent = hint.title;
+  description.textContent = hint.description;
+  summary.textContent = profile
     ? `${profile.name || 'Perfil guardado'} · ${profile.subscriptionPlan || 'Free Lite'}`
     : 'Introduce tu correo para recuperar datos guardados en este equipo.';
 
@@ -339,10 +355,15 @@ function syncBrandUI() {
 }
 
 function openAccessModal() {
+  if (!hasAccessScreen()) {
+    onboardingActive = false;
+    return false;
+  }
   onboardingActive = true;
   document.getElementById('access-modal')?.classList.add('visible');
   syncAccessUi();
   document.getElementById('access-email')?.focus();
+  return true;
 }
 
 function closeAccessModal() {
@@ -423,7 +444,9 @@ function closeModal({ keepPreview = false, completeOnboarding = false } = {}) {
   pending = null;
   if (!keepPreview) applyBrandColors(AppState.company);
   if (onboardingActive && !completeOnboarding) {
-    openAccessModal();
+    if (!openAccessModal()) {
+      onboardingActive = false;
+    }
     return;
   }
   if (completeOnboarding) {
