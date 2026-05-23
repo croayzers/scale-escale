@@ -35,7 +35,7 @@
     <div class="access-copy">
       <div class="mono text-[11px] tracking-widest uppercase mb-3" style="color:var(--muted)">Acceso</div>
       <div class="display-font text-4xl leading-tight mb-3">Empieza identificando tu cuenta</div>
-      <p id="access-description" class="access-description">Luego podrás elegir Google, Microsoft o recibir un acceso por correo.</p>
+      <p id="access-description" class="access-description">Elige cómo quieres identificarte. Si este equipo ya conoce tu perfil, entraremos directamente y recuperaremos tus datos.</p>
     </div>
 
     <div class="access-form">
@@ -60,7 +60,7 @@
           Correo
         </button>
       </div>
-      <div class="access-note">En esta fase la app no abre Google ni Microsoft. Solo usa el correo para recuperar tu perfil local y seguir trabajando.</div>
+      <div class="access-note">Después podrás completar los datos de empresa cuando quieras. Si el perfil ya estaba guardado en este equipo, no te lo volveremos a pedir.</div>
     </div>
 
     <div class="access-plans">
@@ -515,6 +515,7 @@
       <label class="block">
         <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Email</span>
         <input id="company-email" type="email" placeholder="contacto@empresa.com" class="input-field"/>
+        <span id="company-email-help" class="company-field-help">Si vienes del acceso inicial, este correo se reutiliza automáticamente.</span>
       </label>
     </div>
     <label class="block mb-4">

@@ -184,6 +184,14 @@ function currentEmailDraft() {
   );
 }
 
+function hasRecoveredIdentity() {
+  return Boolean(
+    AuthManager.isAuthenticated() ||
+    AppState.company.authStatus === 'authenticated_local' ||
+    AppState.company.authStatus === 'authenticated'
+  );
+}
+
 function buildPalettes() {
   ['primary', 'secondary'].forEach(kind => {
     const palette = document.getElementById(`company-color-${kind}-palette`);
@@ -395,7 +403,20 @@ function syncModalUI() {
   prefillPendingFromEmail(pending.email || AppState.company.authEmail);
 
   document.getElementById('company-name').value = pending.name || '';
-  document.getElementById('company-email').value = pending.email || AppState.company.authEmail || '';
+  const companyEmailField = document.getElementById('company-email');
+  const companyEmailHelp = document.getElementById('company-email-help');
+  const lockedEmail = cleanEmail(AppState.company.authEmail);
+  const resolvedEmail = pending.email || lockedEmail || '';
+  if (companyEmailField) {
+    companyEmailField.value = resolvedEmail;
+    companyEmailField.readOnly = Boolean(lockedEmail);
+    companyEmailField.classList.toggle('is-locked', Boolean(lockedEmail));
+  }
+  if (companyEmailHelp) {
+    companyEmailHelp.textContent = lockedEmail
+      ? `Correo recuperado del acceso: ${lockedEmail}`
+      : 'Puedes editar este correo si quieres guardar la empresa con otro contacto.';
+  }
   document.getElementById('company-venue').value = pending.venue || '';
 
   const primary = colorFor(pending, 'colorPrimary');
@@ -493,7 +514,7 @@ async function handleAccessChoice(kind) {
   await AuthManager.mockSignIn(kind === 'microsoft' ? 'azure' : kind, email);
   saveCompanyState();
   closeAccessModal();
-  openModal({ onboarding: true });
+  finalizeOnboarding();
 }
 
 async function savePending() {
@@ -502,7 +523,7 @@ async function savePending() {
   const secondaryOk = commitColor('secondary', 'colorSecondary', document.getElementById('company-color-secondary')?.value, { syncText: true });
   if (!primaryOk || !secondaryOk) return;
 
-  pending.email = cleanEmail(document.getElementById('company-email')?.value || pending.email || AppState.company.authEmail);
+  pending.email = cleanEmail(AppState.company.authEmail || document.getElementById('company-email')?.value || pending.email);
   pending.name = cleanText(document.getElementById('company-name')?.value || pending.name);
   pending.venue = cleanText(document.getElementById('company-venue')?.value || pending.venue);
 
@@ -603,6 +624,10 @@ function init() {
     if (pending) pending.name = event.target.value.trim();
   });
   document.getElementById('company-email')?.addEventListener('input', event => {
+    if (cleanEmail(AppState.company.authEmail)) {
+      event.target.value = AppState.company.authEmail;
+      return;
+    }
     if (pending) {
       pending.email = event.target.value.trim();
       prefillPendingFromEmail(pending.email);
@@ -654,6 +679,13 @@ function init() {
     syncAuthUi();
     syncBrandUI();
   });
+
+  if (hasRecoveredIdentity()) {
+    closeAccessModal();
+    syncAccessUi();
+    syncAuthUi();
+    return;
+  }
 
   openAccessModal();
 }

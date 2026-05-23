@@ -733,6 +733,18 @@ input[type=range]::-webkit-slider-thumb {
   line-height: 1.45;
   color: var(--muted);
 }
+.company-field-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.input-field.is-locked {
+  background: rgba(10, 10, 11, 0.04);
+  color: rgba(10, 10, 11, 0.72);
+  cursor: default;
+}
 .company-auth-btn {
   justify-content: center;
   min-height: 40px;
