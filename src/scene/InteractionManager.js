@@ -6,6 +6,7 @@ import { AppState }     from '../core/AppState.js';
 import { SceneManager } from './SceneManager.js';
 import { UIManager }    from '../ui/UIManager.js';
 import { CatalogModal } from '../ui/CatalogModal.js';
+import { ZoneManager }  from '../ui/ZoneManager.js';
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -44,6 +45,10 @@ function init() {
   document.addEventListener('pointerdown', onPlacementDocumentPointerDown, true);
   document.addEventListener('escale:catalog-placement-start', onPlacementStart);
   document.addEventListener('escale:catalog-placement-end', onPlacementEnd);
+  document.addEventListener('escale:zones-ui-changed', () => {
+    syncPlacementCursor();
+    updateCursorReadout();
+  });
   syncPlacementCursor();
 }
 
@@ -92,9 +97,11 @@ function applySnap(point) {
   if (!point) return null;
   const next = point.clone();
   if (AppState.snap.enabled) {
-    const spacing = AppState.snap.spacing;
-    next.x = Math.round(next.x / spacing) * spacing;
-    next.z = Math.round(next.z / spacing) * spacing;
+    const spacing = AppState.grid?.subSize ?? AppState.snap.spacing;
+    const offsetX = AppState.grid?.offsetX ?? 0;
+    const offsetZ = AppState.grid?.offsetZ ?? 0;
+    next.x = offsetX + Math.round((next.x - offsetX) / spacing) * spacing;
+    next.z = offsetZ + Math.round((next.z - offsetZ) / spacing) * spacing;
   }
   return next;
 }
@@ -137,9 +144,15 @@ function hideBoxOverlay() {
 
 function syncPlacementCursor() {
   const canvas = document.getElementById('scene-canvas');
-  const active = CatalogModal.hasPendingPlacement();
+  const active = CatalogModal.hasPendingPlacement() || ZoneManager.isPlacementActive();
   document.body.classList.toggle('placement-pending', active);
-  if (canvas) canvas.style.cursor = active ? 'copy' : '';
+  if (canvas) {
+    canvas.style.cursor = CatalogModal.hasPendingPlacement()
+      ? 'copy'
+      : ZoneManager.isPlacementActive()
+        ? 'crosshair'
+        : '';
+  }
 }
 
 function onPlacementStart(event) {
@@ -276,6 +289,12 @@ function onPointerDown(e) {
     return;
   }
 
+  if (ZoneManager.isPlacementActive()) {
+    const point = applySnap(getDragPoint());
+    if (point) ZoneManager.handleCanvasPointerDown(point);
+    return;
+  }
+
   if (CatalogModal.hasPendingPlacement()) {
     placePendingItemAt(e.clientX, e.clientY);
     return;
@@ -336,6 +355,12 @@ function onPointerMove(e) {
     return;
   }
 
+  if (ZoneManager.isPlacementActive()) {
+    const point = applySnap(getDragPoint());
+    if (point) ZoneManager.handleCanvasPointerMove(point);
+    return;
+  }
+
   if (boxSelecting) {
     updateBoxOverlay(boxSelecting.startX, boxSelecting.startY, e.clientX, e.clientY);
     return;
@@ -353,9 +378,11 @@ function onPointerMove(e) {
       const off = dragging.offsets[id];
       let nx = point.x + off.x, nz = point.z + off.z;
       if (AppState.snap.enabled) {
-        const s = AppState.snap.spacing;
-        nx = Math.round(nx / s) * s;
-        nz = Math.round(nz / s) * s;
+        const s = AppState.grid?.subSize ?? AppState.snap.spacing;
+        const offsetX = AppState.grid?.offsetX ?? 0;
+        const offsetZ = AppState.grid?.offsetZ ?? 0;
+        nx = offsetX + Math.round((nx - offsetX) / s) * s;
+        nz = offsetZ + Math.round((nz - offsetZ) / s) * s;
       }
       SceneManager.moveItem(id, nx, nz);
     });
@@ -396,6 +423,11 @@ function onPointerUp(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
+  if (ZoneManager.isPlacementActive()) {
+    ZoneManager.cancelPlacement();
+    syncPlacementCursor();
+    return;
+  }
   if (CatalogModal.hasPendingPlacement()) {
     CatalogModal.clearPendingPlacement();
     return;
@@ -457,6 +489,7 @@ const TYPE_LABELS = {
   carpaSailcloth: 'Carpa sailcloth',
   carpaTipi: 'Carpa tipi',
   carpaDomo: 'Carpa domo',
+  zone: 'Zona',
   poste: 'Poste',
   room: '4 Paredes',
   arbusto: 'Arbusto',
@@ -1302,6 +1335,11 @@ function onKeyDown(e) {
   if (e.key === 'Escape') {
     if (CatalogModal.hasPendingPlacement()) {
       CatalogModal.clearPendingPlacement();
+      return;
+    }
+    if (ZoneManager.isPlacementActive()) {
+      ZoneManager.cancelPlacement();
+      syncPlacementCursor();
       return;
     }
     AppState.deselect();

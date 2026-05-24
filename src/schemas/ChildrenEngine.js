@@ -53,10 +53,13 @@ function placementsAround(item, childConfig) {
     const angle = arcDegrees === 360
       ? startAngleDeg * Math.PI / 180 + (index / count) * Math.PI * 2
       : angleStart + index * angleStep + angleStep / 2;
+    const outwardRotY = Math.PI / 2 - angle;
     return {
       x: Math.cos(angle) * radius,
       z: Math.sin(angle) * radius,
-      rotY: childConfig.facing === 'outward' ? angle + Math.PI / 2 : angle - Math.PI / 2
+      rotY: childConfig.facing === 'outward'
+        ? outwardRotY
+        : outwardRotY + Math.PI
     };
   });
 }

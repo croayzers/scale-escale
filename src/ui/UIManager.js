@@ -194,7 +194,12 @@ function ensureItemSettingsHandle() {
     const A = dynamic.AppState;
     const id = Number(itemSettingsHandle.dataset.itemId || 0);
     const item = A?.items.find(entry => entry.id === id);
-    if (item) showDetail(item);
+    if (item) {
+      document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+        detail: { kind: 'detail', key: `item-${item.id}` }
+      }));
+      showDetail(item);
+    }
   });
   document.body.appendChild(itemSettingsHandle);
   if (window.lucide) lucide.createIcons();
@@ -239,6 +244,113 @@ function showDetail(item) {
   if (!panel || !content || !A) return;
 
   if (PropertyRenderer.canRender(item) && PropertyRenderer.render({ item, panel, content, AppState: A })) {
+    return;
+  }
+
+  if (item.type === 'zone') {
+    const fillOpacity = Math.round((item.fillOpacity ?? item.visual?.opacity ?? 0.18) * 100);
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">Zona</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">2D · ID #${item.id}</div>
+
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Nombre de zona</span>
+        <input id="zone-detail-name" type="text" value="${item.labelText || ''}" class="input-field"/>
+      </label>
+
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo X (m)</span>
+          <input id="zone-detail-length" type="number" min="0.5" max="120" step="0.1" value="${item.dims?.length ?? 4}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho Z (m)</span>
+          <input id="zone-detail-width" type="number" min="0.5" max="120" step="0.1" value="${item.dims?.width ?? 4}" class="input-field"/>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color borde</span>
+          <input id="zone-detail-border" type="color" value="${item.borderColor || '#22c55e'}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color fondo</span>
+          <input id="zone-detail-fill" type="color" value="${item.color || '#22c55e'}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+      </div>
+
+      <label class="block mb-3">
+        <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Visibilidad fondo</span>
+        <div class="flex items-center gap-2">
+          <input id="zone-detail-opacity" type="range" min="5" max="60" step="1" value="${fillOpacity}" class="flex-1"/>
+          <span class="mono text-[10px]" style="min-width:42px">${fillOpacity}%</span>
+        </div>
+      </label>
+
+      <label class="flex items-center justify-between mb-3 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Desactivar color fondo</span>
+        <input id="zone-detail-fill-disabled" type="checkbox" ${item.fillEnabled === false ? 'checked' : ''}/>
+      </label>
+
+      <label class="flex items-center justify-between mb-4 cursor-pointer">
+        <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Bloquear zona</span>
+        <input id="zone-detail-lock" type="checkbox" ${item.locked ? 'checked' : ''}/>
+      </label>
+
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+
+    panel.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
+
+    const updateZone = patch => A.update(item.id, patch, { skipDetailRebuild: true });
+    content.querySelector('#zone-detail-name')?.addEventListener('input', event => {
+      updateZone({ labelText: String(event.target.value || '').trim() || `Zona ${item.id}` });
+    });
+    content.querySelector('#zone-detail-length')?.addEventListener('input', event => {
+      updateZone({
+        dims: { ...(item.dims || {}), length: Math.max(0.5, parseFloat(event.target.value) || item.dims?.length || 4) }
+      });
+    });
+    content.querySelector('#zone-detail-width')?.addEventListener('input', event => {
+      updateZone({
+        dims: { ...(item.dims || {}), width: Math.max(0.5, parseFloat(event.target.value) || item.dims?.width || 4) }
+      });
+    });
+    content.querySelector('#zone-detail-border')?.addEventListener('input', event => {
+      updateZone({ borderColor: event.target.value });
+    });
+    content.querySelector('#zone-detail-fill')?.addEventListener('input', event => {
+      updateZone({ color: event.target.value });
+    });
+    content.querySelector('#zone-detail-opacity')?.addEventListener('input', event => {
+      const opacity = Math.max(0.05, Math.min(0.6, (parseFloat(event.target.value) || 18) / 100));
+      updateZone({
+        fillOpacity: opacity,
+        visual: { ...(item.visual || {}), opacity: item.fillEnabled === false ? 0.001 : opacity, shadows: false }
+      });
+    });
+    content.querySelector('#zone-detail-fill-disabled')?.addEventListener('change', event => {
+      const fillEnabled = !event.target.checked;
+      updateZone({
+        fillEnabled,
+        visual: {
+          ...(item.visual || {}),
+          opacity: fillEnabled ? (item.fillOpacity ?? item.visual?.opacity ?? 0.18) : 0.001,
+          shadows: false
+        }
+      });
+    });
+    content.querySelector('#zone-detail-lock')?.addEventListener('change', event => {
+      if (Boolean(item.locked) !== Boolean(event.target.checked)) A.toggleLock(item.id);
+    });
+    panel.querySelector('[data-act="dup"]')?.addEventListener('click', () => A.duplicate(item.id));
+    panel.querySelector('[data-act="del"]')?.addEventListener('click', () => A.remove(item.id));
     return;
   }
 

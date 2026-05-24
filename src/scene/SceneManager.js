@@ -155,24 +155,47 @@ function init() {
 }
 
 function rebuildGrids() {
-  if (gridHelper) { scene.remove(gridHelper); gridHelper.geometry.dispose(); gridHelper.material.dispose(); }
-  if (gridMain)   { scene.remove(gridMain);   gridMain.geometry.dispose();   gridMain.material.dispose();   }
+  if (gridHelper) {
+    scene.remove(gridHelper);
+    gridHelper.geometry.dispose();
+    (Array.isArray(gridHelper.material) ? gridHelper.material : [gridHelper.material]).forEach(material => material?.dispose?.());
+  }
+  if (gridMain) {
+    scene.remove(gridMain);
+    gridMain.geometry.dispose();
+    (Array.isArray(gridMain.material) ? gridMain.material : [gridMain.material]).forEach(material => material?.dispose?.());
+  }
 
-  const SIZE = 60;
-  const spacing = _appState?.snap?.spacing ?? 0.25;
-  const fineDivisions = Math.min(1200, Math.round(SIZE / spacing));
-  const mainDivisions = SIZE;
+  const size = Math.max(20, _appState?.grid?.extent ?? 60);
+  const subSize = Math.max(0.05, _appState?.grid?.subSize ?? _appState?.snap?.spacing ?? 0.25);
+  const mainSize = Math.max(subSize, _appState?.grid?.majorSize ?? 1);
+  const visibility = Math.max(0, Math.min(100, _appState?.grid?.opacity ?? 55)) / 100;
+  const fineDivisions = Math.min(1600, Math.max(1, Math.round(size / subSize)));
+  const mainDivisions = Math.min(800, Math.max(1, Math.round(size / mainSize)));
 
-  gridHelper = new THREE.GridHelper(SIZE, fineDivisions, 0x1a1a1c, 0x1a1a1c);
-  gridHelper.material.opacity = 0.10;
-  gridHelper.material.transparent = true;
+  gridHelper = new THREE.GridHelper(size, fineDivisions, 0x1a1a1c, 0x1a1a1c);
+  (Array.isArray(gridHelper.material) ? gridHelper.material : [gridHelper.material]).forEach(material => {
+    material.opacity = visibility * 0.28;
+    material.transparent = true;
+    material.needsUpdate = true;
+  });
   scene.add(gridHelper);
 
-  gridMain = new THREE.GridHelper(SIZE, mainDivisions, 0x1a1a1c, 0x1a1a1c);
-  gridMain.material.opacity = 0.25;
-  gridMain.material.transparent = true;
-  gridMain.position.y = 0.001;
+  gridMain = new THREE.GridHelper(size, mainDivisions, 0x1a1a1c, 0x1a1a1c);
+  (Array.isArray(gridMain.material) ? gridMain.material : [gridMain.material]).forEach(material => {
+    material.opacity = visibility * 0.62;
+    material.transparent = true;
+    material.needsUpdate = true;
+  });
   scene.add(gridMain);
+  applyGridOffsets();
+}
+
+function applyGridOffsets() {
+  const offsetX = _appState?.grid?.offsetX ?? 0;
+  const offsetZ = _appState?.grid?.offsetZ ?? 0;
+  if (gridHelper) gridHelper.position.set(offsetX, 0.008, offsetZ);
+  if (gridMain) gridMain.position.set(offsetX, 0.012, offsetZ);
 }
 
 function isCarpaType(type) {
@@ -183,6 +206,10 @@ function isLightingItem(item) {
   return item.type === 'cableLuces'
     || item.type === 'poste'
     || (item.type === 'ambiente' && item.subtype === 'spot');
+}
+
+function isZoneItem(item) {
+  return item?.type === 'zone';
 }
 
 function resolveItemCategory(item) {
@@ -201,7 +228,7 @@ function isChairCategoryItem(item) {
 }
 
 function isCameraSpecificItem(item) {
-  return isCarpaType(item.type) || item.type === 'room' || isLightingItem(item);
+  return isCarpaType(item.type) || item.type === 'room' || isLightingItem(item) || isZoneItem(item);
 }
 
 function shouldUseTopSymbol(item) {
@@ -209,6 +236,7 @@ function shouldUseTopSymbol(item) {
 }
 
 function createModelForCurrentView(item) {
+  if (isZoneItem(item)) return createZoneSymbol(item);
   const view = _appState?.camera === 'top' ? 'top' : 'iso';
   const group = shouldUseTopSymbol(item) ? createTopSymbol(item) : ModelFactory.create(item, { view });
   if (_appState?.camera === 'iso' && isCameraSpecificItem(item)) hideIsoFootprintFills(group, item);
@@ -329,6 +357,7 @@ function refreshPlacementPreview() {
 }
 
 function createTopSymbol(item) {
+  if (isZoneItem(item)) return createZoneSymbol(item);
   if (isCarpaType(item.type)) return createTopCarpaSymbol(item);
   if (item.type === 'room') return createTopRoomSymbol(item);
   if (item.type === 'cableLuces') return createTopCableSymbol(item);
@@ -358,7 +387,7 @@ function makeLine(points, color, y = 0.045) {
   return line;
 }
 
-function addFlatRect(group, L, W, color, fillOpacity = 0.10) {
+function addFlatRect(group, L, W, color, fillOpacity = 0.10, borderColor = color) {
   const fill = new THREE.Mesh(new THREE.PlaneGeometry(L, W), makeFlatMaterial(color, fillOpacity));
   fill.rotation.x = -Math.PI / 2;
   fill.position.y = 0.032;
@@ -374,7 +403,7 @@ function addFlatRect(group, L, W, color, fillOpacity = 0.10) {
     [ L / 2,  W / 2],
     [-L / 2,  W / 2],
     [-L / 2, -W / 2]
-  ], color));
+  ], borderColor));
 }
 
 function addFlatCircle(group, diameter, color, fillOpacity = 0.10) {
@@ -525,6 +554,59 @@ function createTopSpotSymbol(item) {
   return group;
 }
 
+function hexToRgba(hex, alpha = 1) {
+  const parsed = parseHex(hex);
+  const r = (parsed >> 16) & 255;
+  const g = (parsed >> 8) & 255;
+  const b = parsed & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function makeZoneLabelSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 700;
+  canvas.height = 180;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '600 58px "Inter Tight", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = hexToRgba(color, 0.48);
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(4.8, 1.22, 1);
+  sprite.position.set(0, 0.085, 0);
+  sprite.renderOrder = 40;
+  return sprite;
+}
+
+function createZoneSymbol(item) {
+  const group = new THREE.Group();
+  const length = Math.max(0.5, item.dims?.length ?? 4);
+  const width = Math.max(0.5, item.dims?.width ?? 4);
+  const borderColor = parseHex(item.borderColor || item.color || '#22c55e');
+  const fillColor = parseHex(item.color || '#22c55e');
+  const fillOpacity = item.fillEnabled === false
+    ? 0.001
+    : Math.max(0.05, Math.min(item.visual?.opacity ?? item.fillOpacity ?? 0.18, 0.6));
+
+  addFlatRect(group, length, width, fillColor, fillOpacity, borderColor);
+
+  if (item.labelText) {
+    group.add(makeZoneLabelSprite(item.labelText, item.borderColor || item.color || '#22c55e'));
+  }
+
+  return group;
+}
+
 function hideIsoFootprintFills(group, item) {
   group.traverse(child => {
     if (!child.isMesh || !child.material) return;
@@ -583,7 +665,7 @@ function setCamera(mode) {
   // Las carpas tienen representación distinta según vista → reconstruir
   updatePlanViewMode();
   if (_appState) {
-    _appState.items.filter(isCameraSpecificItem).forEach(item => rebuild(item));
+    _appState.items.forEach(item => rebuild(item));
   }
   if (placementPreviewItem) refreshPlacementPreview();
   applyShadowState();
@@ -660,6 +742,7 @@ function rotateItem(id, rotY) {
   g.rotation.y = rotY;
   const item = _appState?.items.find(i => i.id === id);
   if (item) item.rotY = rotY;
+  if (_appState?.showCotas) drawCotas();
 }
 
 function highlightSelection() {
@@ -700,12 +783,99 @@ function highlightSelection() {
   });
 }
 
+function createDimensionLabel(text) {
+  const sprite = makeTextSprite(text, 'zone');
+  sprite.scale.set(2.6, 0.72, 1);
+  sprite.position.y = 0.01;
+  return sprite;
+}
+
+function addDimensionArrow(group, start, end, label, labelOffset = [0, 0]) {
+  const main = makeLine([start, end], 0x111111, 0.062);
+  group.add(main);
+
+  const dx = end[0] - start[0];
+  const dz = end[1] - start[1];
+  const length = Math.hypot(dx, dz) || 1;
+  const ux = dx / length;
+  const uz = dz / length;
+  const arrowSize = Math.min(0.28, Math.max(0.12, length * 0.12));
+  const wingAngle = 0.45;
+
+  const arrowPoints = (origin, dir) => {
+    const bx = origin[0] - dir * ux * arrowSize;
+    const bz = origin[1] - dir * uz * arrowSize;
+    const px = -uz;
+    const pz = ux;
+    return [
+      [origin, [bx + px * arrowSize * wingAngle, bz + pz * arrowSize * wingAngle]],
+      [origin, [bx - px * arrowSize * wingAngle, bz - pz * arrowSize * wingAngle]]
+    ];
+  };
+
+  [...arrowPoints(start, -1), ...arrowPoints(end, 1)].forEach(([from, to]) => {
+    group.add(makeLine([from, to], 0x111111, 0.062));
+  });
+
+  const labelSprite = createDimensionLabel(label);
+  labelSprite.position.set(
+    (start[0] + end[0]) / 2 + labelOffset[0],
+    0.07,
+    (start[1] + end[1]) / 2 + labelOffset[1]
+  );
+  group.add(labelSprite);
+}
+
+function createZoneCotasGroup(item) {
+  const group = new THREE.Group();
+  const length = Math.max(0.5, item.dims?.length ?? 4);
+  const width = Math.max(0.5, item.dims?.width ?? 4);
+  const offset = 0.46;
+
+  group.userData.itemId = item.id;
+  group.userData.isZoneCota = true;
+  group.position.set(item.x, 0, item.z);
+  group.rotation.y = item.rotY || 0;
+
+  group.add(makeLine([
+    [-length / 2, width / 2],
+    [-length / 2, width / 2 + offset]
+  ], 0x111111, 0.062));
+  group.add(makeLine([
+    [length / 2, width / 2],
+    [length / 2, width / 2 + offset]
+  ], 0x111111, 0.062));
+  addDimensionArrow(
+    group,
+    [-length / 2, width / 2 + offset],
+    [length / 2, width / 2 + offset],
+    `${length.toFixed(1)}m`,
+    [0, 0.24]
+  );
+
+  group.add(makeLine([
+    [length / 2, -width / 2],
+    [length / 2 + offset, -width / 2]
+  ], 0x111111, 0.062));
+  group.add(makeLine([
+    [length / 2, width / 2],
+    [length / 2 + offset, width / 2]
+  ], 0x111111, 0.062));
+  addDimensionArrow(
+    group,
+    [length / 2 + offset, -width / 2],
+    [length / 2 + offset, width / 2],
+    `${width.toFixed(1)}m`,
+    [0.26, 0]
+  );
+
+  return group;
+}
+
 function drawCotas() {
   while (cotasGroup.children.length) {
     const c = cotasGroup.children.pop();
-    if (c.material && c.material.map) c.material.map.dispose();
-    if (c.material) c.material.dispose();
-    if (c.geometry) c.geometry.dispose();
+    disposeGroup(c);
   }
   if (!_appState?.showCotas) return;
 
@@ -713,11 +883,16 @@ function drawCotas() {
     'mesaCocktail', 'mesaCurva', 'mesaSerpentina', 'barraLibre',
     'carpaCuadrada', 'carpaStar',
     'carpaPabellon', 'carpaTransparente', 'carpaBeduina',
-    'carpaSailcloth', 'carpaTipi', 'carpaDomo'];
+    'carpaSailcloth', 'carpaTipi', 'carpaDomo', 'zone'];
 
   _appState.items.forEach(item => {
     if (isChairCategoryItem(item)) return;
     if (!COTAS_ALWAYS.includes(item.type) && !item.showLabel) return;
+
+    if (isZoneItem(item)) {
+      cotasGroup.add(createZoneCotasGroup(item));
+      return;
+    }
 
     let label, kind, yOffset;
 
@@ -841,10 +1016,14 @@ function drawCotas() {
 
 function moveCotaFor(itemId, x, z) {
   if (!_appState?.showCotas) return;
-  cotasGroup.children.forEach(sprite => {
-    if (sprite.userData.itemId === itemId) {
-      sprite.position.x = x;
-      sprite.position.z = z;
+  cotasGroup.children.forEach(node => {
+    if (node.userData.itemId === itemId) {
+      node.position.x = x;
+      node.position.z = z;
+      if (node.userData.isZoneCota) {
+        const item = _appState?.items.find(entry => entry.id === itemId);
+        node.rotation.y = item?.rotY || 0;
+      }
     }
   });
 }
@@ -1038,20 +1217,12 @@ let canvasBoundary = null;
 
 function setCanvasSize(wM, lM) {
   if (!_appState) return;
-  if (canvasBoundary) { scene.remove(canvasBoundary); canvasBoundary = null; }
-  const points = [
-    new THREE.Vector3(-wM/2, 0.02, -lM/2),
-    new THREE.Vector3( wM/2, 0.02, -lM/2),
-    new THREE.Vector3( wM/2, 0.02,  lM/2),
-    new THREE.Vector3(-wM/2, 0.02,  lM/2),
-    new THREE.Vector3(-wM/2, 0.02, -lM/2),
-  ];
-  const geo = new THREE.BufferGeometry().setFromPoints(points);
-  canvasBoundary = new THREE.Line(geo,
-    new THREE.LineBasicMaterial({ color: 0x00c853, linewidth: 3, transparent: true, opacity: 1.0, depthTest: false })
-  );
-  canvasBoundary.renderOrder = 999;
-  scene.add(canvasBoundary);
+  if (canvasBoundary) {
+    scene.remove(canvasBoundary);
+    canvasBoundary.geometry?.dispose?.();
+    canvasBoundary.material?.dispose?.();
+    canvasBoundary = null;
+  }
   rebuildGrids();
 }
 
@@ -1067,6 +1238,7 @@ function setPlanMoving(active) {
 
 function setPlanLocked(locked) {
   planLocked = locked;
+  if (_appState?.grid) _appState.grid.locked = locked;
   if (locked) planMoving = false;
 }
 
@@ -1078,23 +1250,18 @@ function startPlanMove(point) {
   planMoveStart = { x: point.x, z: point.z };
   // Guardamos posición actual del boundary
   planMeshStart = {
-    x: canvasBoundary?.position.x ?? 0,
-    z: canvasBoundary?.position.z ?? 0,
-    planX: planMesh?.position.x ?? 0,
-    planZ: planMesh?.position.z ?? 0
+    x: _appState?.grid?.offsetX ?? 0,
+    z: _appState?.grid?.offsetZ ?? 0
   };
 }
 
 function updatePlanMove(point) {
-  if (!planMoving || !planMoveStart || !canvasBoundary) return;
+  if (!planMoving || !planMoveStart || !_appState?.grid) return;
   const dx = point.x - planMoveStart.x;
   const dz = point.z - planMoveStart.z;
-  canvasBoundary.position.x = planMeshStart.x + dx;
-  canvasBoundary.position.z = planMeshStart.z + dz;
-  if (planMesh) {
-    planMesh.position.x = planMeshStart.planX + dx;
-    planMesh.position.z = planMeshStart.planZ + dz;
-  }
+  _appState.grid.offsetX = planMeshStart.x + dx;
+  _appState.grid.offsetZ = planMeshStart.z + dz;
+  applyGridOffsets();
 }
 
 function endPlanMove() {

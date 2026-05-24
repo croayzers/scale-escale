@@ -27,6 +27,7 @@ function buildSceneInsights(state, reason = 'snapshot') {
   const planCode = String(state.company?.subscriptionPlanCode || 'free_lite').toLowerCase();
   const selectedItems = [...(state.selectedIds || [])];
   const lockedItems = items.filter(item => item.locked).length;
+  const zoneItems = items.filter(item => item?.type === 'zone');
   const guestAssignments = items.reduce((sum, item) => (
     sum + (Array.isArray(item.guests) ? item.guests.filter(guest => guest?.name || guest?.email).length : 0)
   ), 0);
@@ -38,6 +39,8 @@ function buildSceneInsights(state, reason = 'snapshot') {
     timestamp: new Date().toISOString(),
     hasSceneItems: items.length > 0,
     totalItems: items.length,
+    totalZones: zoneItems.length,
+    hasZones: zoneItems.length > 0,
     inventoryItems: getInventoryTotalItems(items),
     nonInventoryItems: items.length - inventoryItems.length,
     totalPax: getInventoryTotalPax(items),
@@ -49,6 +52,11 @@ function buildSceneInsights(state, reason = 'snapshot') {
     hasPlan,
     planWidthM: state.plan?.widthM ?? 0,
     planLengthM: state.plan?.lengthM ?? 0,
+    gridMainSizeM: state.grid?.majorSize ?? 1,
+    gridSubSizeM: state.grid?.subSize ?? 0.25,
+    gridVisibilityPct: state.grid?.opacity ?? 55,
+    gridOffsetX: state.grid?.offsetX ?? 0,
+    gridOffsetZ: state.grid?.offsetZ ?? 0,
     eventName: getEventName(),
     companyName: state.company?.name || '',
     planCode,
@@ -115,6 +123,15 @@ export const AppState = {
   },
 
   snap: { enabled: true, spacing: 0.25 },
+  grid: {
+    majorSize: 1,
+    subSize: 0.25,
+    opacity: 55,
+    extent: 60,
+    offsetX: 0,
+    offsetZ: 0,
+    locked: false
+  },
 
   history: [],
   HISTORY_LIMIT: 3,

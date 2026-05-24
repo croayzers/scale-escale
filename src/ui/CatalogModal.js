@@ -133,6 +133,10 @@ function init() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') close();
   });
+
+  document.addEventListener('escale:scene-overlay-open', event => {
+    if (event.detail?.kind !== 'catalog') close();
+  });
 }
 
 function open(categoryKey) {
@@ -163,6 +167,9 @@ function open(categoryKey) {
     });
   }
 
+  document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+    detail: { kind: 'catalog', key: categoryKey }
+  }));
   modal.classList.remove('hidden');
 }
 

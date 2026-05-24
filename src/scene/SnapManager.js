@@ -52,6 +52,7 @@ function setEnabled(v) {
 
 function setSpacing(v) {
   AppState.snap.spacing = v;
+  if (AppState.grid) AppState.grid.subSize = v;
   document.querySelectorAll('[data-snap-preset]').forEach(p => {
     p.classList.toggle('active', parseFloat(p.dataset.snapPreset) === v);
   });

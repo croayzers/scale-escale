@@ -74,8 +74,7 @@ export function createMesa(item) {
     const cz = Math.sin(angle) * chairRadius;
     const chair = createChair();
     chair.position.set(cx, 0, cz);
-    const outward = new THREE.Vector3(cx * 2, chair.position.y, cz * 2);
-    chair.lookAt(outward);
+    chair.rotation.y = Math.PI / 2 - angle;
     group.add(chair);
   }
 

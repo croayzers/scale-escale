@@ -42,6 +42,9 @@ function makeInventoryButton() {
   button.addEventListener('click', () => {
     clearCategoryButtons();
     CatalogModal.close();
+    document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+      detail: { kind: 'inventory', key: 'inventory' }
+    }));
     document.dispatchEvent(new CustomEvent('escale:toggle-inventory'));
   });
   return button;
@@ -57,6 +60,9 @@ function toggleCategory(key, button) {
   }
 
   button.classList.add('active');
+  document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+    detail: { kind: 'catalog', key }
+  }));
   document.dispatchEvent(new CustomEvent('escale:inventory-close'));
   CatalogModal.open(key);
 }
@@ -77,8 +83,13 @@ function setInventoryActive(active) {
   document.getElementById('dock-inventory-btn')?.classList.toggle('active', active);
 }
 
+function setInventoryReady(ready) {
+  document.getElementById('dock-inventory-btn')?.classList.toggle('inventory-ready', Boolean(ready));
+}
+
 export const Dock = {
   init,
   clearCategoryButtons,
-  setInventoryActive
+  setInventoryActive,
+  setInventoryReady
 };

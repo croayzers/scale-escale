@@ -57,15 +57,7 @@ function serialize() {
   };
 
   // Posición del boundary (área verde)
-  const boundary = SceneManager.scene?.children?.find(
-    c => c.isLine && c.material?.color?.getHex?.() === 0x00c853
-  );
-  const canvasArea = {
-    w: parseFloat(document.getElementById('canvas-w')?.value) || 30,
-    l: parseFloat(document.getElementById('canvas-l')?.value) || 30,
-    offsetX: boundary?.position?.x ?? 0,
-    offsetZ: boundary?.position?.z ?? 0,
-  };
+  const grid = { ...(AppState.grid || {}) };
 
   return {
     version:    TEMPLATE_VERSION,
@@ -74,7 +66,7 @@ function serialize() {
     name:       document.getElementById('inventory-event-name')?.value || 'Sin nombre',
     items,
     plan,
-    canvasArea,
+    grid,
     camera:  AppState.camera,
     snap:    { ...AppState.snap },
     cotas:   AppState.showCotas,
@@ -199,31 +191,26 @@ async function applyTemplate(data) {
     AppState.plan.opacity = data.plan.opacity  ?? 0.7;
 
     // Actualizar inputs del header
-    const canvasW = document.getElementById('canvas-w');
-    const canvasL = document.getElementById('canvas-l');
-    if (canvasW) canvasW.value = data.canvasArea?.w ?? data.plan.widthM;
-    if (canvasL) canvasL.value = data.canvasArea?.l ?? data.plan.lengthM;
+    const legacyOffsetX = data.canvasArea?.offsetX ?? 0;
+    const legacyOffsetZ = data.canvasArea?.offsetZ ?? 0;
 
     // Aplicar tamaño del área
-    const w = data.canvasArea?.w ?? data.plan.widthM;
-    const l = data.canvasArea?.l ?? data.plan.lengthM;
-    SceneManager.setCanvasSize(w, l);
+    AppState.grid = {
+      ...(AppState.grid || {}),
+      ...(data.grid || {}),
+      offsetX: data.grid?.offsetX ?? legacyOffsetX,
+      offsetZ: data.grid?.offsetZ ?? legacyOffsetZ
+    };
+    AppState.snap.spacing = data.grid?.subSize ?? data.snap?.spacing ?? AppState.snap.spacing;
+    AppState.grid.subSize = AppState.grid.subSize ?? AppState.snap.spacing;
+    AppState.grid.majorSize = Math.max(AppState.grid.subSize, AppState.grid.majorSize ?? 1);
+    SceneManager.rebuildGrids();
 
     // Restaurar imagen del plano
     if (data.plan.imageDataURL) {
       await loadPlanImage(data.plan.imageDataURL);
     }
 
-    // Restaurar offset del boundary
-    if (data.canvasArea?.offsetX || data.canvasArea?.offsetZ) {
-      const boundary = SceneManager.scene?.children?.find(
-        c => c.isLine && c.material?.color?.getHex?.() === 0x00c853
-      );
-      if (boundary) {
-        boundary.position.x = data.canvasArea.offsetX;
-        boundary.position.z = data.canvasArea.offsetZ;
-      }
-    }
   }
 
   // 3. Recrear items
@@ -254,10 +241,15 @@ async function applyTemplate(data) {
   AppState.nextId = maxId + 1;
 
   // 4. Restaurar ajustes
+  if (data.grid) {
+    AppState.grid = { ...(AppState.grid || {}), ...data.grid };
+  }
   if (data.snap) {
     AppState.snap.enabled = data.snap.enabled ?? true;
     AppState.snap.spacing = data.snap.spacing ?? 0.25;
   }
+  AppState.grid.subSize = data.grid?.subSize ?? AppState.snap.spacing ?? AppState.grid.subSize;
+  AppState.grid.majorSize = Math.max(AppState.grid.subSize, data.grid?.majorSize ?? AppState.grid.majorSize ?? 1);
   if (data.cotas !== undefined)  AppState.showCotas = data.cotas;
   if (data.shadows !== undefined) AppState.shadows = data.shadows;
 
@@ -273,6 +265,8 @@ async function applyTemplate(data) {
   }
 
   // 7. Aplicar sombras
+  SceneManager.rebuildGrids();
+  SceneManager.setPlanLocked(AppState.grid?.locked === true);
   SceneManager.applyShadowState();
   SceneManager.drawCotas();
 

@@ -99,6 +99,142 @@
   margin-top: 12px;
 }
 
+.hdr-menu-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.menu-section-label {
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.menu-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.menu-field {
+  display: grid;
+  gap: 6px;
+}
+
+.menu-field span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.menu-field-full {
+  grid-column: 1 / -1;
+}
+
+.menu-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-slider-row strong {
+  min-width: 38px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+}
+
+.menu-full-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.menu-inline-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.menu-inline-actions .btn {
+  flex: 1 1 140px;
+  justify-content: center;
+}
+
+.menu-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.menu-empty-copy {
+  padding: 10px 11px;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.zones-list {
+  display: grid;
+  gap: 8px;
+}
+
+.zone-chip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.54);
+  text-align: left;
+  transition: all 140ms;
+}
+
+.zone-chip:hover,
+.zone-chip.active {
+  border-color: rgba(var(--brand-primary-rgb), 0.42);
+  background: rgba(var(--brand-primary-rgb), 0.08);
+}
+
+.zone-chip-swatch {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.zone-chip-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.zone-chip-copy strong {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.zone-chip-copy small {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.color-input-field {
+  padding: 2px;
+  height: 36px;
+}
+
 .menu-action {
   width: 100%;
   min-width: 0;
@@ -196,6 +332,43 @@
 .pro-button.pro-locked .menu-action-tag {
   background: rgba(245, 158, 11, 0.14);
   color: #9a6700;
+}
+
+.hdr-pro-chip {
+  background: linear-gradient(180deg, rgba(255, 214, 102, 0.24), rgba(255, 170, 51, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(255, 184, 77, 0.24);
+}
+
+.hdr-pro-chip:hover,
+.hdr-pro-chip.active {
+  background: linear-gradient(180deg, rgba(255, 214, 102, 0.32), rgba(255, 170, 51, 0.24));
+}
+
+.pro-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pro-feature-card {
+  display: grid;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,196,107,0.08));
+}
+
+.pro-feature-card strong {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.pro-feature-card span {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
 }
 
 .icon-btn {
@@ -778,6 +951,11 @@ input[type=range]::-webkit-slider-thumb {
   font-size: 12px;
   line-height: 1.35;
 }
+.plan-step-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
 .plan-step-action {
   width: 100%;
   justify-content: center;
@@ -795,6 +973,29 @@ input[type=range]::-webkit-slider-thumb {
 }
 .guide-pulse {
   animation: guidePulse 900ms ease-in-out 2;
+}
+.plan-step-mini {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.56);
+}
+.plan-step-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.plan-step-mini-row strong {
+  font-weight: 600;
+}
+.plan-step-mini-state {
+  color: var(--muted);
+  text-align: right;
 }
 @keyframes guidePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-primary-rgb), 0); }

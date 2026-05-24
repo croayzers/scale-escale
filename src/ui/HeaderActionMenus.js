@@ -4,6 +4,18 @@ import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { ProButtonManager } from './ProButtonManager.js';
 
 const MENU_CONFIG = {
+  zones: {
+    buttonId: 'btn-zones-menu',
+    menuId: 'zones-menu'
+  },
+  grid: {
+    buttonId: 'btn-grid-menu',
+    menuId: 'grid-menu'
+  },
+  pro: {
+    buttonId: 'btn-pro-menu',
+    menuId: 'pro-menu'
+  },
   template: {
     buttonId: 'btn-template-menu',
     menuId: 'template-menu'
@@ -90,7 +102,37 @@ function refreshPrintMenu() {
 function refreshMenus() {
   refreshTemplateMenu();
   refreshPrintMenu();
+  refreshProMenu();
+  document.dispatchEvent(new CustomEvent('escale:header-menus-refresh', {
+    detail: { activeMenuKey }
+  }));
   ProButtonManager.markButtons(document);
+  if (window.lucide) lucide.createIcons();
+}
+
+function refreshProMenu() {
+  const planCode = SubscriptionManager.currentPlanCode();
+  const plan = SubscriptionManager.currentPlan();
+  const title = document.getElementById('pro-menu-plan');
+  const note = document.getElementById('pro-menu-note');
+  const btnPro = document.querySelector('[data-plan-upgrade="pro"]');
+  const btnPremium = document.querySelector('[data-plan-upgrade="premium"]');
+
+  if (title) title.textContent = `Plan actual: ${plan.name}`;
+  if (note) {
+    note.textContent = planCode === 'premium'
+      ? 'Tienes todas las funciones activas. Desde aquí puedes gestionar la suscripción.'
+      : planCode === 'pro'
+        ? 'Ya tienes PDF, inventario y branding. Premium añade cliente, CRM, ERP y SharePoint.'
+        : 'PRO desbloquea exportación profesional, reporting y compartición del planning.';
+  }
+
+  if (btnPro) {
+    btnPro.textContent = planCode === 'pro' || planCode === 'premium' ? 'Gestionar PRO' : 'Pasar a PRO';
+  }
+  if (btnPremium) {
+    btnPremium.textContent = planCode === 'premium' ? 'Gestionar Premium' : 'Ver Premium';
+  }
 }
 
 function openMenu(menuKey) {
@@ -98,10 +140,16 @@ function openMenu(menuKey) {
   if (!button || !menu) return;
 
   refreshMenus();
+  document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+    detail: { kind: 'header', key: menuKey }
+  }));
   closeMenus();
   setMenuOpenState(menuKey, true);
   positionMenu(menu, button);
   activeMenuKey = menuKey;
+  document.dispatchEvent(new CustomEvent('escale:header-menu-opened', {
+    detail: { menuKey }
+  }));
 }
 
 function toggleMenu(menuKey) {
@@ -145,6 +193,16 @@ function handlePrintAction(action, button) {
   }
 }
 
+function handlePlanUpgrade(planCode) {
+  closeMenus();
+  const current = SubscriptionManager.currentPlanCode();
+  if (current === planCode || (current === 'premium' && planCode === 'pro')) {
+    void SubscriptionManager.openCustomerPortal();
+    return;
+  }
+  void SubscriptionManager.openCheckout(planCode);
+}
+
 function onDocumentClick(event) {
   const clickedInsideMenu = Object.keys(MENU_CONFIG).some(key => {
     const { button, menu } = getMenuElements(key);
@@ -157,13 +215,11 @@ function onDocumentClick(event) {
 function init() {
   ProButtonManager.init();
 
-  document.getElementById('btn-template-menu')?.addEventListener('click', event => {
-    event.stopPropagation();
-    toggleMenu('template');
-  });
-  document.getElementById('btn-print-menu')?.addEventListener('click', event => {
-    event.stopPropagation();
-    toggleMenu('print');
+  Object.entries(MENU_CONFIG).forEach(([menuKey, config]) => {
+    document.getElementById(config.buttonId)?.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleMenu(menuKey);
+    });
   });
 
   document.querySelectorAll('[data-template-action]').forEach(button => {
@@ -180,7 +236,17 @@ function init() {
     });
   });
 
+  document.querySelectorAll('[data-plan-upgrade]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      handlePlanUpgrade(button.dataset.planUpgrade);
+    });
+  });
+
   document.addEventListener('click', onDocumentClick);
+  document.addEventListener('escale:scene-overlay-open', event => {
+    if (event.detail?.kind !== 'header') closeMenus();
+  });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeMenus();
   });

@@ -54,6 +54,7 @@ function init() {
   // Calibración
   document.getElementById('btn-calibrate')?.addEventListener('click', toggleCalibration);
   document.getElementById('cancel-calibration')?.addEventListener('click', cancelCalibration);
+  emitCalibrationProgress();
 }
 
 function openFormatModal() {
@@ -358,6 +359,17 @@ function extractDwgThumbnail(buf) {
 }
 
 /* ── Calibración ── */
+function emitCalibrationProgress(detail = {}) {
+  document.dispatchEvent(new CustomEvent('escale:plan-calibration-progress', {
+    detail: {
+      point1: 'Pendiente',
+      point2: 'Pendiente',
+      result: 'Sin calibrar',
+      ...detail
+    }
+  }));
+}
+
 function toggleCalibration() {
   if (!AppState.plan.texture) {
     alert('Carga un plano base primero (botón superior).');
@@ -366,30 +378,40 @@ function toggleCalibration() {
   AppState.calibration.active = true;
   AppState.calibration.p1 = null;
   AppState.calibration.p2 = null;
-  document.getElementById('calibration-banner')?.classList.add('visible');
-  const step = document.getElementById('cal-step');
-  if (step) step.textContent = 'Click en el primer punto';
   document.body.classList.add('cursor-cal');
+  emitCalibrationProgress({
+    point1: 'Activo',
+    point2: 'Pendiente',
+    result: 'Esperando referencia'
+  });
 }
 
-function cancelCalibration() {
+function cancelCalibration(resetProgress = true) {
   AppState.calibration.active = false;
   AppState.calibration.p1 = null;
   AppState.calibration.p2 = null;
-  document.getElementById('calibration-banner')?.classList.remove('visible');
   document.body.classList.remove('cursor-cal');
+  if (resetProgress) emitCalibrationProgress();
 }
 
 function handleCalibrationClick(point) {
   if (!AppState.calibration.p1) {
     AppState.calibration.p1 = { x: point.x, z: point.z };
-    const step = document.getElementById('cal-step');
-    if (step) step.textContent = 'Click en el segundo punto';
+    emitCalibrationProgress({
+      point1: 'Marcado',
+      point2: 'Activo',
+      result: 'Marca el segundo punto'
+    });
   } else {
     AppState.calibration.p2 = { x: point.x, z: point.z };
     const dx = AppState.calibration.p2.x - AppState.calibration.p1.x;
     const dz = AppState.calibration.p2.z - AppState.calibration.p1.z;
     const sceneDist = Math.sqrt(dx*dx + dz*dz);
+    emitCalibrationProgress({
+      point1: 'Marcado',
+      point2: 'Marcado',
+      result: 'Introduce la distancia real'
+    });
     askRealDistance(sceneDist);
   }
 }
@@ -529,8 +551,13 @@ function applyScale(sceneDist, realMeters) {
   document.getElementById('plan-width').value = AppState.plan.widthM.toFixed(2);
   document.getElementById('plan-length').value = AppState.plan.lengthM.toFixed(2);
   SceneManager.updatePlanSize();
+  emitCalibrationProgress({
+    point1: 'Marcado',
+    point2: 'Marcado',
+    result: `${realMeters.toFixed(2)} m aplicados`
+  });
   document.dispatchEvent(new CustomEvent('escale:plan-calibrated'));
-  cancelCalibration();
+  cancelCalibration(false);
 }
 
 export const PlanManager = { init, handleCalibrationClick, cancelCalibration };

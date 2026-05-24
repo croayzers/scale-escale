@@ -172,36 +172,26 @@
 
   <div class="hdr-sep"></div>
 
-  <!-- Ãrea canvas -->
+  <!-- Zonas -->
   <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
-    <div class="flex items-center gap-1">
-      <span class="mono text-[10px]" style="color:var(--muted)">Ãrea</span>
-      <input id="canvas-w" type="number" min="5" max="200" step="1" value="30"
-        title="Paso 2 Â· Definir Ã¡rea"
-        style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
-      <span class="mono text-[10px]" style="color:var(--muted)">Ã—</span>
-      <input id="canvas-l" type="number" min="5" max="200" step="1" value="30"
-        title="Paso 2 Â· Definir Ã¡rea"
-        style="width:44px;padding:3px 5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid rgba(0,0,0,0.15);border-radius:5px;background:rgba(255,255,255,0.6);text-align:center"/>
-      <span class="mono text-[10px]" style="color:var(--muted)">m</span>
-    </div>
+    <button id="btn-zones-menu" class="hdr-chip" title="Zonas">
+      <i data-lucide="map" class="w-3.5 h-3.5"></i>
+      <span>Zonas</span>
+      <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+    </button>
     <span id="step-dot-2" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
   </div>
 
   <div class="hdr-sep"></div>
 
-  <!-- Plano mover/bloquear -->
-  <div class="flex items-center gap-1">
-    <span class="mono text-[10px]" style="color:var(--muted)">Plano</span>
-    <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
-      <button id="btn-move-plan" class="hdr-icon" title="Paso 3 Â· Mover plano" style="width:28px;height:28px">
-        <i data-lucide="move" class="w-3.5 h-3.5"></i>
-      </button>
-      <span id="step-dot-3" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
-    </div>
-    <button id="btn-lock-plan" class="hdr-icon" title="Bloquear plano" style="width:28px;height:28px">
-      <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+  <!-- Grid -->
+  <div style="position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px">
+    <button id="btn-grid-menu" class="hdr-chip" title="Grid y rejilla">
+      <i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i>
+      <span>Grid</span>
+      <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
     </button>
+    <span id="step-dot-3" style="width:5px;height:5px;border-radius:50%;background:#e53e3e;display:none"></span>
   </div>
 
   <div class="hdr-sep"></div>
@@ -227,6 +217,12 @@
     <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
   </button>
 
+  <button id="btn-pro-menu" class="hdr-chip hdr-pro-chip" title="Funciones PRO">
+    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+    <span>PRO</span>
+    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+  </button>
+
   <div class="hdr-sep"></div>
   
   <!-- Ajustes -->
@@ -242,6 +238,70 @@
 
   </div>
 </header>
+
+<div id="zones-menu" class="hdr-popover hidden" aria-hidden="true">
+  <div class="hdr-popover-head">
+    <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Zonas sobre plano</div>
+    <div class="hdr-popover-meta">Elemento 2D editable</div>
+  </div>
+  <div id="zones-menu-note" class="hdr-popover-note">Pulsa Añadir zona y marca dos esquinas opuestas sobre el plano.</div>
+  <div class="hdr-menu-block">
+    <div class="menu-section-label">Nueva zona</div>
+    <div class="menu-field-grid">
+      <label class="menu-field menu-field-full">
+        <span>Nombre de zona</span>
+        <input id="zone-new-name" class="input-field" type="text" value="Zona 1"/>
+      </label>
+    </div>
+    <button id="zone-add-btn" class="btn primary menu-full-btn" type="button">Añadir zona</button>
+  </div>
+  <div class="hdr-menu-block">
+    <div class="menu-section-label">Zonas añadidas</div>
+    <div id="zones-list" class="zones-list"></div>
+  </div>
+  <div id="zone-editor" class="hdr-menu-block"></div>
+</div>
+
+<div id="grid-menu" class="hdr-popover hidden" aria-hidden="true">
+  <div class="hdr-popover-head">
+    <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Grid y subrejilla</div>
+    <div class="hdr-popover-meta">Mueve la rejilla, no el plano</div>
+  </div>
+  <div class="hdr-popover-note">Ajusta la medida principal, la subrejilla y su visibilidad. El movimiento desplaza la rejilla de referencia.</div>
+  <div class="hdr-menu-block">
+    <div class="menu-section-label">Ajustes</div>
+    <div class="menu-field-grid">
+      <label class="menu-field">
+        <span>Medida grid (m)</span>
+        <input id="grid-main-size" class="input-field" type="number" min="0.25" max="20" step="0.25" value="1"/>
+      </label>
+      <label class="menu-field">
+        <span>Subrejilla (m)</span>
+        <input id="grid-sub-size" class="input-field" type="number" min="0.05" max="5" step="0.05" value="0.25"/>
+      </label>
+      <label class="menu-field menu-field-full">
+        <span>Visibilidad</span>
+        <div class="menu-slider-row">
+          <input id="grid-visibility" type="range" min="0" max="100" step="1" value="55"/>
+          <strong id="grid-visibility-value">55%</strong>
+        </div>
+      </label>
+    </div>
+  </div>
+  <div class="hdr-menu-block">
+    <div class="menu-section-label">Movimiento</div>
+    <div class="menu-inline-actions">
+      <button id="btn-move-plan" class="btn ghost" type="button">
+        <i data-lucide="move" class="w-3.5 h-3.5"></i>
+        <span>Mover rejilla</span>
+      </button>
+      <button id="btn-lock-plan" class="btn ghost" type="button">
+        <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+        <span id="grid-lock-label">Bloquear rejilla</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <div id="template-menu" class="hdr-popover hidden" aria-hidden="true">
   <div class="hdr-popover-head">
@@ -301,6 +361,52 @@
   </div>
 </div>
 
+<div id="pro-menu" class="hdr-popover hidden" aria-hidden="true">
+  <div class="hdr-popover-head">
+    <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Funciones destacadas</div>
+    <div id="pro-menu-plan" class="hdr-popover-meta">Plan actual: Free Lite</div>
+  </div>
+  <div id="pro-menu-note" class="hdr-popover-note">PRO desbloquea exportación profesional, reporting y compartición del planning.</div>
+  <div class="pro-feature-grid">
+    <div class="pro-feature-card">
+      <i data-lucide="file-search" class="w-4 h-4"></i>
+      <strong>PDF con preview</strong>
+      <span>Cenital o ISO antes de descargar</span>
+    </div>
+    <div class="pro-feature-card">
+      <i data-lucide="files" class="w-4 h-4"></i>
+      <strong>Inventario empresa</strong>
+      <span>PDF + CSV con branding y resumen</span>
+    </div>
+    <div class="pro-feature-card">
+      <i data-lucide="send" class="w-4 h-4"></i>
+      <strong>Compartir planning</strong>
+      <span>Mesas, invitados y envío asistido</span>
+    </div>
+    <div class="pro-feature-card">
+      <i data-lucide="badge-euro" class="w-4 h-4"></i>
+      <strong>Premium operaciones</strong>
+      <span>Cliente, CRM, ERP y SharePoint</span>
+    </div>
+  </div>
+  <div class="hdr-popover-actions">
+    <button class="menu-action" type="button" data-plan-upgrade="pro">
+      <span class="menu-action-icon"><i data-lucide="zap" class="w-4 h-4"></i></span>
+      <span class="menu-action-copy">
+        <strong>Pasar a PRO</strong>
+        <small>Exportación, reporting y branding</small>
+      </span>
+    </button>
+    <button class="menu-action" type="button" data-plan-upgrade="premium">
+      <span class="menu-action-icon"><i data-lucide="crown" class="w-4 h-4"></i></span>
+      <span class="menu-action-copy">
+        <strong>Ver Premium</strong>
+        <small>Cliente, CRM, ERP y SharePoint</small>
+      </span>
+    </button>
+  </div>
+</div>
+
   <input type="file" id="file-plan-img" accept="image/*" class="hidden"/>
   <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
   <input type="file" id="file-plan-dwg" accept=".dwg,.dxf" class="hidden"/>
@@ -351,26 +457,43 @@
       <div class="plan-step-index">1</div>
       <div class="plan-step-body">
         <div class="plan-step-title">Medir plano</div>
-        <p>Usa una referencia conocida, por ejemplo una puerta de 2 m: click en un extremo, click en el otro y escribe la medida real.</p>
-        <button id="guide-calibrate-btn" class="btn primary plan-step-action"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>Medir plano</button>
+        <p>Usa una referencia conocida del plano. Marca primer punto, segundo punto y confirma la distancia real para calibrar la escala.</p>
+        <div class="plan-step-mini">
+          <div class="plan-step-mini-row">
+            <strong>Primer punto</strong>
+            <span id="guide-calibration-point-1" class="plan-step-mini-state">Pendiente</span>
+          </div>
+          <div class="plan-step-mini-row">
+            <strong>Segundo punto</strong>
+            <span id="guide-calibration-point-2" class="plan-step-mini-state">Pendiente</span>
+          </div>
+          <div class="plan-step-mini-row">
+            <strong>Resultado</strong>
+            <span id="guide-calibration-result" class="plan-step-mini-state">Sin calibrar</span>
+          </div>
+        </div>
+        <div class="plan-step-actions">
+          <button id="guide-calibrate-btn" class="btn primary plan-step-action"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>Medir plano</button>
+          <button id="cancel-calibration" class="btn ghost plan-step-action"><i data-lucide="x" class="w-3.5 h-3.5"></i>Cancelar</button>
+        </div>
       </div>
     </section>
 
-    <section id="guide-step-area" class="plan-step" data-state="waiting">
+    <section id="guide-step-zones" class="plan-step" data-state="waiting">
       <div class="plan-step-index">2</div>
       <div class="plan-step-body">
-        <div class="plan-step-title">Definir Ã¡rea</div>
-        <p>Indica el ancho y largo de la zona que ocuparÃ¡ el evento en los campos Ãrea de la barra superior.</p>
-        <button id="guide-area-btn" class="btn ghost plan-step-action"><i data-lucide="square-dashed" class="w-3.5 h-3.5"></i>Editar Ã¡rea</button>
+        <div class="plan-step-title">Zonas</div>
+        <p>Crea tantas zonas como necesites: Entrada, Evento, Salon o cualquier nombre operativo para el plano.</p>
+        <button id="guide-zones-btn" class="btn ghost plan-step-action"><i data-lucide="map" class="w-3.5 h-3.5"></i>Abrir zonas</button>
       </div>
     </section>
 
-    <section id="guide-step-move" class="plan-step" data-state="waiting">
+    <section id="guide-step-grid" class="plan-step" data-state="waiting">
       <div class="plan-step-index">3</div>
       <div class="plan-step-body">
-        <div class="plan-step-title">Mover Ã¡rea</div>
-        <p>Desplaza el rectÃ¡ngulo del evento encima del plano. Cuando estÃ© colocado, pulsa Listo.</p>
-        <button id="guide-move-btn" class="btn ghost plan-step-action"><i data-lucide="move" class="w-3.5 h-3.5"></i>Mover plano</button>
+        <div class="plan-step-title">Grid</div>
+        <p>Ajusta el tamaño de la rejilla y, si hace falta, desplázala para que coincida con el plano cargado.</p>
+        <button id="guide-grid-btn" class="btn ghost plan-step-action"><i data-lucide="grid-3x3" class="w-3.5 h-3.5"></i>Abrir grid</button>
       </div>
     </section>
 
@@ -391,17 +514,10 @@
 <!-- CONTEXT MENU -->
 <div id="context-menu" class="glass"></div>
 
-<!-- BANNER CALIBRACIÃ“N -->
-<div id="calibration-banner" class="glass-dark">
-  <span class="blink-dot"></span>
-  <span class="mono text-[11px] tracking-widest uppercase">Modo calibraciÃ³n Â· <span id="cal-step">Click en el primer punto</span></span>
-  <button id="cancel-calibration" class="ml-2 text-[10px] underline opacity-70 hover:opacity-100">Cancelar</button>
-</div>
-
 <!-- BANNER MOVER PLANO -->
 <div id="plan-move-banner" class="glass-dark" style="display:none;position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:40;padding:10px 20px;display:none;align-items:center;gap:10px;border-radius:8px">
   <span class="blink-dot" style="background:#4a90ff"></span>
-  <span class="mono text-[11px] tracking-widest uppercase">Modo mover plano Â· Arrastra para reposicionar</span>
+  <span class="mono text-[11px] tracking-widest uppercase">Modo mover rejilla Â· Arrastra para reposicionar el grid</span>
   <button id="plan-move-done" class="ml-2 text-[10px] underline opacity-70 hover:opacity-100">Listo</button>
 </div>
 

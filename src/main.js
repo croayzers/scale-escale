@@ -12,6 +12,7 @@ import { ShareManager } from './io/ShareManager.js';
 import { Dock } from './ui/Dock.js';
 import { CatalogModal } from './ui/CatalogModal.js';
 import { HeaderActionMenus } from './ui/HeaderActionMenus.js';
+import { ZoneManager } from './ui/ZoneManager.js';
 import { TemplateManager } from './io/TemplateManager.js';
 import { ServiceConfig } from './services/ServiceConfig.js';
 import { AuthManager } from './services/AuthManager.js';
@@ -54,6 +55,7 @@ async function bootstrap() {
   await safeInit('Dock', () => Dock.init());
   await safeInit('TemplateManager', () => TemplateManager.init());
   await safeInit('HeaderActionMenus', () => HeaderActionMenus.init());
+  await safeInit('ZoneManager', () => ZoneManager.init());
   await safeInit('InventoryPanel', () => InventoryPanel.init());
 
   const welcomeModal = document.getElementById('welcome-modal');
@@ -63,8 +65,6 @@ async function bootstrap() {
   const zoomPct = document.getElementById('zoom-pct');
   const camIso = document.getElementById('cam-iso');
   const camTop = document.getElementById('cam-top');
-  const canvasW = document.getElementById('canvas-w');
-  const canvasL = document.getElementById('canvas-l');
   const settingsModal = document.getElementById('settings-modal');
   const btnMovePlan = document.getElementById('btn-move-plan');
   const btnLockPlan = document.getElementById('btn-lock-plan');
@@ -76,8 +76,7 @@ async function bootstrap() {
     steps: {
       planLoaded: false,
       calibrated: false,
-      areaDefined: false,
-      planMoved: false
+      gridAdjusted: false
     }
   };
 
@@ -107,6 +106,7 @@ async function bootstrap() {
     document.getElementById('hdr-pax').textContent = String(pax);
     document.getElementById('hdr-area').textContent = area.toFixed(0);
     document.body.classList.toggle('has-items', AppState.items.length > 0);
+    Dock.setInventoryReady(AppState.items.length > 0);
   };
 
   const baseRefresh = UIManager.refresh.bind(UIManager);
@@ -116,7 +116,12 @@ async function bootstrap() {
     InventoryPanel.refresh();
   };
 
-  const setInventoryOpen = open => {
+  const setInventoryOpen = (open, { announce = true } = {}) => {
+    if (open && announce) {
+      document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+        detail: { kind: 'inventory', key: 'inventory' }
+      }));
+    }
     state.inventoryOpen = open;
     if (inventoryPanel) inventoryPanel.style.display = open ? 'block' : 'none';
     Dock.setInventoryActive(open);
@@ -124,10 +129,11 @@ async function bootstrap() {
     if (open) InventoryPanel.refresh();
   };
 
-  const markPlanMovedComplete = () => {
+  const getZoneCount = () => AppState.items.filter(item => item.type === 'zone').length;
+
+  const markGridAdjustedComplete = () => {
     if (!state.steps.planLoaded || !state.steps.calibrated) return;
-    state.steps.areaDefined = true;
-    state.steps.planMoved = true;
+    state.steps.gridAdjusted = true;
     updatePlanGuide();
   };
 
@@ -149,42 +155,51 @@ async function bootstrap() {
     const guide = document.getElementById('plan-guide');
     if (!guide) return;
 
+    const zoneCount = getZoneCount();
+    const zonesReady = zoneCount > 0;
+
     guide.classList.toggle('hidden', !state.steps.planLoaded || state.planGuideDismissed);
     setGuideStepState('guide-step-calibrate', state.steps.calibrated ? 'done' : 'active');
     setGuideStepState(
-      'guide-step-area',
-      state.steps.areaDefined ? 'done' : state.steps.calibrated ? 'active' : 'waiting'
+      'guide-step-zones',
+      zonesReady ? 'done' : state.steps.calibrated ? 'active' : 'waiting'
     );
     setGuideStepState(
-      'guide-step-move',
-      state.steps.planMoved ? 'done' : state.steps.areaDefined ? 'active' : 'waiting'
+      'guide-step-grid',
+      state.steps.gridAdjusted ? 'done' : zonesReady ? 'active' : 'waiting'
     );
-    setGuideStepState('guide-step-catalog', state.steps.planMoved ? 'active' : 'waiting');
+    setGuideStepState('guide-step-catalog', state.steps.gridAdjusted ? 'active' : 'waiting');
 
     const nextText = document.getElementById('plan-guide-next-text');
     if (nextText) {
-      nextText.textContent = !state.steps.calibrated
-        ? 'Pulsa la regla, marca dos puntos del plano y escribe la medida real.'
-        : !state.steps.areaDefined
-          ? 'Define el area que ocupara el evento.'
-          : !state.steps.planMoved
-            ? 'Mueve el area sobre el plano y confirma con Listo.'
-            : 'Ya puedes colocar objetos desde la barra inferior.';
+      if (AppState.calibration.active) {
+        nextText.textContent = AppState.calibration.p1
+          ? 'Segundo punto: marca el otro extremo de la referencia. Al segundo click se pedira la medida real.'
+          : 'Primer punto: marca el inicio de la referencia que quieras usar para calibrar.';
+      } else {
+        nextText.textContent = !state.steps.calibrated
+          ? 'Pulsa Medir plano y calibra con una referencia real del plano.'
+          : !zonesReady
+            ? 'Abre Zonas y dibuja una o varias zonas operativas sobre el plano.'
+            : !state.steps.gridAdjusted
+              ? 'Abre Grid y mueve la rejilla hasta hacerla coincidir con el plano.'
+              : 'Ya puedes colocar objetos desde la barra inferior.';
+      }
     }
 
-    const guideArea = document.getElementById('guide-area-btn');
-    const guideMove = document.getElementById('guide-move-btn');
+    const guideZones = document.getElementById('guide-zones-btn');
+    const guideGrid = document.getElementById('guide-grid-btn');
     const guideCatalog = document.getElementById('guide-catalog-btn');
-    if (guideArea) guideArea.disabled = !state.steps.calibrated;
-    if (guideMove) guideMove.disabled = !state.steps.calibrated;
-    if (guideCatalog) guideCatalog.disabled = !state.steps.planMoved;
+    if (guideZones) guideZones.disabled = !state.steps.calibrated;
+    if (guideGrid) guideGrid.disabled = !state.steps.calibrated || !zonesReady;
+    if (guideCatalog) guideCatalog.disabled = !state.steps.gridAdjusted;
 
     const dot1 = document.getElementById('step-dot-1');
     const dot2 = document.getElementById('step-dot-2');
     const dot3 = document.getElementById('step-dot-3');
     if (dot1) dot1.style.display = state.steps.planLoaded && !state.steps.calibrated ? 'block' : 'none';
-    if (dot2) dot2.style.display = state.steps.calibrated && !state.steps.areaDefined ? 'block' : 'none';
-    if (dot3) dot3.style.display = state.steps.areaDefined && !state.steps.planMoved ? 'block' : 'none';
+    if (dot2) dot2.style.display = state.steps.calibrated && !zonesReady ? 'block' : 'none';
+    if (dot3) dot3.style.display = zonesReady && !state.steps.gridAdjusted ? 'block' : 'none';
   };
 
   const originalSetPlanTexture = SceneManager.setPlanTexture.bind(SceneManager);
@@ -192,9 +207,11 @@ async function bootstrap() {
     originalSetPlanTexture(texture);
     state.steps.planLoaded = true;
     state.steps.calibrated = false;
-    state.steps.areaDefined = false;
-    state.steps.planMoved = false;
+    state.steps.gridAdjusted = false;
     state.planGuideDismissed = false;
+    document.getElementById('guide-calibration-point-1').textContent = 'Pendiente';
+    document.getElementById('guide-calibration-point-2').textContent = 'Pendiente';
+    document.getElementById('guide-calibration-result').textContent = 'Sin calibrar';
     updatePlanGuide();
   };
 
@@ -207,15 +224,31 @@ async function bootstrap() {
   document.addEventListener('escale:inventory-close', () => {
     if (state.inventoryOpen) setInventoryOpen(false);
   });
+  document.addEventListener('escale:scene-insights-changed', () => {
+    updatePlanGuide();
+  });
   document.addEventListener('escale:plan-calibrated', () => {
     state.steps.calibrated = true;
+    updatePlanGuide();
+  });
+  document.addEventListener('escale:plan-calibration-progress', event => {
+    const point1 = document.getElementById('guide-calibration-point-1');
+    const point2 = document.getElementById('guide-calibration-point-2');
+    const result = document.getElementById('guide-calibration-result');
+    if (point1 && event.detail?.point1) point1.textContent = event.detail.point1;
+    if (point2 && event.detail?.point2) point2.textContent = event.detail.point2;
+    if (result && event.detail?.result) result.textContent = event.detail.result;
     updatePlanGuide();
   });
 
   camIso?.addEventListener('click', setIsoCamera);
   camTop?.addEventListener('click', setTopCamera);
   document.getElementById('btn-upload-plan')?.addEventListener('click', setTopCamera);
-  document.getElementById('btn-calibrate')?.addEventListener('click', setTopCamera);
+  document.getElementById('btn-calibrate')?.addEventListener('click', () => {
+    state.planGuideDismissed = false;
+    setTopCamera();
+    updatePlanGuide();
+  });
 
   zoomRange?.addEventListener('input', () => {
     SceneManager.setZoomPercent(parseInt(zoomRange.value, 10));
@@ -237,6 +270,9 @@ async function bootstrap() {
   });
 
   document.getElementById('btn-settings')?.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
+      detail: { kind: 'settings', key: 'settings' }
+    }));
     settingsModal?.classList.add('visible');
   });
   document.getElementById('settings-close')?.addEventListener('click', () => {
@@ -244,6 +280,12 @@ async function bootstrap() {
   });
   document.getElementById('settings-done')?.addEventListener('click', () => {
     settingsModal?.classList.remove('visible');
+  });
+
+  document.addEventListener('escale:scene-overlay-open', event => {
+    const kind = event.detail?.kind || '';
+    if (kind !== 'inventory' && state.inventoryOpen) setInventoryOpen(false, { announce: false });
+    if (kind !== 'settings') settingsModal?.classList.remove('visible');
   });
 
   const snapToggle = document.getElementById('snap-toggle');
@@ -275,25 +317,13 @@ async function bootstrap() {
     });
   }
 
-  const applyCanvasSize = () => {
-    const width = Math.max(5, parseFloat(canvasW?.value) || 30);
-    const length = Math.max(5, parseFloat(canvasL?.value) || 30);
-    SceneManager.setCanvasSize(width, length);
-    state.steps.areaDefined = true;
-    updatePlanGuide();
-  };
-
-  canvasW?.addEventListener('change', applyCanvasSize);
-  canvasL?.addEventListener('change', applyCanvasSize);
-  applyCanvasSize();
-
   btnMovePlan?.addEventListener('click', () => {
     if (!AppState.plan.mesh) {
       alert('Carga un plano primero.');
       return;
     }
     if (SceneManager.isPlanLocked()) {
-      alert('El plano esta bloqueado. Desbloquealo primero.');
+      alert('La rejilla esta bloqueada. Desbloqueala primero.');
       return;
     }
 
@@ -309,6 +339,7 @@ async function bootstrap() {
     } else {
       SceneManager.setControlsEnabled(true);
     }
+    ZoneManager.refreshGridMenu();
   });
 
   document.getElementById('plan-move-done')?.addEventListener('click', () => {
@@ -317,19 +348,22 @@ async function bootstrap() {
     document.getElementById('scene-canvas').style.cursor = '';
     document.getElementById('plan-move-banner').style.display = 'none';
     SceneManager.setControlsEnabled(true);
-    markPlanMovedComplete();
+    markGridAdjustedComplete();
+    AppState.emitSceneInsights('grid-move');
+    ZoneManager.refreshGridMenu();
   });
 
   btnLockPlan?.addEventListener('click', () => {
     const locked = !SceneManager.isPlanLocked();
     SceneManager.setPlanLocked(locked);
     btnLockPlan.classList.toggle('active', locked);
-    const icon = btnLockPlan.querySelector('i');
-    if (icon) {
-      icon.setAttribute('data-lucide', locked ? 'lock' : 'unlock');
-      if (window.lucide) lucide.createIcons();
+    if (locked) {
+      btnMovePlan?.classList.remove('active');
+      document.getElementById('scene-canvas').style.cursor = '';
+      document.getElementById('plan-move-banner').style.display = 'none';
+      SceneManager.setControlsEnabled(true);
     }
-    if (locked) btnMovePlan?.classList.remove('active');
+    ZoneManager.refreshGridMenu();
   });
 
   document.getElementById('plan-guide-close')?.addEventListener('click', () => {
@@ -339,16 +373,13 @@ async function bootstrap() {
   document.getElementById('guide-calibrate-btn')?.addEventListener('click', () => {
     document.getElementById('btn-calibrate')?.click();
   });
-  document.getElementById('guide-area-btn')?.addEventListener('click', () => {
-    state.steps.areaDefined = true;
-    updatePlanGuide();
-    pulseGuideTarget(canvasW, canvasL);
-    canvasW?.focus();
+  document.getElementById('guide-zones-btn')?.addEventListener('click', () => {
+    HeaderActionMenus.openMenu('zones');
+    pulseGuideTarget(document.getElementById('btn-zones-menu'));
   });
-  document.getElementById('guide-move-btn')?.addEventListener('click', () => {
-    state.steps.areaDefined = true;
-    updatePlanGuide();
-    btnMovePlan?.click();
+  document.getElementById('guide-grid-btn')?.addEventListener('click', () => {
+    HeaderActionMenus.openMenu('grid');
+    pulseGuideTarget(document.getElementById('btn-grid-menu'), btnMovePlan);
   });
   document.getElementById('guide-catalog-btn')?.addEventListener('click', () => {
     pulseGuideTarget(document.getElementById('dock'));

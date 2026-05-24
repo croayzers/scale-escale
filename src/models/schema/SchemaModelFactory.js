@@ -23,7 +23,24 @@ function createFromSchema(item, context = {}) {
   }
 
   const view = context.view || 'iso';
-  const group = builder(enrichedItem, view, schema, context) || new THREE.Group();
+  let group;
+  try {
+    group = builder(enrichedItem, view, schema, context) || new THREE.Group();
+  } catch (error) {
+    console.error('[SchemaModelFactory] builder failed', {
+      schemaId: schema.id,
+      builderKey,
+      view,
+      item: {
+        type: enrichedItem.type,
+        schemaId: enrichedItem.schemaId,
+        catalogDefinitionId: enrichedItem.catalogDefinitionId || '',
+        dims: enrichedItem.dims || {}
+      },
+      error
+    });
+    throw error;
+  }
   group.userData.schemaId = schema.id;
   group.userData.schemaFamily = schema.family;
 

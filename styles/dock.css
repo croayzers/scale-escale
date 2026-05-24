@@ -98,6 +98,49 @@
   border-radius: 50%;
   background: var(--ink);
 }
+
+#dock-items #dock-inventory-btn.inventory-ready {
+  box-shadow:
+    0 0 0 1px rgba(255, 179, 71, 0.42),
+    0 0 16px -6px rgba(255, 166, 0, 0.72);
+}
+
+#dock-items #dock-inventory-btn.inventory-ready::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 248deg,
+    rgba(255, 166, 0, 0.98) 252deg 302deg,
+    rgba(255, 214, 102, 0.98) 306deg 334deg,
+    transparent 338deg 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: inventoryOrbit 2.4s linear infinite;
+  pointer-events: none;
+}
+
+#dock-items #dock-inventory-btn.inventory-ready.active {
+  box-shadow:
+    0 4px 12px rgba(37,99,235,0.4),
+    0 0 18px -4px rgba(255, 170, 0, 0.78);
+}
+
+@keyframes inventoryOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 #dock-items .dock-sep {
   width: 1px; height: 28px;
   background: rgba(0,0,0,0.12);
