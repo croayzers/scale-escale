@@ -2,6 +2,7 @@ import { ExportManager } from '../io/ExportManager.js';
 import { TemplateManager } from '../io/TemplateManager.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { ProButtonManager } from './ProButtonManager.js';
+import { PlansModal } from './PlansModal.js';
 
 const MENU_CONFIG = {
   zones: {
@@ -41,11 +42,7 @@ function positionMenu(menu, button) {
   if (!menu || !button) return;
   const rect = button.getBoundingClientRect();
   const menuWidth = menu.offsetWidth || 320;
-  const left = Math.min(
-    Math.max(12, rect.left),
-    window.innerWidth - menuWidth - 12
-  );
-
+  const left = Math.min(Math.max(12, rect.left), window.innerWidth - menuWidth - 12);
   menu.style.left = `${left}px`;
   menu.style.top = `${rect.bottom + 10}px`;
 }
@@ -73,7 +70,7 @@ function refreshTemplateMenu() {
     source.textContent = meta.source === 'loaded'
       ? 'Plantilla cargada'
       : meta.source === 'saved'
-        ? 'Ultima plantilla guardada'
+        ? 'Última plantilla guardada'
         : 'Escena en curso';
   }
 }
@@ -99,6 +96,43 @@ function refreshPrintMenu() {
   note.classList.add('is-upsell');
 }
 
+function refreshProMenu() {
+  const planCode = SubscriptionManager.currentPlanCode();
+  const plan = SubscriptionManager.currentPlan();
+  const title = document.getElementById('pro-menu-plan');
+  const note = document.getElementById('pro-menu-note');
+  const btnPro = document.querySelector('[data-plan-upgrade="pro"]');
+  const btnPremium = document.querySelector('[data-plan-upgrade="premium"]');
+  const btnProTitle = btnPro?.querySelector('strong');
+  const btnProCopy = btnPro?.querySelector('small');
+  const btnPremiumTitle = btnPremium?.querySelector('strong');
+  const btnPremiumCopy = btnPremium?.querySelector('small');
+
+  if (title) title.textContent = `Plan actual: ${plan.name}`;
+  if (note) {
+    note.textContent = planCode === 'premium'
+      ? 'Tienes todas las funciones activas. Desde aquí puedes gestionar la suscripción.'
+      : planCode === 'pro'
+        ? 'Ya tienes PDF, inventario y branding. Premium añade cliente, CRM, ERP y SharePoint.'
+        : 'PRO desbloquea exportación profesional, reporting y compartición del planning.';
+    note.classList.toggle('is-upsell', planCode === 'free_lite');
+  }
+
+  if (btnProTitle && btnProCopy) {
+    btnProTitle.textContent = planCode === 'pro' || planCode === 'premium' ? 'Gestionar PRO' : 'Pasar a PRO';
+    btnProCopy.textContent = planCode === 'pro' || planCode === 'premium'
+      ? 'Abrir comparativa y portal de suscripción'
+      : 'Abrir planes y checkout de Stripe';
+  }
+
+  if (btnPremiumTitle && btnPremiumCopy) {
+    btnPremiumTitle.textContent = planCode === 'premium' ? 'Gestionar Premium' : 'Ver Premium';
+    btnPremiumCopy.textContent = planCode === 'premium'
+      ? 'Abrir comparativa y portal de suscripción'
+      : 'Integraciones, CRM y SharePoint';
+  }
+}
+
 function refreshMenus() {
   refreshTemplateMenu();
   refreshPrintMenu();
@@ -108,31 +142,6 @@ function refreshMenus() {
   }));
   ProButtonManager.markButtons(document);
   if (window.lucide) lucide.createIcons();
-}
-
-function refreshProMenu() {
-  const planCode = SubscriptionManager.currentPlanCode();
-  const plan = SubscriptionManager.currentPlan();
-  const title = document.getElementById('pro-menu-plan');
-  const note = document.getElementById('pro-menu-note');
-  const btnPro = document.querySelector('[data-plan-upgrade="pro"]');
-  const btnPremium = document.querySelector('[data-plan-upgrade="premium"]');
-
-  if (title) title.textContent = `Plan actual: ${plan.name}`;
-  if (note) {
-    note.textContent = planCode === 'premium'
-      ? 'Tienes todas las funciones activas. Desde aquí puedes gestionar la suscripción.'
-      : planCode === 'pro'
-        ? 'Ya tienes PDF, inventario y branding. Premium añade cliente, CRM, ERP y SharePoint.'
-        : 'PRO desbloquea exportación profesional, reporting y compartición del planning.';
-  }
-
-  if (btnPro) {
-    btnPro.textContent = planCode === 'pro' || planCode === 'premium' ? 'Gestionar PRO' : 'Pasar a PRO';
-  }
-  if (btnPremium) {
-    btnPremium.textContent = planCode === 'premium' ? 'Gestionar Premium' : 'Ver Premium';
-  }
 }
 
 function openMenu(menuKey) {
@@ -195,12 +204,7 @@ function handlePrintAction(action, button) {
 
 function handlePlanUpgrade(planCode) {
   closeMenus();
-  const current = SubscriptionManager.currentPlanCode();
-  if (current === planCode || (current === 'premium' && planCode === 'pro')) {
-    void SubscriptionManager.openCustomerPortal();
-    return;
-  }
-  void SubscriptionManager.openCheckout(planCode);
+  PlansModal.open(planCode);
 }
 
 function onDocumentClick(event) {

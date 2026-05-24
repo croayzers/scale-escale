@@ -312,6 +312,53 @@ function ensureInteractiveGroup(group, itemId) {
   }
 }
 
+function collectInteractiveMeshes() {
+  const meshArray = [];
+  meshes.forEach(group => {
+    group.traverse(child => {
+      if (!child?.isMesh || child.userData?.isPlacementPreview || child.userData?.isTopStroke) return;
+      if (child.userData?.isMain === true || child.userData?.baseColor !== undefined) meshArray.push(child);
+    });
+  });
+  return meshArray;
+}
+
+function resolveItemFromObject(object) {
+  let node = object;
+  while (node && (!node.userData || (node.userData.id === undefined && node.userData.rootId === undefined))) {
+    node = node.parent;
+  }
+  const resolvedId = node?.userData?.id ?? node?.userData?.rootId;
+  return resolvedId !== undefined ? _appState?.items.find(item => item.id === resolvedId) || null : null;
+}
+
+function computeMeshTopY(group) {
+  const bounds = new THREE.Box3();
+  const childBounds = new THREE.Box3();
+  let hasMesh = false;
+  group?.traverse?.(child => {
+    if (!child?.isMesh || child.userData?.isPlacementPreview || child.visible === false) return;
+    childBounds.setFromObject(child);
+    if (!Number.isFinite(childBounds.max.y)) return;
+    if (!hasMesh) bounds.copy(childBounds);
+    else bounds.union(childBounds);
+    hasMesh = true;
+  });
+  return hasMesh ? bounds.max.y : 0;
+}
+
+function measureItemTopY(item) {
+  if (!item) return 0;
+  const group = meshes.get(item.id);
+  const canUseCurrentGroup = group && _appState?.camera === 'iso' && !shouldUseTopSymbol(item);
+  if (canUseCurrentGroup) return computeMeshTopY(group);
+
+  const probe = ModelFactory.create(item, { view: 'iso' }) || new THREE.Group();
+  const topY = computeMeshTopY(probe) || Math.max(0, item.dims?.height ?? 0);
+  disposeGroup(probe);
+  return topY;
+}
+
 function stylePlacementPreview(group) {
   group.traverse(child => {
     child.userData = child.userData || {};
@@ -525,15 +572,7 @@ function createTopCableSymbol(item) {
   for (let i = 0; i < count; i += 1) {
     const t = count === 1 ? 0.5 : (i + 0.5) / count;
     const x = -totalLength / 2 + totalLength * t;
-    function addPostCircle(group, x, z, diameter, color) {
-  const radius = Math.max(diameter / 2, 0.075);
-  const post = new THREE.Mesh(new THREE.CircleGeometry(radius, 18), makeFlatMaterial(color, 0.95));
-  post.rotation.x = -Math.PI / 2;
-  post.position.set(x, 0.052, z);
-  post.renderOrder = 30;
-  post.userData.baseColor = color;
-  group.add(post);
-}
+    addPostCircle(group, x, 0, 0.12, lightColor);
   }
   return group;
 }
@@ -675,7 +714,7 @@ function spawn(item) {
   const group = createModelForCurrentView(item);
   group.userData = { ...(group.userData || {}), id: item.id };
   ensureInteractiveGroup(group, item.id);
-  group.position.set(item.x, 0, item.z);
+  group.position.set(item.x || 0, item.y || 0, item.z || 0);
   if (item.rotY) group.rotation.y = item.rotY;
   meshes.set(item.id, group);
   scene.add(group);
@@ -726,13 +765,18 @@ function disposeGroup(group) {
   });
 }
 
-function moveItem(id, x, z) {
+function moveItem(id, x, z, y = null) {
   const g = meshes.get(id);
   if (!g) return;
   g.position.x = x;
+  if (y !== null && y !== undefined) g.position.y = y;
   g.position.z = z;
   const item = _appState?.items.find(i => i.id === id);
-  if (item) { item.x = x; item.z = z; }
+  if (item) {
+    item.x = x;
+    item.z = z;
+    if (y !== null && y !== undefined) item.y = y;
+  }
   moveCotaFor(id, x, z);
 }
 
@@ -1162,6 +1206,35 @@ function screenToGround(clientX, clientY) {
   return raycaster.ray.intersectPlane(dragPlane, point) ? point : null;
 }
 
+function screenToPlacement(clientX, clientY) {
+  pointer.x = (clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, activeCam);
+
+  const intersects = raycaster.intersectObjects(collectInteractiveMeshes(), false);
+  for (const hit of intersects) {
+    const item = resolveItemFromObject(hit.object);
+    if (!item || isZoneItem(item)) continue;
+    return {
+      x: hit.point.x,
+      y: (item.y || 0) + measureItemTopY(item),
+      z: hit.point.z,
+      stacked: true,
+      targetItem: item
+    };
+  }
+
+  const ground = screenToGround(clientX, clientY);
+  if (!ground) return null;
+  return {
+    x: ground.x,
+    y: 0,
+    z: ground.z,
+    stacked: false,
+    targetItem: null
+  };
+}
+
 function focusPoint(x, z, zoomPercent = 250) {
   if (_appState.camera === 'iso') {
     const offset = perspectiveCam.position.clone().sub(controlsIso.target);
@@ -1186,19 +1259,21 @@ function setPlacementPreview(item) {
   placementPreviewItem = JSON.parse(JSON.stringify(item));
   placementPreview = createModelForCurrentView(placementPreviewItem) || new THREE.Group();
   stylePlacementPreview(placementPreview);
-  placementPreview.position.set(item.x || 0, 0, item.z || 0);
+  placementPreview.position.set(item.x || 0, item.y || 0, item.z || 0);
   placementPreview.rotation.y = item.rotY || 0;
   placementPreview.userData = { ...(placementPreview.userData || {}), isPlacementPreview: true };
   scene.add(placementPreview);
 }
 
-function updatePlacementPreview(x, z) {
+function updatePlacementPreview(x, z, y = null) {
   if (!placementPreview) return;
   placementPreview.position.x = x;
+  if (y !== null && y !== undefined) placementPreview.position.y = y;
   placementPreview.position.z = z;
   if (placementPreviewItem) {
     placementPreviewItem.x = x;
     placementPreviewItem.z = z;
+    if (y !== null && y !== undefined) placementPreviewItem.y = y;
   }
 }
 
@@ -1281,6 +1356,7 @@ export const SceneManager = {
   setControlsEnabled,
   setZoomPercent,
   screenToGround,
+  screenToPlacement,
   focusPoint,
   setPlacementPreview,
   updatePlacementPreview,

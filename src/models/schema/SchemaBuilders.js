@@ -166,6 +166,30 @@ function archShape(length, width) {
   return shape;
 }
 
+function annularSectorShape(innerRadius, outerRadius, angle, startAngle = -angle / 2) {
+  const shape = new THREE.Shape();
+  const endAngle = startAngle + angle;
+  const segments = Math.max(18, Math.ceil((angle * 180) / Math.PI / 4));
+
+  for (let index = 0; index <= segments; index += 1) {
+    const t = index / segments;
+    const theta = startAngle + (endAngle - startAngle) * t;
+    const x = Math.cos(theta) * outerRadius;
+    const y = Math.sin(theta) * outerRadius;
+    if (index === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
+
+  for (let index = segments; index >= 0; index -= 1) {
+    const t = index / segments;
+    const theta = startAngle + (endAngle - startAngle) * t;
+    shape.lineTo(Math.cos(theta) * innerRadius, Math.sin(theta) * innerRadius);
+  }
+
+  shape.closePath();
+  return shape;
+}
+
 function inferTopFootprintKind(item) {
   if (item.display?.topKind) return item.display.topKind;
   switch (item.catalogDefinitionId) {
@@ -303,6 +327,7 @@ function inferRectProfile(item) {
     case 'totem_publicitario': return 'totem';
     case 'podium': return 'podium';
     case 'pasarela': return 'runway';
+    case 'tarima_curva': return 'curvedPlatform';
     case 'cabina_tecnica':
     case 'cabina_traduccion': return 'booth';
     case 'bano_portatil': return 'portableToilet';
@@ -1074,6 +1099,9 @@ function buildGenericRect(item, view) {
     case 'runway':
       buildRunway(group, item, L, W, H, color);
       break;
+    case 'curvedPlatform':
+      buildCurvedPlatform(group, item, L, W, H, color);
+      break;
     case 'booth':
       buildBooth(group, item, L, W, H, color);
       break;
@@ -1157,7 +1185,7 @@ function buildGenericRect(item, view) {
         new THREE.BoxGeometry(L, H, W),
         makeStandardMaterial(color, item.visual?.materialPreset || 'matte', item.visual?.opacity ?? 1)
       );
-      body.position.y = H / 2 + (item.y || 0);
+      body.position.y = H / 2;
       body.castShadow = item.visual?.shadows !== false;
       markMain(body, color);
       group.add(body);
@@ -1168,25 +1196,61 @@ function buildGenericRect(item, view) {
   return group;
 }
 
-function buildCurvedBar(group, diameter, height, color) {
-  const radius = diameter / 2;
-  const arc = Math.PI * 0.72;
-  const start = Math.PI * 0.14;
-  const shell = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, height, 44, 1, false, start, arc),
-    makeStandardMaterial(color, 'matte', 0.96)
+function buildCurvedPlatform(group, item, L, W, H, color) {
+  const outerRadius = Math.max(L * 0.62, W * 0.9);
+  const thickness = Math.max(0.28, Math.min(outerRadius - 0.12, W));
+  const innerRadius = Math.max(0.12, outerRadius - thickness);
+  const angle = Math.PI * 0.54;
+  const shape = annularSectorShape(innerRadius, outerRadius, angle);
+  const body = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, { depth: H, bevelEnabled: false, curveSegments: 28 }),
+    makeStandardMaterial(color, item.visual?.materialPreset || 'matte', item.visual?.opacity ?? 1)
   );
-  shell.position.y = height / 2;
-  markMain(shell, color);
-  group.add(shell);
+  body.rotation.x = -Math.PI / 2;
+  body.position.y = 0;
+  body.castShadow = item.visual?.shadows !== false;
+  markMain(body, color);
+  group.add(body);
+
+  const trim = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.03, H * 0.12), bevelEnabled: false, curveSegments: 28 }),
+    makeStandardMaterial('#4B5563', 'metal', 1)
+  );
+  trim.rotation.x = -Math.PI / 2;
+  trim.position.y = H + Math.max(0.03, H * 0.12);
+  group.add(trim);
+}
+
+function buildCurvedBar(group, diameter, height, color) {
+  const outerRadius = diameter / 2;
+  const counterDepth = Math.max(0.42, diameter * 0.2);
+  const innerRadius = Math.max(0.24, outerRadius - counterDepth);
+  const angle = Math.PI * 0.74;
+  const shape = annularSectorShape(innerRadius, outerRadius, angle);
+  const body = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 32 }),
+    makeStandardMaterial(color, 'matte', 0.98)
+  );
+  body.rotation.x = -Math.PI / 2;
+  body.position.y = 0;
+  markMain(body, color);
+  group.add(body);
+
   const top = new THREE.Mesh(
-    new THREE.TorusGeometry(radius * 0.74, 0.12, 10, 48, arc),
+    new THREE.ExtrudeGeometry(shape, { depth: 0.05, bevelEnabled: false, curveSegments: 32 }),
     makeStandardMaterial('#E5E7EB', 'metal', 1)
   );
-  top.rotation.x = Math.PI / 2;
-  top.rotation.z = start;
-  top.position.y = height + 0.02;
+  top.rotation.x = -Math.PI / 2;
+  top.position.y = height;
   group.add(top);
+
+  const frontRail = new THREE.Mesh(
+    new THREE.TorusGeometry((innerRadius + outerRadius) / 2, counterDepth * 0.46, 12, 48, angle),
+    makeStandardMaterial('#CBD5E1', 'metal', 0.22)
+  );
+  frontRail.rotation.x = Math.PI / 2;
+  frontRail.position.y = height * 0.58;
+  group.add(frontRail);
 }
 
 function buildVase(group, diameter, height, color) {
@@ -1280,11 +1344,22 @@ function buildGenericRound(item, view) {
   const color = item.color || '#B6B1A9';
   const profile = inferRoundProfile(item);
   if (view === 'top') {
-    const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 72), makeTopFill(color, item.visual?.opacity ?? 0.2));
-    fill.rotation.x = -Math.PI / 2;
-    fill.position.y = 0.04;
-    markMain(fill, color);
-    group.add(fill);
+    if (profile === 'curvedBar') {
+      const outerRadius = diameter / 2;
+      const innerRadius = Math.max(0.24, outerRadius - Math.max(0.42, diameter * 0.2));
+      const shape = annularSectorShape(innerRadius, outerRadius, Math.PI * 0.74);
+      const fill = new THREE.Mesh(new THREE.ShapeGeometry(shape), makeTopFill(color, item.visual?.opacity ?? 0.24));
+      fill.rotation.x = -Math.PI / 2;
+      fill.position.y = 0.04;
+      markMain(fill, color);
+      group.add(fill);
+    } else {
+      const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 72), makeTopFill(color, item.visual?.opacity ?? 0.2));
+      fill.rotation.x = -Math.PI / 2;
+      fill.position.y = 0.04;
+      markMain(fill, color);
+      group.add(fill);
+    }
     if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }

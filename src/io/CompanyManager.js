@@ -3,6 +3,8 @@ import { DashboardSync } from './DashboardSync.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { AuthManager } from '../services/AuthManager.js';
+import { applyBrandTheme } from '../core/BrandTokens.js';
+import { PlansModal } from '../ui/PlansModal.js';
 
 const STORAGE_KEY = 'escale_company';
 const PROFILE_INDEX_KEY = 'escale_company_profiles';
@@ -165,12 +167,13 @@ function mergeProfile(profile, { forceEmail = false } = {}) {
 function applyBrandColors(company = AppState.company) {
   const primary = colorFor(company, 'colorPrimary');
   const secondary = colorFor(company, 'colorSecondary');
-  const root = document.documentElement;
-
-  root.style.setProperty('--brand-primary', primary);
-  root.style.setProperty('--brand-primary-rgb', hexToRgb(primary));
-  root.style.setProperty('--brand-secondary', secondary);
-  root.style.setProperty('--accent', secondary);
+  applyBrandTheme({
+    ...company,
+    colorPrimary: primary,
+    colorSecondary: secondary
+  });
+  document.documentElement.style.setProperty('--brand-primary-rgb', hexToRgb(primary));
+  document.documentElement.style.setProperty('--accent', secondary);
 }
 
 function currentDraft() {
@@ -732,6 +735,9 @@ function init() {
   document.getElementById('access-tab-register')?.addEventListener('click', () => setAccessMode('register'));
   document.getElementById('access-google')?.addEventListener('click', () => void handleAccessChoice('google'));
   document.getElementById('access-microsoft')?.addEventListener('click', () => void handleAccessChoice('microsoft'));
+  document.getElementById('access-plan-badge')?.addEventListener('click', () => {
+    PlansModal.open(SubscriptionManager.currentPlanCode() === 'free_lite' ? 'pro' : SubscriptionManager.currentPlanCode());
+  });
   document.getElementById('access-form')?.addEventListener('submit', event => {
     event.preventDefault();
     void handleAccessChoice('email');

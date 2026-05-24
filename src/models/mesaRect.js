@@ -27,8 +27,8 @@ export function createMesaRect(item) {
   for (let i = 0; i < sideChairs; i++) {
     const t = (i + 0.5) / sideChairs;
     const x = -L/2 + t * L;
-    g.add(makeChair(x, offsetZ, 0));
-    g.add(makeChair(x, -offsetZ, Math.PI));
+    g.add(makeChair(x, offsetZ, Math.PI));
+    g.add(makeChair(x, -offsetZ, 0));
   }
   item.chairs = sideChairs * 2;
 

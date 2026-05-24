@@ -407,6 +407,34 @@
   </div>
 </div>
 
+<div id="plans-modal" class="modal-bg plans-modal-shell">
+  <div class="glass plans-modal-card">
+    <div class="plans-modal-head">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Planes</div>
+        <h3 class="display-font text-3xl leading-tight">Desbloquea todo el potencial de E-scale</h3>
+        <p id="plans-modal-meta" class="plans-modal-meta">Plan actual: Free Lite</p>
+      </div>
+      <button type="button" class="icon-btn" data-plans-close title="Cerrar">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div id="plans-modal-cards" class="plans-card-grid"></div>
+
+    <div class="plans-table-wrap">
+      <div class="plans-table-title">Comparativa completa</div>
+      <div class="plans-table-head">
+        <div class="plans-table-cell is-label">Característica</div>
+        <div class="plans-table-cell" data-plan-column="free_lite">Lite</div>
+        <div class="plans-table-cell" data-plan-column="pro">PRO</div>
+        <div class="plans-table-cell" data-plan-column="premium">Premium</div>
+      </div>
+      <div id="plans-modal-table-body" class="plans-table-body"></div>
+    </div>
+  </div>
+</div>
+
   <input type="file" id="file-plan-img" accept="image/*" class="hidden"/>
   <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
   <input type="file" id="file-plan-dwg" accept=".dwg,.dxf" class="hidden"/>

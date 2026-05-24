@@ -100,7 +100,7 @@ function shouldKeepPlacementActive() {
   return Boolean(getPendingPlacement()?.sticky);
 }
 
-function createPendingItem({ x = 0, z = 0 } = {}) {
+function createPendingItem({ x = 0, y = 0, z = 0 } = {}) {
   const placement = getPendingPlacement();
   if (!placement) return null;
 
@@ -109,13 +109,14 @@ function createPendingItem({ x = 0, z = 0 } = {}) {
     delete clone.id;
     clone.locked = false;
     clone.x = x;
+    clone.y = y;
     clone.z = z;
     return clone;
   }
 
   const definition = placement.definition || getPendingDefinition();
   if (!definition) return null;
-  return ElementLibrary.toItem(definition, { x, z });
+  return ElementLibrary.toItem(definition, { x, y, z });
 }
 
 function init() {

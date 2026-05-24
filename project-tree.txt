@@ -1,0 +1,161 @@
+PROJECT STRUCTURE
+
+├── .chrome-cdp/
+├── .codex-artifacts/
+│   ├── elements-inventory-glow.png
+│   └── pro-menu-exclusive.png
+├── .edge-cdp/
+├── .env.example
+├── .gitignore
+├── api/
+│   ├── analytics/
+│   │   └── capture.js
+│   ├── app/
+│   │   ├── bootstrap.js
+│   │   ├── company-sync.js
+│   │   └── export-sync.js
+│   ├── billing/
+│   │   ├── checkout.js
+│   │   ├── portal.js
+│   │   └── webhook.js
+│   ├── email/
+│   │   ├── send-export.js
+│   │   └── send-share.js
+│   └── public-config.js
+├── dashboard_api.py
+├── dashboard_sharepoint_mock/
+│   ├── build_dashboard_workbook.mjs
+│   ├── Escale_Dashboard_Base.xlsx
+│   ├── logos/
+│   │   └── rafa-corp_CMP-20260521212010-5709E8.png
+│   └── _previews/
+│       ├── catalogos.png
+│       ├── dashboard.png
+│       ├── diccionario.png
+│       ├── dispositivos.png
+│       ├── empresas.png
+│       ├── exportaciones.png
+│       ├── formula_errors.ndjson
+│       ├── inspect_dashboard.ndjson
+│       ├── inventario.png
+│       ├── logos.png
+│       ├── lugares.png
+│       └── suscripciones.png
+├── docs/
+│   ├── examples/
+│   │   └── next-app/
+│   │       ├── .env.local.example
+│   │       ├── components/
+│   │       │   ├── Login.tsx
+│   │       │   └── PlanBadge.tsx
+│   │       └── lib/
+│   │           └── supabase-browser.ts
+│   ├── NEXTJS_LOGIN_BLUEPRINT.md
+│   ├── PLATFORM_SETUP.md
+│   ├── SAAS_ROADMAP.md
+│   └── SCHEMA_ARCHITECTURE.md
+├── elements.json
+├── generate-tree.js
+├── hooks/
+├── index.html
+├── lib/
+│   ├── env.js
+│   ├── http.js
+│   ├── plans.js
+│   ├── resend.js
+│   ├── stripe.js
+│   └── supabase.js
+├── Mejoras.yml
+├── qa/
+├── README.md
+├── server.py
+├── src/
+│   ├── core/
+│   │   ├── AppState.js
+│   │   ├── BrandTokens.js
+│   │   ├── ElementLibrary.js
+│   │   ├── InventoryRules.js
+│   │   └── PlanCatalog.js
+│   ├── io/
+│   │   ├── CompanyManager.js
+│   │   ├── DashboardSync.js
+│   │   ├── ExportManager.js
+│   │   ├── PlanManager.js
+│   │   ├── ShareManager.js
+│   │   └── TemplateManager.js
+│   ├── main.js
+│   ├── models/
+│   │   ├── ambiente.js
+│   │   ├── arbol.js
+│   │   ├── arbusto.js
+│   │   ├── barraLibre.js
+│   │   ├── buffet.js
+│   │   ├── cableLuces.js
+│   │   ├── carpa.js
+│   │   ├── carpaBeduina.js
+│   │   ├── carpaCuadrada.js
+│   │   ├── carpaDomo.js
+│   │   ├── carpaHelpers.js
+│   │   ├── carpaPabellon.js
+│   │   ├── carpaSailcloth.js
+│   │   ├── carpaStar.js
+│   │   ├── carpaTipi.js
+│   │   ├── carpaTransparente.js
+│   │   ├── chair.js
+│   │   ├── colors.js
+│   │   ├── index.js
+│   │   ├── mesa.js
+│   │   ├── mesaCocktail.js
+│   │   ├── mesaCurva.js
+│   │   ├── mesaImperial.js
+│   │   ├── mesaRect.js
+│   │   ├── mesaSerpentina.js
+│   │   ├── poste.js
+│   │   ├── room.js
+│   │   ├── schema/
+│   │   │   ├── SchemaBuilders.js
+│   │   │   └── SchemaModelFactory.js
+│   │   ├── sillaCatering.js
+│   │   └── sillaLineal.js
+│   ├── scene/
+│   │   ├── InteractionManager.js
+│   │   ├── SceneManager.js
+│   │   └── SnapManager.js
+│   ├── schemas/
+│   │   ├── CatalogBlueprints.js
+│   │   ├── CatalogCategories.js
+│   │   ├── ChildrenEngine.js
+│   │   ├── ElementSchemas.js
+│   │   ├── ParamDefinitions.js
+│   │   ├── SchemaItemFactory.js
+│   │   ├── SchemaRegistry.js
+│   │   └── SchemaUtils.js
+│   ├── services/
+│   │   ├── AnalyticsManager.js
+│   │   ├── AuthManager.js
+│   │   ├── CloudApi.js
+│   │   ├── CloudSync.js
+│   │   ├── ServiceConfig.js
+│   │   ├── SubscriptionManager.js
+│   │   └── SupportManager.js
+│   └── ui/
+│       ├── CatalogModal.js
+│       ├── Dock.js
+│       ├── HeaderActionMenus.js
+│       ├── InventoryPanel.js
+│       ├── PlansModal.js
+│       ├── ProButtonManager.js
+│       ├── PropertyRenderer.js
+│       ├── TextSanitizer.js
+│       ├── UIManager.js
+│       └── ZoneManager.js
+├── styles/
+│   ├── base.css
+│   ├── components.css
+│   ├── dock.css
+│   └── layout.css
+├── supabase/
+│   └── schema.sql
+├── vercel.json
+└── __pycache__/
+    └── dashboard_api.cpython-312.pyc

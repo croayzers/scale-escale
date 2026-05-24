@@ -13,6 +13,8 @@ import { Dock } from './ui/Dock.js';
 import { CatalogModal } from './ui/CatalogModal.js';
 import { HeaderActionMenus } from './ui/HeaderActionMenus.js';
 import { ZoneManager } from './ui/ZoneManager.js';
+import { PlansModal } from './ui/PlansModal.js';
+import { TextSanitizer } from './ui/TextSanitizer.js';
 import { TemplateManager } from './io/TemplateManager.js';
 import { ServiceConfig } from './services/ServiceConfig.js';
 import { AuthManager } from './services/AuthManager.js';
@@ -40,6 +42,7 @@ async function bootstrap() {
   await safeInit('SubscriptionManager', () => SubscriptionManager.init());
   await safeInit('AnalyticsManager', () => AnalyticsManager.init());
   await safeInit('SupportManager', () => SupportManager.init());
+  await safeInit('TextSanitizer', () => TextSanitizer.init());
 
   await UIManager.init();
   await SceneManager.init();
@@ -55,6 +58,7 @@ async function bootstrap() {
   await safeInit('Dock', () => Dock.init());
   await safeInit('TemplateManager', () => TemplateManager.init());
   await safeInit('HeaderActionMenus', () => HeaderActionMenus.init());
+  await safeInit('PlansModal', () => PlansModal.init());
   await safeInit('ZoneManager', () => ZoneManager.init());
   await safeInit('InventoryPanel', () => InventoryPanel.init());
 

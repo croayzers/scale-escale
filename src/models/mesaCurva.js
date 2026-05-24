@@ -51,14 +51,14 @@ export function createMesaCurva(item) {
       const chair = makeChair();
       chair.position.set(x, 0, z);
       // Mirar hacia centro (interna) o hacia fuera (externa)
-      chair.rotation.y = faceOut ? a - Math.PI/2 : a + Math.PI/2;
+      chair.rotation.y = faceOut ? (Math.PI / 2 - a) : (-Math.PI / 2 - a);
       g.add(chair);
     }
   };
 
   let totalChairs = 0;
   if (dist === 'externa' || dist === 'ambas') {
-    placeChair(rOut + 0.32, true);
+    placeChair(rOut -0.32, true);
     totalChairs += nChairs;
   }
   if (dist === 'interna' || dist === 'ambas') {

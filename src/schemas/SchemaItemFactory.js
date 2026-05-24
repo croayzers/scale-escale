@@ -11,7 +11,7 @@ const CATALOG_META_KEYS = new Set([
   'defaultRotation'
 ]);
 
-export function createItemFromCatalog(definition, { x = 0, z = 0 } = {}) {
+export function createItemFromCatalog(definition, { x = 0, y = 0, z = 0 } = {}) {
   const draft = deepClone(definition || {});
   const schema = SchemaRegistry.resolve(draft);
   const hydrated = schema
@@ -23,6 +23,7 @@ export function createItemFromCatalog(definition, { x = 0, z = 0 } = {}) {
   });
 
   hydrated.x = x;
+  hydrated.y = y;
   hydrated.z = z;
   hydrated.rotY = ((definition?.defaultRotation || 0) * Math.PI) / 180;
   hydrated.catalogDefinitionId = definition?.id || '';

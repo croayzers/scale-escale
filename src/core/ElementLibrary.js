@@ -42,8 +42,8 @@ export const ElementLibrary = {
     return this.all().find(item => item.id === id) || null;
   },
 
-  toItem(definition, { x = 0, z = 0 } = {}) {
-    return createItemFromCatalog(definition, { x, z });
+  toItem(definition, { x = 0, y = 0, z = 0 } = {}) {
+    return createItemFromCatalog(definition, { x, y, z });
   },
 
   renderAddButtons() {

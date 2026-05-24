@@ -480,8 +480,8 @@ export const ELEMENT_SCHEMAS = [
             type: 'schemaProp',
             schemaId: 'prop.generic-rect',
             dims: {
-              width: parentItem.stairs?.width ?? 1.6,
-              length: parentItem.stairs?.depth ?? 0.35,
+              width: parentItem.stairs?.depth ?? 0.35,
+              length: parentItem.stairs?.width ?? 1.6,
               height: stepHeight
             },
             color: '#45454B',

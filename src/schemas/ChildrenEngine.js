@@ -140,7 +140,7 @@ function placementsStairs(item, childConfig) {
         z: 0,
         y,
         rotY: -Math.PI / 2,
-        dims: { width, length: depth, height: stepHeight }
+        dims: { width: depth, length: width, height: stepHeight }
       };
     }
 
@@ -150,7 +150,7 @@ function placementsStairs(item, childConfig) {
         z: 0,
         y,
         rotY: Math.PI / 2,
-        dims: { width, length: depth, height: stepHeight }
+        dims: { width: depth, length: width, height: stepHeight }
       };
     }
 
@@ -159,7 +159,7 @@ function placementsStairs(item, childConfig) {
       z: parent.width / 2 + distance,
       y,
       rotY: 0,
-      dims: { width, length: depth, height: stepHeight }
+      dims: { width: depth, length: width, height: stepHeight }
     };
   });
 }

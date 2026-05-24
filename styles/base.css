@@ -6,9 +6,42 @@
   --accent: #d4ff3a;
   --muted: #6a6a6e;
   --hairline: rgba(10, 10, 11, 0.12);
+  --brand-display-font: 'Fraunces', serif;
+  --brand-body-font: 'Inter Tight', system-ui, sans-serif;
+  --brand-mono-font: 'JetBrains Mono', monospace;
   --brand-primary:     #2563eb;
   --brand-primary-rgb: 37,99,235;
   --brand-secondary:   #d4ff3a;
+  --brand-logo-from: #273449;
+  --brand-logo-to: #1a2235;
+  --brand-logo-border: rgba(255, 255, 255, 0.14);
+  --brand-logo-ink: #ffffff;
+  --brand-shell-radius: 28px;
+  --brand-panel-radius: 14px;
+  --brand-chip-radius: 12px;
+  --plan-free-lite-accent: #2563eb;
+  --plan-free-lite-border: #3b82f6;
+  --plan-free-lite-fill: #f3f7ff;
+  --plan-free-lite-surface: rgba(37, 99, 235, 0.08);
+  --plan-free-lite-shadow: rgba(37, 99, 235, 0.18);
+  --plan-free-lite-badge-bg: linear-gradient(180deg, #4c8dff 0%, #2563eb 100%);
+  --plan-free-lite-badge-text: #ffffff;
+  --plan-pro-accent: #ffb000;
+  --plan-pro-border: #f59e0b;
+  --plan-pro-fill: #fff7db;
+  --plan-pro-surface: rgba(245, 158, 11, 0.1);
+  --plan-pro-shadow: rgba(245, 158, 11, 0.22);
+  --plan-pro-badge-bg: linear-gradient(180deg, #ffca5c 0%, #ff9a1f 100%);
+  --plan-pro-badge-text: #ffffff;
+  --plan-premium-accent: #1d4ed8;
+  --plan-premium-border: #1d4ed8;
+  --plan-premium-fill: #eef4ff;
+  --plan-premium-surface: rgba(29, 78, 216, 0.08);
+  --plan-premium-shadow: rgba(29, 78, 216, 0.18);
+  --plan-premium-badge-bg: linear-gradient(180deg, #2b66f6 0%, #1d4ed8 100%);
+  --plan-premium-badge-text: #ffffff;
+  --inventory-orbit-start: var(--plan-pro-accent);
+  --inventory-orbit-end: #ffe082;
 }
 
 * { box-sizing: border-box; }
@@ -19,7 +52,7 @@ html, body {
   height: 100%;
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Inter Tight', system-ui, sans-serif;
+  font-family: var(--brand-body-font);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -56,13 +89,13 @@ body::after {
 }
 
 .display-font {
-  font-family: 'Fraunces', serif;
+  font-family: var(--brand-display-font);
   font-optical-sizing: auto;
   letter-spacing: -0.02em;
 }
 
 .mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--brand-mono-font);
 }
 
 /* Crosshair cursor for calibration */

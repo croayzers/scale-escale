@@ -21,6 +21,7 @@ let bKeyDown = false;
 let shiftDown = false;
 let placementIndicator = null;
 let copiedItemTemplate = null;
+let placementPreviewVisible = false;
 
 function init() {
   const canvas = document.getElementById('scene-canvas');
@@ -40,7 +41,10 @@ function init() {
   });
   document.addEventListener('mousemove', e => {
     window._lastMousePos = { x: e.clientX, y: e.clientY };
-    if (CatalogModal.hasPendingPlacement()) updatePlacementIndicator(e.clientX, e.clientY);
+    if (CatalogModal.hasPendingPlacement()) {
+      updatePlacementIndicator(e.clientX, e.clientY);
+      syncPlacementPreview(e.clientX, e.clientY);
+    }
   });
   document.addEventListener('pointerdown', onPlacementDocumentPointerDown, true);
   document.addEventListener('escale:catalog-placement-start', onPlacementStart);
@@ -106,6 +110,18 @@ function applySnap(point) {
   return next;
 }
 
+function resolvePlacementPoint(clientX, clientY) {
+  const placement = SceneManager.screenToPlacement(clientX, clientY);
+  if (!placement) return null;
+  if (!placement.stacked) {
+    const snapped = applySnap(new THREE.Vector3(placement.x, placement.y || 0, placement.z));
+    if (!snapped) return null;
+    placement.x = snapped.x;
+    placement.z = snapped.z;
+  }
+  return placement;
+}
+
 
 /* ─── Proyección item.x,z → pantalla (para box-select) ─── */
 function itemToScreen(item) {
@@ -158,6 +174,7 @@ function syncPlacementCursor() {
 function onPlacementStart(event) {
   const label = event.detail?.label || event.detail?.definition?.name || 'Elemento seleccionado';
   if (!label) return;
+  placementPreviewVisible = false;
   syncPlacementCursor();
   const indicator = ensurePlacementIndicator();
   indicator.classList.remove('hidden');
@@ -167,10 +184,13 @@ function onPlacementStart(event) {
     : 'Haz click en el destino · Esc cancela';
   const mousePos = window._lastMousePos || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   updatePlacementIndicator(mousePos.x, mousePos.y);
+  syncPlacementPreview(mousePos.x, mousePos.y);
   updateCursorReadout();
 }
 
 function onPlacementEnd() {
+  placementPreviewVisible = false;
+  SceneManager.clearPlacementPreview();
   syncPlacementCursor();
   hidePlacementIndicator();
   updateCursorReadout();
@@ -205,18 +225,37 @@ function updatePlacementIndicator(clientX, clientY) {
   indicator.style.top = `${clientY + 18}px`;
 }
 
+function syncPlacementPreview(clientX, clientY) {
+  const placement = resolvePlacementPoint(clientX, clientY);
+  if (!placement) return;
+
+  if (!placementPreviewVisible) {
+    const previewItem = CatalogModal.createPendingItem({
+      x: placement.x,
+      y: placement.y,
+      z: placement.z
+    });
+    if (!previewItem) return;
+    SceneManager.setPlacementPreview(previewItem);
+    placementPreviewVisible = true;
+    return;
+  }
+
+  SceneManager.updatePlacementPreview(placement.x, placement.z, placement.y);
+}
+
 function isUiClickTarget(target) {
   return Boolean(target?.closest?.(
     '#catalog-modal, #dock, #header-mac, #inventory-panel, #context-menu, ' +
-    '#company-modal, #welcome-modal, #settings-modal, #export-modal, #share-modal, ' +
+    '#company-modal, #welcome-modal, #settings-modal, #export-modal, #share-modal, #plans-modal, #detail-panel, ' +
     '#export-preview-modal, #share-preview-modal, .modal-bg, button, input, select, textarea, label'
   ));
 }
 
 function placePendingItemAt(clientX, clientY) {
-  const point = applySnap(SceneManager.screenToGround(clientX, clientY));
+  const point = resolvePlacementPoint(clientX, clientY);
   if (!point) return false;
-  const item = CatalogModal.createPendingItem({ x: point.x, z: point.z });
+  const item = CatalogModal.createPendingItem({ x: point.x, y: point.y, z: point.z });
   if (!item) return false;
 
   const placed = AppState.add(item);
@@ -259,7 +298,9 @@ function onPlacementDocumentPointerDown(e) {
 function updateCursorReadout() {
   const mousePos = window._lastMousePos;
   const point = mousePos
-    ? applySnap(SceneManager.screenToGround(mousePos.x, mousePos.y))
+    ? (CatalogModal.hasPendingPlacement()
+        ? resolvePlacementPoint(mousePos.x, mousePos.y)
+        : applySnap(SceneManager.screenToGround(mousePos.x, mousePos.y)))
     : applySnap(getDragPoint());
   if (!point) return;
   const suffix = CatalogModal.hasPendingPlacement()
@@ -296,6 +337,7 @@ function onPointerDown(e) {
   }
 
   if (CatalogModal.hasPendingPlacement()) {
+    syncPlacementPreview(e.clientX, e.clientY);
     placePendingItemAt(e.clientX, e.clientY);
     return;
   }
@@ -368,6 +410,7 @@ function onPointerMove(e) {
 
   if (CatalogModal.hasPendingPlacement()) {
     updatePlacementIndicator(e.clientX, e.clientY);
+    syncPlacementPreview(e.clientX, e.clientY);
     return;
   }
 

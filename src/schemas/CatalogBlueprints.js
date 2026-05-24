@@ -188,7 +188,15 @@ const SCHEMA_CATALOG = {
   ],
   scenography: [
     stageItem('tarima_recta', 'Tarima recta', { width: 3, length: 2, height: 0.35, icon: 'square-stack' }),
-    rectItem('tarima_curva', 'Tarima curva', 'scenography', { width: 2.4, length: 1.4, height: 0.35, color: '#44403C', icon: 'circle' }),
+    rectItem('tarima_curva', 'Tarima curva', 'scenography', {
+      width: 2.4,
+      length: 1.4,
+      height: 0.35,
+      color: '#44403C',
+      icon: 'circle',
+      assetProfile: 'curvedPlatform',
+      display: { topKind: 'arch' }
+    }),
     rectItem('backstage', 'Backstage', 'scenography', { width: 4, length: 6, height: 2.6, color: '#1F2937', icon: 'curtain' }),
     rectItem('truss_cuadrado', 'Truss cuadrado', 'scenography', { width: 0.4, length: 4, height: 4, color: '#9CA3AF', icon: 'square-dashed' }),
     rectItem('truss_triangular', 'Truss triangular', 'scenography', { width: 0.5, length: 4, height: 4, color: '#9CA3AF', icon: 'triangle' }),

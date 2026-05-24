@@ -101,8 +101,8 @@
 
 #dock-items #dock-inventory-btn.inventory-ready {
   box-shadow:
-    0 0 0 1px rgba(255, 179, 71, 0.42),
-    0 0 16px -6px rgba(255, 166, 0, 0.72);
+    0 0 0 1px color-mix(in srgb, var(--inventory-orbit-start) 42%, transparent),
+    0 0 18px -6px color-mix(in srgb, var(--inventory-orbit-start) 68%, transparent);
 }
 
 #dock-items #dock-inventory-btn.inventory-ready::before {
@@ -114,8 +114,8 @@
   background: conic-gradient(
     from 0deg,
     transparent 0deg 248deg,
-    rgba(255, 166, 0, 0.98) 252deg 302deg,
-    rgba(255, 214, 102, 0.98) 306deg 334deg,
+    var(--inventory-orbit-start) 252deg 302deg,
+    var(--inventory-orbit-end) 306deg 334deg,
     transparent 338deg 360deg
   );
   -webkit-mask:
@@ -133,7 +133,7 @@
 #dock-items #dock-inventory-btn.inventory-ready.active {
   box-shadow:
     0 4px 12px rgba(37,99,235,0.4),
-    0 0 18px -4px rgba(255, 170, 0, 0.78);
+    0 0 20px -4px color-mix(in srgb, var(--inventory-orbit-start) 72%, transparent);
 }
 
 @keyframes inventoryOrbit {

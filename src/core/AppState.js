@@ -191,6 +191,7 @@ export const AppState = {
   add(item) {
     this.pushHistory();
     item.id = this.nextId++;
+    if (item.y === undefined) item.y = 0;
     if (item.locked === undefined) item.locked = false;
     this.items.push(item);
     SceneManager.spawn(item);

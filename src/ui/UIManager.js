@@ -190,7 +190,17 @@ function ensureItemSettingsHandle() {
   itemSettingsHandle.className = 'item-settings-handle hidden';
   itemSettingsHandle.title = 'Modificar item';
   itemSettingsHandle.innerHTML = '<i data-lucide="settings-2" class="w-4 h-4"></i>';
-  itemSettingsHandle.addEventListener('click', () => {
+  itemSettingsHandle.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  itemSettingsHandle.addEventListener('mousedown', event => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  itemSettingsHandle.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
     const A = dynamic.AppState;
     const id = Number(itemSettingsHandle.dataset.itemId || 0);
     const item = A?.items.find(entry => entry.id === id);
@@ -198,6 +208,7 @@ function ensureItemSettingsHandle() {
       document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
         detail: { kind: 'detail', key: `item-${item.id}` }
       }));
+      A.select?.(item.id);
       showDetail(item);
     }
   });
