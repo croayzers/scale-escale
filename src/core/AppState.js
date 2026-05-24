@@ -140,6 +140,46 @@ export const AppState = {
     }
   },
 
+  replace(id, nextItem, opts = {}) {
+    const index = this.items.findIndex(i => i.id === id);
+    if (index < 0 || !nextItem) return;
+    const current = this.items[index];
+    this.pushHistory();
+    const keepCategoryStyle = Boolean(
+      current.catalogCategory
+      && nextItem.catalogCategory
+      && current.catalogCategory === nextItem.catalogCategory
+    );
+
+    const replacement = {
+      ...nextItem,
+      id,
+      x: current.x,
+      z: current.z,
+      y: current.y ?? nextItem.y ?? 0,
+      rotY: nextItem.rotY && nextItem.rotY !== 0 ? nextItem.rotY : (current.rotY ?? 0),
+      locked: current.locked ?? false,
+      catalogDefinitionId: nextItem.catalogDefinitionId || current.catalogDefinitionId || '',
+      catalogCategory: nextItem.catalogCategory || current.catalogCategory || '',
+      catalogName: nextItem.catalogName || current.catalogName || ''
+    };
+
+    if (current.labelText && (!replacement.labelText || keepCategoryStyle)) replacement.labelText = current.labelText;
+    if (current.color && (!replacement.color || keepCategoryStyle)) replacement.color = current.color;
+    if (current.textColor && (!replacement.textColor || keepCategoryStyle)) replacement.textColor = current.textColor;
+    if (current.display?.textSize && (!replacement.display?.textSize || keepCategoryStyle)) {
+      replacement.display = { ...(replacement.display || {}), textSize: current.display.textSize };
+    }
+
+    this.items[index] = replacement;
+    SceneManager.rebuild(replacement);
+    SceneManager.highlightSelection();
+    UIManager.refresh();
+    if (this.selectedId === id && this.selectedIds.size === 1 && !opts.skipDetailRebuild) {
+      UIManager.showDetail?.(replacement);
+    }
+  },
+
   duplicate(id) {
     const item = this.items.find(i => i.id === id);
     if (!item) return;

@@ -1,5 +1,6 @@
-import { SchemaRegistry } from '../schemas/SchemaRegistry.js';
+﻿import { SchemaRegistry } from '../schemas/SchemaRegistry.js';
 import { buildPatch, clamp, deepMerge, getValueAtPath } from '../schemas/SchemaUtils.js';
+import { ElementLibrary } from '../core/ElementLibrary.js';
 
 function canRender(item) {
   return Boolean(SchemaRegistry.resolve(item));
@@ -41,6 +42,25 @@ function patchForParam(item, param, nextValue) {
 function isVisible(item, param) {
   if (typeof param.visibleIf === 'function') return Boolean(param.visibleIf(item, param));
   return true;
+}
+
+function resolveCategory(item, schema) {
+  return item.catalogCategory || schema?.metadata?.category || item.category || '';
+}
+
+function categoryDefinitions(item, schema) {
+  const category = resolveCategory(item, schema);
+  if (!category || !ElementLibrary.data?.[category]?.length) return [];
+  return ElementLibrary.data[category];
+}
+
+function currentDefinitionId(item, schema) {
+  if (item.catalogDefinitionId) return item.catalogDefinitionId;
+  const definitions = categoryDefinitions(item, schema);
+  const direct = definitions.find(def => def.type === item.type && String(def.subtype || '') === String(item.subtype || ''));
+  if (direct) return direct.id;
+  const schemaMatch = definitions.find(def => def.schemaId && def.schemaId === item.schemaId);
+  return schemaMatch?.id || '';
 }
 
 function fieldMarkup(item, param) {
@@ -129,7 +149,7 @@ function groupMarkup(title, params, item, advanced = false) {
     <details class="schema-advanced-panel">
       <summary class="schema-advanced-summary">
         <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)">Ajustes avanzados</span>
-        <span class="mono text-[10px]" style="color:var(--muted)">⚙</span>
+        <span class="mono text-[10px]" style="color:var(--muted)">?</span>
       </summary>
       <div class="grid grid-cols-2 gap-2 pt-3">${body}</div>
     </details>
@@ -140,15 +160,65 @@ function bindFieldEvents(panel, item, params, AppState) {
   params.forEach(param => {
     const element = panel.querySelector(`[data-param-key="${param.key}"]`);
     if (!element) return;
-    const eventName = param.type === 'color' || param.type === 'range'
-      ? 'input'
-      : 'change';
+    const useLiveInput = param.type === 'color'
+      || param.type === 'range'
+      || param.type === 'text'
+      || param.type === 'number';
+    const eventName = useLiveInput ? 'input' : 'change';
     element.addEventListener(eventName, () => {
       const raw = parseRawValue(param, element);
       const normalized = normalizeValue(param, raw);
       const patch = patchForParam(item, param, normalized);
-      AppState.update(item.id, patch, { skipDetailRebuild: param.type === 'color' || param.type === 'range' });
+      AppState.update(item.id, patch, { skipDetailRebuild: useLiveInput });
     });
+  });
+}
+
+function replaceItem(AppState, item, nextItem) {
+  if (!AppState || !item || !nextItem) return;
+  if (typeof AppState.replace === 'function') {
+    AppState.replace(item.id, nextItem);
+    return;
+  }
+
+  const current = AppState.items?.find(entry => entry.id === item.id) || item;
+  const keepCategoryStyle = Boolean(
+    current.catalogCategory
+    && nextItem.catalogCategory
+    && current.catalogCategory === nextItem.catalogCategory
+  );
+  const patch = {
+    ...nextItem,
+    y: current.y ?? nextItem.y ?? 0,
+    rotY: nextItem.rotY && nextItem.rotY !== 0 ? nextItem.rotY : (current.rotY ?? 0),
+    locked: current.locked ?? false,
+    catalogDefinitionId: nextItem.catalogDefinitionId || current.catalogDefinitionId || '',
+    catalogCategory: nextItem.catalogCategory || current.catalogCategory || '',
+    catalogName: nextItem.catalogName || current.catalogName || ''
+  };
+
+  delete patch.id;
+  delete patch.x;
+  delete patch.z;
+
+  if (current.labelText && (!patch.labelText || keepCategoryStyle)) patch.labelText = current.labelText;
+  if (current.color && (!patch.color || keepCategoryStyle)) patch.color = current.color;
+  if (current.textColor && (!patch.textColor || keepCategoryStyle)) patch.textColor = current.textColor;
+  if (current.display?.textSize && (!patch.display?.textSize || keepCategoryStyle)) {
+    patch.display = { ...(patch.display || {}), textSize: current.display.textSize };
+  }
+
+  AppState.update(item.id, patch);
+}
+
+function bindTypeSwitcher(panel, item, schema, AppState) {
+  const select = panel.querySelector('[data-item-definition]');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const definition = ElementLibrary.find(select.value);
+    if (!definition) return;
+    const nextItem = ElementLibrary.toItem(definition, { x: item.x, z: item.z });
+    replaceItem(AppState, item, nextItem);
   });
 }
 
@@ -161,10 +231,21 @@ function render({ item, panel, content, AppState }) {
   const advanced = visibleParams.filter(param => param.level === 'advanced');
   const title = schema.metadata?.label || item.labelText || item.type;
   const subtitle = [item.name, item.subtype, `ID #${item.id}`].filter(Boolean).join(' · ');
+  const definitions = categoryDefinitions(item, schema);
+  const selectedDefinitionId = currentDefinitionId(item, schema);
+  const typeSwitcher = definitions.length > 1 ? `
+    <label class="block mb-4">
+      <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Tipo</span>
+      <select data-item-definition class="input-field">
+        ${definitions.map(def => `<option value="${def.id}" ${def.id === selectedDefinitionId ? 'selected' : ''}>${def.name}</option>`).join('')}
+      </select>
+    </label>
+  ` : '';
 
   content.innerHTML = `
     <div class="display-font text-2xl mb-1 leading-tight">${title}</div>
     <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">${subtitle}</div>
+    ${typeSwitcher}
     ${groupMarkup('Parametros basicos', basic, item, false)}
     ${advanced.length ? '<div class="rule"></div>' : ''}
     ${groupMarkup('Ajustes avanzados', advanced, item, true)}
@@ -179,6 +260,7 @@ function render({ item, panel, content, AppState }) {
   if (window.lucide) lucide.createIcons();
 
   bindFieldEvents(panel, item, visibleParams, AppState);
+  bindTypeSwitcher(panel, item, schema, AppState);
   panel.querySelector('[data-act="dup"]')?.addEventListener('click', () => AppState.duplicate(item.id));
   panel.querySelector('[data-act="del"]')?.addEventListener('click', () => AppState.remove(item.id));
   return true;
@@ -188,3 +270,4 @@ export const PropertyRenderer = {
   canRender,
   render
 };
+

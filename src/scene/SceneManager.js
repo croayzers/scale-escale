@@ -4,6 +4,7 @@
 
 import { ModelFactory } from '../models/index.js';
 import { computePostPositions } from '../models/carpaHelpers.js';
+import { SchemaRegistry } from '../schemas/SchemaRegistry.js';
 // Imports diferidos para romper ciclos:
 // AppState y UIManager se cargan en runtime, no en estático.
 
@@ -20,6 +21,8 @@ const meshes = new Map();
 let dragPlane;
 let directionalLight, ambientLight, fillLight;
 let cotasGroup;
+let placementPreview = null;
+let placementPreviewItem = null;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -182,6 +185,21 @@ function isLightingItem(item) {
     || (item.type === 'ambiente' && item.subtype === 'spot');
 }
 
+function resolveItemCategory(item) {
+  return item?.catalogCategory
+    || SchemaRegistry.resolve(item)?.metadata?.category
+    || item?.category
+    || '';
+}
+
+function isChairCategoryItem(item) {
+  const category = resolveItemCategory(item);
+  return category === 'chairs'
+    || item?.type === 'sillaCatering'
+    || item?.type === 'sillaLineal'
+    || item?.schemaId === 'seat.sofa';
+}
+
 function isCameraSpecificItem(item) {
   return isCarpaType(item.type) || item.type === 'room' || isLightingItem(item);
 }
@@ -194,7 +212,120 @@ function createModelForCurrentView(item) {
   const view = _appState?.camera === 'top' ? 'top' : 'iso';
   const group = shouldUseTopSymbol(item) ? createTopSymbol(item) : ModelFactory.create(item, { view });
   if (_appState?.camera === 'iso' && isCameraSpecificItem(item)) hideIsoFootprintFills(group, item);
+  if (view === 'top') addTopStrokes(group);
   return group;
+}
+
+function addTopStrokes(group) {
+  group.traverse(child => {
+    if (!child?.isMesh || !child.geometry || !child.material) return;
+    if (child.userData?.skipTopStroke || child.userData?.isTopStroke) return;
+    if (Array.isArray(child.material) ? child.material.some(material => material?.map) : child.material?.map) return;
+
+    const edgesGeometry = new THREE.EdgesGeometry(child.geometry, 1);
+    const position = edgesGeometry.getAttribute('position');
+    if (!position || position.count === 0) {
+      edgesGeometry.dispose();
+      return;
+    }
+
+    const stroke = new THREE.LineSegments(
+      edgesGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x111111,
+        transparent: true,
+        opacity: 0.48,
+        depthTest: false,
+        depthWrite: false
+      })
+    );
+    stroke.renderOrder = (child.renderOrder || 0) + 2;
+    stroke.userData.isTopStroke = true;
+    child.add(stroke);
+  });
+}
+
+function eachMaterial(target, callback) {
+  const materials = Array.isArray(target.material) ? target.material : [target.material];
+  materials.filter(Boolean).forEach(callback);
+}
+
+function ensureInteractiveGroup(group, itemId) {
+  let mainMesh = null;
+  group.traverse(child => {
+    child.userData = child.userData || {};
+    child.userData.rootId = itemId;
+    if (!child.isMesh) return;
+
+    if (!mainMesh) mainMesh = child;
+    if (child.userData.isMain && child.userData.baseColor === undefined) {
+      eachMaterial(child, material => {
+        if (child.userData.baseColor === undefined && material?.color) {
+          child.userData.baseColor = material.color.getHex();
+        }
+        if (child.userData.baseOpacity === undefined
+          && material?.transparent === true
+          && typeof material.opacity === 'number') {
+          child.userData.baseOpacity = material.opacity;
+        }
+      });
+    }
+  });
+
+  if (mainMesh && mainMesh.userData.isMain !== true) {
+    mainMesh.userData.isMain = true;
+    if (mainMesh.userData.baseColor === undefined) {
+      eachMaterial(mainMesh, material => {
+        if (mainMesh.userData.baseColor === undefined && material?.color) {
+          mainMesh.userData.baseColor = material.color.getHex();
+        }
+      });
+    }
+  }
+}
+
+function stylePlacementPreview(group) {
+  group.traverse(child => {
+    child.userData = child.userData || {};
+    child.userData.isPlacementPreview = true;
+
+    if (child.isMesh && child.material) {
+      child.castShadow = false;
+      child.receiveShadow = false;
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map(material => material?.clone?.() || material);
+      } else if (child.material.clone) {
+        child.material = child.material.clone();
+      }
+      eachMaterial(child, material => {
+        material.transparent = true;
+        material.depthWrite = false;
+        material.opacity = Math.max(0.2, Math.min(typeof material.opacity === 'number' ? material.opacity * 0.48 : 0.48, 0.72));
+        if ('emissive' in material && material.emissive) {
+          material.emissive = new THREE.Color(0xffffff);
+          material.emissiveIntensity = 0.14;
+        }
+      });
+    }
+
+    if (child.isSprite && child.material?.clone) {
+      child.material = child.material.clone();
+      child.material.transparent = true;
+      child.material.opacity = 0.76;
+      child.renderOrder = 60;
+    }
+  });
+}
+
+function refreshPlacementPreview() {
+  if (!placementPreviewItem) return;
+  const snapshot = {
+    ...placementPreviewItem,
+    dims: placementPreviewItem.dims ? { ...placementPreviewItem.dims } : placementPreviewItem.dims,
+    visual: placementPreviewItem.visual ? { ...placementPreviewItem.visual } : placementPreviewItem.visual
+  };
+  clearPlacementPreview();
+  setPlacementPreview(snapshot);
 }
 
 function createTopSymbol(item) {
@@ -454,12 +585,14 @@ function setCamera(mode) {
   if (_appState) {
     _appState.items.filter(isCameraSpecificItem).forEach(item => rebuild(item));
   }
+  if (placementPreviewItem) refreshPlacementPreview();
   applyShadowState();
 }
 
 function spawn(item) {
   const group = createModelForCurrentView(item);
-  group.userData = { id: item.id };
+  group.userData = { ...(group.userData || {}), id: item.id };
+  ensureInteractiveGroup(group, item.id);
   group.position.set(item.x, 0, item.z);
   if (item.rotY) group.rotation.y = item.rotY;
   meshes.set(item.id, group);
@@ -540,32 +673,28 @@ function highlightSelection() {
         const isSelected = selectedSet.has(id);
         const isSimilar = sel && sel.type === 'mesa' && it && it.type === 'mesa'
                           && it.dims.diameter === sel.dims.diameter && !selectedSet.has(id);
-        const isCarpa = it && it.type === 'carpa';
+        const isCarpa = it && isCarpaType(it.type);
 
-        if (isCarpa) {
-          if (isSelected) {
-            if (child.material.opacity !== undefined) child.material.opacity = Math.min(1, (child.userData.baseOpacity || 1) * 1.5);
-            child.material.color.setHex(0x8b5a2b);
-          } else {
-            if (child.material.opacity !== undefined && child.userData.baseOpacity) child.material.opacity = child.userData.baseOpacity;
-            child.material.color.setHex(child.userData.baseColor);
+        eachMaterial(child, material => {
+          if (isCarpa) {
+            if (typeof material.opacity === 'number') {
+              material.opacity = isSelected
+                ? Math.min(1, (child.userData.baseOpacity || material.opacity || 1) * 1.5)
+                : (child.userData.baseOpacity ?? material.opacity);
+            }
+            if (material.color?.setHex) material.color.setHex(isSelected ? 0x8b5a2b : child.userData.baseColor);
+            return;
           }
-          return;
-        }
 
-        if (isSelected) {
-          child.material.emissive = new THREE.Color(0xffffff);
-          child.material.emissiveIntensity = 0.18;
-          child.material.color.setHex(0x2a2a2c);
-        } else if (isSimilar) {
-          child.material.emissive = new THREE.Color(0xd4ff3a);
-          child.material.emissiveIntensity = 0.10;
-          child.material.color.setHex(child.userData.baseColor);
-        } else {
-          child.material.emissive = new THREE.Color(0x000000);
-          child.material.emissiveIntensity = 0;
-          child.material.color.setHex(child.userData.baseColor);
-        }
+          if ('emissive' in material && material.emissive) {
+            material.emissive = new THREE.Color(isSelected ? 0xffffff : isSimilar ? 0xd4ff3a : 0x000000);
+            material.emissiveIntensity = isSelected ? 0.18 : isSimilar ? 0.10 : 0;
+          }
+
+          if (material.color?.setHex) {
+            material.color.setHex(isSelected ? 0x2a2a2c : child.userData.baseColor);
+          }
+        });
       }
     });
   });
@@ -582,11 +711,12 @@ function drawCotas() {
 
   const COTAS_ALWAYS = ['mesa', 'buffet', 'carpa', 'mesaRect', 'mesaImperial',
     'mesaCocktail', 'mesaCurva', 'mesaSerpentina', 'barraLibre',
-    'sillaCatering', 'sillaLineal', 'carpaCuadrada', 'carpaStar',
+    'carpaCuadrada', 'carpaStar',
     'carpaPabellon', 'carpaTransparente', 'carpaBeduina',
     'carpaSailcloth', 'carpaTipi', 'carpaDomo'];
 
   _appState.items.forEach(item => {
+    if (isChairCategoryItem(item)) return;
     if (!COTAS_ALWAYS.includes(item.type) && !item.showLabel) return;
 
     let label, kind, yOffset;
@@ -869,6 +999,38 @@ function focusPoint(x, z, zoomPercent = 250) {
   activeControls.update();
 }
 
+function setPlacementPreview(item) {
+  if (!scene) return;
+  clearPlacementPreview();
+  if (!item) return;
+
+  placementPreviewItem = JSON.parse(JSON.stringify(item));
+  placementPreview = createModelForCurrentView(placementPreviewItem) || new THREE.Group();
+  stylePlacementPreview(placementPreview);
+  placementPreview.position.set(item.x || 0, 0, item.z || 0);
+  placementPreview.rotation.y = item.rotY || 0;
+  placementPreview.userData = { ...(placementPreview.userData || {}), isPlacementPreview: true };
+  scene.add(placementPreview);
+}
+
+function updatePlacementPreview(x, z) {
+  if (!placementPreview) return;
+  placementPreview.position.x = x;
+  placementPreview.position.z = z;
+  if (placementPreviewItem) {
+    placementPreviewItem.x = x;
+    placementPreviewItem.z = z;
+  }
+}
+
+function clearPlacementPreview() {
+  if (!placementPreview) return;
+  scene.remove(placementPreview);
+  disposeGroup(placementPreview);
+  placementPreview = null;
+  placementPreviewItem = null;
+}
+
 /* ─── API exportada ─── */
 
 /* ─── Canvas boundary (rectángulo de área de trabajo) ─── */
@@ -953,6 +1115,9 @@ export const SceneManager = {
   setZoomPercent,
   screenToGround,
   focusPoint,
+  setPlacementPreview,
+  updatePlacementPreview,
+  clearPlacementPreview,
   rebuildGrids,
   applyShadowState,
   setPlanTexture, updatePlanSize, updatePlanOpacity,

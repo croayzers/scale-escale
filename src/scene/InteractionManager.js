@@ -5,6 +5,7 @@
 import { AppState }     from '../core/AppState.js';
 import { SceneManager } from './SceneManager.js';
 import { UIManager }    from '../ui/UIManager.js';
+import { CatalogModal } from '../ui/CatalogModal.js';
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -17,6 +18,7 @@ let boxSelecting = null;      // { startX, startY, additive }
 let rKeyDown = false;
 let bKeyDown = false;
 let shiftDown = false;
+let placementIndicator = null;
 
 function init() {
   const canvas = document.getElementById('scene-canvas');
@@ -36,7 +38,12 @@ function init() {
   });
   document.addEventListener('mousemove', e => {
     window._lastMousePos = { x: e.clientX, y: e.clientY };
+    if (CatalogModal.hasPendingPlacement()) updatePlacementIndicator(e.clientX, e.clientY);
   });
+  document.addEventListener('pointerdown', onPlacementDocumentPointerDown, true);
+  document.addEventListener('escale:catalog-placement-start', onPlacementStart);
+  document.addEventListener('escale:catalog-placement-end', onPlacementEnd);
+  syncPlacementCursor();
 }
 
 function setPointer(e) {
@@ -49,7 +56,7 @@ function getIntersectedItem() {
   const meshArray = [];
   SceneManager.meshes.forEach((g) => {
     g.traverse(child => {
-      if (child.isMesh && child.userData.baseColor !== undefined) meshArray.push(child);
+      if (child.isMesh && (child.userData.isMain === true || child.userData.baseColor !== undefined)) meshArray.push(child);
     });
   });
   const intersects = raycaster.intersectObjects(meshArray, false);
@@ -57,16 +64,17 @@ function getIntersectedItem() {
 
   const resolveItem = (mesh) => {
     let obj = mesh;
-    while (obj && (!obj.userData || obj.userData.id === undefined)) obj = obj.parent;
-    return obj ? AppState.items.find(i => i.id === obj.userData.id) : null;
+    while (obj && (!obj.userData || (obj.userData.id === undefined && obj.userData.rootId === undefined))) obj = obj.parent;
+    const resolvedId = obj?.userData?.id ?? obj?.userData?.rootId;
+    return resolvedId !== undefined ? AppState.items.find(i => i.id === resolvedId) : null;
   };
 
   let firstNonCarpa = null, firstCarpa = null;
   for (const hit of intersects) {
     const item = resolveItem(hit.object);
     if (!item) continue;
-    if (item.type !== 'carpa' && !firstNonCarpa) firstNonCarpa = item;
-    if (item.type === 'carpa' && !firstCarpa) firstCarpa = item;
+    if (!String(item.type || '').startsWith('carpa') && !firstNonCarpa) firstNonCarpa = item;
+    if (String(item.type || '').startsWith('carpa') && !firstCarpa) firstCarpa = item;
     if (firstNonCarpa) break;
   }
   return firstNonCarpa || firstCarpa;
@@ -79,11 +87,17 @@ function getDragPoint() {
   return point;
 }
 
-function updateCursorReadout() {
-  const p = getDragPoint();
-  if (p) document.getElementById('status-cursor').textContent =
-    `X: ${p.x.toFixed(2)}m · Z: ${p.z.toFixed(2)}m`;
+function applySnap(point) {
+  if (!point) return null;
+  const next = point.clone();
+  if (AppState.snap.enabled) {
+    const spacing = AppState.snap.spacing;
+    next.x = Math.round(next.x / spacing) * spacing;
+    next.z = Math.round(next.z / spacing) * spacing;
+  }
+  return next;
 }
+
 
 /* ─── Proyección item.x,z → pantalla (para box-select) ─── */
 function itemToScreen(item) {
@@ -120,6 +134,104 @@ function hideBoxOverlay() {
   if (el) el.style.display = 'none';
 }
 
+function syncPlacementCursor() {
+  const canvas = document.getElementById('scene-canvas');
+  const active = CatalogModal.hasPendingPlacement();
+  document.body.classList.toggle('placement-pending', active);
+  if (canvas) canvas.style.cursor = active ? 'copy' : '';
+}
+
+function onPlacementStart(event) {
+  const definition = event.detail?.definition;
+  if (!definition) return;
+  syncPlacementCursor();
+  const indicator = ensurePlacementIndicator();
+  indicator.classList.remove('hidden');
+  document.getElementById('placement-indicator-title').textContent = definition.name || 'Elemento seleccionado';
+  const mousePos = window._lastMousePos || { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  updatePlacementIndicator(mousePos.x, mousePos.y);
+  updateCursorReadout();
+}
+
+function onPlacementEnd() {
+  syncPlacementCursor();
+  hidePlacementIndicator();
+  updateCursorReadout();
+}
+
+
+function ensurePlacementIndicator() {
+  if (placementIndicator) return placementIndicator;
+  placementIndicator = document.createElement('div');
+  placementIndicator.id = 'placement-indicator';
+  placementIndicator.className = 'placement-indicator hidden';
+  placementIndicator.innerHTML = `
+    <span class="placement-indicator-box" aria-hidden="true"></span>
+    <div class="placement-indicator-copy">
+      <strong id="placement-indicator-title">Elemento seleccionado</strong>
+      <small id="placement-indicator-hint">Haz click en el destino · Esc cancela</small>
+    </div>
+  `;
+  document.body.appendChild(placementIndicator);
+  return placementIndicator;
+}
+
+function hidePlacementIndicator() {
+  if (!placementIndicator) return;
+  placementIndicator.classList.add('hidden');
+}
+
+function updatePlacementIndicator(clientX, clientY) {
+  const indicator = ensurePlacementIndicator();
+  indicator.classList.remove('hidden');
+  indicator.style.left = `${clientX + 18}px`;
+  indicator.style.top = `${clientY + 18}px`;
+}
+
+function isUiClickTarget(target) {
+  return Boolean(target?.closest?.(
+    '#catalog-modal, #dock, #header-mac, #inventory-panel, #context-menu, ' +
+    '#company-modal, #welcome-modal, #settings-modal, #export-modal, #share-modal, ' +
+    '#export-preview-modal, #share-preview-modal, .modal-bg, button, input, select, textarea, label'
+  ));
+}
+
+function placePendingItemAt(clientX, clientY) {
+  const point = applySnap(SceneManager.screenToGround(clientX, clientY));
+  if (!point) return false;
+  const item = CatalogModal.createPendingItem({ x: point.x, z: point.z });
+  if (!item) return false;
+
+  const placed = AppState.add(item);
+  CatalogModal.clearPendingPlacement();
+  AppState.select(placed.id);
+  document.body.classList.add('has-items');
+  return true;
+}
+
+function onPlacementDocumentPointerDown(e) {
+  if (!CatalogModal.hasPendingPlacement()) return;
+  if (e.button !== 0) return;
+  if (isUiClickTarget(e.target)) return;
+  if (placePendingItemAt(e.clientX, e.clientY)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
+function updateCursorReadout() {
+  const mousePos = window._lastMousePos;
+  const point = mousePos
+    ? applySnap(SceneManager.screenToGround(mousePos.x, mousePos.y))
+    : applySnap(getDragPoint());
+  if (!point) return;
+  const suffix = CatalogModal.hasPendingPlacement()
+    ? ` · Colocar: ${CatalogModal.getPendingDefinition()?.name || 'Item'}`
+    : '';
+  document.getElementById('status-cursor').textContent =
+    `X: ${point.x.toFixed(2)}m · Z: ${point.z.toFixed(2)}m${suffix}`;
+}
+
 function onPointerDown(e) {
   if (e.button !== 0) return;
   setPointer(e);
@@ -137,6 +249,11 @@ function onPointerDown(e) {
   if (SceneManager.isPlanMoving()) {
     const point = getDragPoint();
     if (point) SceneManager.startPlanMove(point);
+    return;
+  }
+
+  if (CatalogModal.hasPendingPlacement()) {
+    placePendingItemAt(e.clientX, e.clientY);
     return;
   }
 
@@ -200,6 +317,11 @@ function onPointerMove(e) {
     return;
   }
 
+  if (CatalogModal.hasPendingPlacement()) {
+    updatePlacementIndicator(e.clientX, e.clientY);
+    return;
+  }
+
   if (dragging) {
     const point = getDragPoint();
     if (!point) return;
@@ -250,6 +372,10 @@ function onPointerUp(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
+  if (CatalogModal.hasPendingPlacement()) {
+    CatalogModal.clearPendingPlacement();
+    return;
+  }
   setPointer(e);
   const item = getIntersectedItem();
   if (!item) { hideContextMenu(); return; }
@@ -1132,6 +1258,10 @@ function onKeyDown(e) {
   }
 
   if (e.key === 'Escape') {
+    if (CatalogModal.hasPendingPlacement()) {
+      CatalogModal.clearPendingPlacement();
+      return;
+    }
     AppState.deselect();
     hideContextMenu();
     window.PlanManager?.cancelCalibration?.();

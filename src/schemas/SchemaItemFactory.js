@@ -25,6 +25,9 @@ export function createItemFromCatalog(definition, { x = 0, z = 0 } = {}) {
   hydrated.x = x;
   hydrated.z = z;
   hydrated.rotY = ((definition?.defaultRotation || 0) * Math.PI) / 180;
+  hydrated.catalogDefinitionId = definition?.id || '';
+  hydrated.catalogCategory = definition?.category || '';
+  hydrated.catalogName = definition?.name || '';
 
   if (schema) hydrated.schemaId = schema.id;
   return hydrated;

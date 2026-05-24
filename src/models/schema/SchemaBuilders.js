@@ -76,6 +76,50 @@ function addTopLabel(group, text, color = '#111827') {
   group.add(plane);
 }
 
+function addTopPlainText(group, text, {
+  color = '#FFFFFF',
+  fontSize = 34,
+  width = 2.2,
+  height = 0.5
+} = {}) {
+  const normalized = String(text || '').trim();
+  if (!normalized) return;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 512;
+  canvas.height = 128;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = `700 ${Math.max(18, Math.min(fontSize, 72))}px "Inter Tight", sans-serif`;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2, Math.min(8, fontSize / 8));
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeText(normalized, canvas.width / 2, canvas.height / 2);
+  ctx.fillText(normalized, canvas.width / 2, canvas.height / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  const computedWidth = Math.max(width, normalized.length * Math.max(0.34, fontSize * 0.018));
+  const computedHeight = Math.max(height, Math.max(0.7, fontSize * 0.028));
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(computedWidth, computedHeight),
+    new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    })
+  );
+  plane.rotation.x = -Math.PI / 2;
+  plane.position.y = 0.085;
+  plane.renderOrder = 40;
+  plane.userData.skipTopStroke = true;
+  group.add(plane);
+}
+
 function buildRoundTable(item, view) {
   const group = new THREE.Group();
   const diameter = item.dims?.diameter ?? 1.8;
@@ -85,7 +129,7 @@ function buildRoundTable(item, view) {
   const opacity = item.visual?.opacity ?? 1;
 
   if (view === 'top') {
-    const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 48), makeTopFill(color, 0.18));
+    const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 72), makeTopFill(color, 0.18));
     fill.rotation.x = -Math.PI / 2;
     fill.position.y = 0.04;
     fill.userData.baseColor = colorNumber(color);
@@ -93,7 +137,7 @@ function buildRoundTable(item, view) {
     group.add(fill);
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(Math.max(0.03, diameter / 2 - 0.04), diameter / 2, 48),
+      new THREE.RingGeometry(Math.max(0.03, diameter / 2 - 0.04), diameter / 2, 72),
       new THREE.MeshBasicMaterial({ color: colorNumber('#111827'), transparent: true, opacity: 0.7, side: THREE.DoubleSide })
     );
     ring.rotation.x = -Math.PI / 2;
@@ -104,7 +148,7 @@ function buildRoundTable(item, view) {
   }
 
   const top = new THREE.Mesh(
-    new THREE.CylinderGeometry(diameter / 2, diameter / 2, 0.06, 36),
+    new THREE.CylinderGeometry(diameter / 2, diameter / 2, 0.06, 64),
     makeStandardMaterial(color, materialPreset, opacity)
   );
   top.position.y = height;
@@ -115,7 +159,7 @@ function buildRoundTable(item, view) {
   group.add(top);
 
   const cloth = new THREE.Mesh(
-    new THREE.CylinderGeometry(diameter / 2 + 0.04, diameter / 2 + 0.12, height - 0.05, 32, 1, true),
+    new THREE.CylinderGeometry(diameter / 2 + 0.04, diameter / 2 + 0.12, height - 0.05, 52, 1, true),
     makeStandardMaterial(color, 'fabric', Math.min(opacity, 0.96))
   );
   cloth.position.y = (height - 0.05) / 2;
@@ -131,7 +175,7 @@ function buildRoundTable(item, view) {
   group.add(leg);
 
   const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(diameter * 0.18, diameter * 0.2, 0.05, 20),
+    new THREE.CylinderGeometry(diameter * 0.18, diameter * 0.2, 0.05, 32),
     makeStandardMaterial('#6B6864', 'metal', 1)
   );
   base.position.y = 0.025;
@@ -297,7 +341,7 @@ function buildGenericRound(item, view) {
   const height = item.dims?.height ?? 0.8;
   const color = item.color || '#B6B1A9';
   if (view === 'top') {
-    const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 48), makeTopFill(color, item.visual?.opacity ?? 0.2));
+    const fill = new THREE.Mesh(new THREE.CircleGeometry(diameter / 2, 72), makeTopFill(color, item.visual?.opacity ?? 0.2));
     fill.rotation.x = -Math.PI / 2;
     fill.position.y = 0.04;
     fill.userData.isMain = true;
@@ -306,7 +350,7 @@ function buildGenericRound(item, view) {
     return group;
   }
   const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(diameter / 2, diameter / 2, height, 28),
+    new THREE.CylinderGeometry(diameter / 2, diameter / 2, height, 56),
     makeStandardMaterial(color, item.visual?.materialPreset || 'matte', item.visual?.opacity ?? 1)
   );
   body.position.y = height / 2;
@@ -352,19 +396,19 @@ function buildPerson(item, view) {
   const color = item.color || '#2C2C31';
   const accent = item.accentColor || '#D9D4CC';
   if (view === 'top') {
-    const body = new THREE.Mesh(new THREE.CircleGeometry(0.22, 28), makeTopFill(accent, 0.28));
+    const body = new THREE.Mesh(new THREE.CircleGeometry(0.22, 36), makeTopFill(accent, 0.28));
     body.rotation.x = -Math.PI / 2;
     body.position.y = 0.04;
     body.userData.isMain = true;
     group.add(body);
-    const head = new THREE.Mesh(new THREE.CircleGeometry(0.1, 20), makeTopFill(color, 0.8));
+    const head = new THREE.Mesh(new THREE.CircleGeometry(0.1, 28), makeTopFill(color, 0.8));
     head.rotation.x = -Math.PI / 2;
     head.position.set(0, 0.042, -0.14);
     group.add(head);
     return group;
   }
   const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.16, Math.max(0.2, height - 0.5), 4, 12),
+    new THREE.CapsuleGeometry(0.16, Math.max(0.2, height - 0.5), 6, 18),
     makeStandardMaterial(color, 'matte', 1)
   );
   body.position.y = height / 2;
@@ -402,7 +446,14 @@ function buildArrow(item) {
   mesh.position.y = 0.04;
   mesh.userData.isMain = true;
   group.add(mesh);
-  if (item.labelText) addTopLabel(group, item.labelText, '#111827');
+  if (item.labelText) {
+    addTopPlainText(group, item.labelText, {
+      color: item.textColor || '#FFFFFF',
+      fontSize: item.display?.textSize ?? 34,
+      width: Math.max(4.2, L * 1.75),
+      height: Math.max(1.05, W * 0.95)
+    });
+  }
   return group;
 }
 
@@ -412,19 +463,19 @@ function buildLighting(item, view) {
   const color = item.color || '#111827';
   const lightColor = item.lightColor || '#FFE8A3';
   if (view === 'top') {
-    const base = new THREE.Mesh(new THREE.CircleGeometry(0.18, 24), makeTopFill(color, 0.9));
+    const base = new THREE.Mesh(new THREE.CircleGeometry(0.18, 30), makeTopFill(color, 0.9));
     base.rotation.x = -Math.PI / 2;
     base.position.y = 0.04;
     base.userData.isMain = true;
     group.add(base);
-    const halo = new THREE.Mesh(new THREE.CircleGeometry(0.42, 32), makeTopFill(lightColor, 0.28));
+    const halo = new THREE.Mesh(new THREE.CircleGeometry(0.42, 42), makeTopFill(lightColor, 0.28));
     halo.rotation.x = -Math.PI / 2;
     halo.position.y = 0.041;
     group.add(halo);
     return group;
   }
   const mast = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, height, 10),
+    new THREE.CylinderGeometry(0.04, 0.04, height, 16),
     makeStandardMaterial(color, 'metal', 1)
   );
   mast.position.y = height / 2;
@@ -439,7 +490,7 @@ function buildLighting(item, view) {
   lamp.castShadow = true;
   group.add(lamp);
   const emitter = new THREE.Mesh(
-    new THREE.SphereGeometry(0.09, 12, 12),
+    new THREE.SphereGeometry(0.09, 18, 18),
     new THREE.MeshStandardMaterial({
       color: colorNumber(lightColor),
       emissive: colorNumber(lightColor),

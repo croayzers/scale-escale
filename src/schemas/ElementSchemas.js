@@ -646,6 +646,8 @@ export const ELEMENT_SCHEMAS = [
       dims: { width: 1.2, length: 2.2, height: 0.05 },
       color: '#111827',
       labelText: '',
+      textColor: '#FFFFFF',
+      display: { textSize: 34 },
       visual: { materialPreset: 'matte', opacity: 0.95, shadows: false },
       physics: { snap: true, collisions: false }
     },
@@ -654,7 +656,29 @@ export const ELEMENT_SCHEMAS = [
       StandardParams.length({ default: 2.2, min: 0.3, max: 12, step: 0.05 }),
       StandardParams.rotation(),
       StandardParams.color(),
-      StandardParams.text({ label: 'Texto libre' })
+      StandardParams.text({ label: 'Texto libre' }),
+      {
+        key: 'textColor',
+        path: 'textColor',
+        type: 'color',
+        label: 'Color texto',
+        default: '#FFFFFF',
+        level: PARAM_LEVEL.BASIC,
+        category: PARAM_CATEGORY.APPEARANCE
+      },
+      {
+        key: 'textSize',
+        path: 'display.textSize',
+        type: 'number',
+        label: 'Tamano texto',
+        default: 34,
+        min: 18,
+        max: 72,
+        step: 1,
+        suffix: 'px',
+        level: PARAM_LEVEL.BASIC,
+        category: PARAM_CATEGORY.LABELS
+      }
     ]
   },
   {

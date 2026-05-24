@@ -3,6 +3,7 @@
    ───────────────────────────────────────────────────────── */
 
 let _appState, _sceneManager;
+let itemSettingsHandle;
 async function bindDeps() {
   if (!_appState)     ({ AppState:     _appState     } = await import('../core/AppState.js'));
   if (!_sceneManager) ({ SceneManager: _sceneManager } = await import('../scene/SceneManager.js'));
@@ -137,11 +138,11 @@ function updateTooltipPosition() {
   const A = dynamic.AppState;
   const S = dynamic.SceneManager;
   if (!A || !S) return;
-  if (A.selectedId === null) { hideTooltip(); return; }
+  if (A.selectedId === null) { hideTooltip(); hideItemSettingsHandle(); return; }
   const item = A.items.find(i => i.id === A.selectedId);
-  if (!item) { hideTooltip(); return; }
+  if (!item) { hideTooltip(); hideItemSettingsHandle(); return; }
   const mesh = S.meshes.get(item.id);
-  if (!mesh) return;
+  if (!mesh) { hideItemSettingsHandle(); return; }
 
   const yHeight = item.type === 'mesa'  ? 1.2
                 : item.type === 'carpa' ? (A.camera === 'top' ? 0.3 : 4.5)
@@ -173,11 +174,61 @@ function updateTooltipPosition() {
   const y = (-vec.y * 0.5 + 0.5) * window.innerHeight;
 
   const tip = document.getElementById('tooltip');
+  updateItemSettingsHandle(item, mesh);
   if (!tip) return;
   tip.style.left = x + 'px';
   tip.style.top  = y + 'px';
 
   if (!tip.classList.contains('visible')) showTooltip(item);
+}
+
+function ensureItemSettingsHandle() {
+  if (itemSettingsHandle) return itemSettingsHandle;
+  itemSettingsHandle = document.createElement('button');
+  itemSettingsHandle.id = 'item-settings-handle';
+  itemSettingsHandle.type = 'button';
+  itemSettingsHandle.className = 'item-settings-handle hidden';
+  itemSettingsHandle.title = 'Modificar item';
+  itemSettingsHandle.innerHTML = '<i data-lucide="settings-2" class="w-4 h-4"></i>';
+  itemSettingsHandle.addEventListener('click', () => {
+    const A = dynamic.AppState;
+    const id = Number(itemSettingsHandle.dataset.itemId || 0);
+    const item = A?.items.find(entry => entry.id === id);
+    if (item) showDetail(item);
+  });
+  document.body.appendChild(itemSettingsHandle);
+  if (window.lucide) lucide.createIcons();
+  return itemSettingsHandle;
+}
+
+function hideItemSettingsHandle() {
+  if (!itemSettingsHandle) return;
+  itemSettingsHandle.classList.add('hidden');
+}
+
+function updateItemSettingsHandle(item, mesh) {
+  const A = dynamic.AppState;
+  const S = dynamic.SceneManager;
+  if (!A || !S || A.selectedIds.size !== 1 || !item || !mesh) {
+    hideItemSettingsHandle();
+    return;
+  }
+
+  const handle = ensureItemSettingsHandle();
+  const bounds = new THREE.Box3().setFromObject(mesh);
+  const anchor = new THREE.Vector3(
+    bounds.max.x,
+    Math.max(0.04, bounds.min.y + 0.06),
+    bounds.max.z
+  );
+  anchor.project(S.activeCam);
+
+  const x = (anchor.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-anchor.y * 0.5 + 0.5) * window.innerHeight;
+  handle.dataset.itemId = String(item.id);
+  handle.style.left = `${x + 6}px`;
+  handle.style.top = `${y + 6}px`;
+  handle.classList.remove('hidden');
 }
 
 /* ─── Panel detalle (editable completo) ─── */
@@ -1283,6 +1334,7 @@ function showMultiDetail(ids) {
   const panel = document.getElementById('detail-panel');
   const content = document.getElementById('detail-content');
   if (!panel || !content || !A) return;
+  hideItemSettingsHandle();
   const items = ids.map(id => A.items.find(i => i.id === id)).filter(Boolean);
   const totalPax = items.reduce((s, i) => s + (i.chairs || 0), 0);
   const lockedCount = items.filter(i => i.locked).length;
@@ -1319,6 +1371,7 @@ function showMultiDetail(ids) {
 function hideDetail() {
   const p = document.getElementById('detail-panel');
   if (p) p.style.display = 'none';
+  hideItemSettingsHandle();
 }
 
 function refreshUndoBadge() {

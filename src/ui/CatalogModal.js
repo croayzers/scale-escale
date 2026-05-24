@@ -2,11 +2,57 @@
    CATALOG MODAL — Modal flotante con tarjetas por categoría
    ───────────────────────────────────────────────────────── */
 
-import { AppState }       from '../core/AppState.js';
 import { ElementLibrary } from '../core/ElementLibrary.js';
-import { SceneManager }   from '../scene/SceneManager.js';
 
 let currentCategory = null;
+let pendingDefinition = null;
+
+function syncPendingGlobal() {
+  window.__escalePendingCatalogDefinition = pendingDefinition
+    ? JSON.parse(JSON.stringify(pendingDefinition))
+    : null;
+}
+
+function emitPlacementState(active) {
+  document.dispatchEvent(new CustomEvent(
+    active ? 'escale:catalog-placement-start' : 'escale:catalog-placement-end',
+    {
+      detail: {
+        active,
+        definition: active ? pendingDefinition : null
+      }
+    }
+  ));
+}
+
+function setPendingPlacement(definition) {
+  pendingDefinition = definition || null;
+  syncPendingGlobal();
+  document.body.classList.toggle('placement-pending', Boolean(pendingDefinition));
+  emitPlacementState(Boolean(pendingDefinition));
+}
+
+function clearPendingPlacement() {
+  if (!pendingDefinition && !window.__escalePendingCatalogDefinition) return;
+  pendingDefinition = null;
+  syncPendingGlobal();
+  document.body.classList.remove('placement-pending');
+  emitPlacementState(false);
+}
+
+function hasPendingPlacement() {
+  return Boolean(pendingDefinition || window.__escalePendingCatalogDefinition);
+}
+
+function getPendingDefinition() {
+  return pendingDefinition || window.__escalePendingCatalogDefinition || null;
+}
+
+function createPendingItem({ x = 0, z = 0 } = {}) {
+  const definition = getPendingDefinition();
+  if (!definition) return null;
+  return ElementLibrary.toItem(definition, { x, z });
+}
 
 function init() {
   document.getElementById('catalog-close')?.addEventListener('click', close);
@@ -46,24 +92,7 @@ function open(categoryKey) {
       card.addEventListener('click', () => {
         const def = items.find(d => d.id === card.dataset.elementId);
         if (def) {
-          const item = ElementLibrary.toItem(def);
-          const mousePos = window._lastMousePos;
-          const modalBounds = modal.getBoundingClientRect();
-          const mouseIsOverModal = mousePos
-            && mousePos.x >= modalBounds.left
-            && mousePos.x <= modalBounds.right
-            && mousePos.y >= modalBounds.top
-            && mousePos.y <= modalBounds.bottom;
-          const groundPoint = mousePos && !mouseIsOverModal
-            ? SceneManager.screenToGround(mousePos.x, mousePos.y)
-            : null;
-          const target = groundPoint || SceneManager.activeControls?.target || new THREE.Vector3(0, 0, 0);
-
-          item.x = target.x;
-          item.z = target.z;
-          const placed = AppState.add(item);
-          SceneManager.focusPoint(placed.x, placed.z, 250);
-          document.body.classList.add('has-items');
+          setPendingPlacement(def);
           close();
         }
       });
@@ -128,14 +157,70 @@ function thumbSVG(def) {
 
 function svgSchemaThumb(def) {
   const color = def.color || def.lightColor || '#cfd4dc';
-  const icon = def.icon || 'box';
+  const accent = def.accentColor || '#111827';
+  const schemaId = String(def.schemaId || '');
+
+  if (schemaId.startsWith('chair.')) return svgChair(def.color || '#f5f3ee', def.subtype);
+  if (schemaId.startsWith('table.round')) return svgCircle(color);
+  if (schemaId.startsWith('buffet.')) return svgLongRect(color);
+  if (schemaId.startsWith('stage.')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="58" width="72" height="10" rx="2" fill="rgba(0,0,0,0.08)"/>
+      <rect x="18" y="38" width="64" height="22" rx="4" fill="${color}" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+      <rect x="40" y="62" width="20" height="12" rx="2" fill="${accent}" opacity="0.7"/>
+      <rect x="44" y="74" width="12" height="6" rx="2" fill="${accent}" opacity="0.45"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('person.')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="82" rx="18" ry="4" fill="rgba(0,0,0,0.1)"/>
+      <circle cx="50" cy="30" r="10" fill="${accent}"/>
+      <rect x="38" y="42" width="24" height="26" rx="12" fill="${color}" stroke="rgba(0,0,0,0.18)" stroke-width="0.6"/>
+      <rect x="30" y="48" width="40" height="6" rx="3" fill="${accent}" opacity="0.24"/>
+      <line x1="44" y1="68" x2="38" y2="82" stroke="${accent}" stroke-width="3"/>
+      <line x1="56" y1="68" x2="62" y2="82" stroke="${accent}" stroke-width="3"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('lighting.')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="84" rx="18" ry="3" fill="rgba(0,0,0,0.1)"/>
+      <rect x="47" y="24" width="6" height="48" rx="3" fill="${accent}"/>
+      <rect x="36" y="18" width="28" height="12" rx="4" fill="${accent}"/>
+      <circle cx="50" cy="36" r="16" fill="${color}" opacity="0.32"/>
+      <circle cx="50" cy="36" r="9" fill="${color}" opacity="0.72"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('surface.')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="82" rx="34" ry="5" fill="rgba(0,0,0,0.08)"/>
+      <rect x="18" y="30" width="64" height="36" rx="10" fill="${color}" opacity="0.85"/>
+      <rect x="22" y="34" width="56" height="28" rx="8" fill="none" stroke="${accent}" stroke-width="2" opacity="0.35"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('seat.sofa')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="84" rx="32" ry="4" fill="rgba(0,0,0,0.08)"/>
+      <rect x="18" y="46" width="64" height="22" rx="8" fill="${color}" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+      <rect x="18" y="32" width="64" height="18" rx="8" fill="${color}" opacity="0.92"/>
+      <rect x="16" y="36" width="10" height="30" rx="5" fill="${accent}" opacity="0.72"/>
+      <rect x="74" y="36" width="10" height="30" rx="5" fill="${accent}" opacity="0.72"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('arrow.')) {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 16 50 L 52 50 L 52 38 L 84 50 L 52 62 L 52 50 Z" fill="${accent}"/>
+      <rect x="20" y="44" width="34" height="12" rx="6" fill="${color}" opacity="0.42"/>
+    </svg>`;
+  }
+  if (schemaId.startsWith('prop.generic-round')) return svgCircle(color);
+  if (schemaId.startsWith('prop.generic-rect')) return svgRect(color);
+
   const label = (def.name || '').slice(0, 2).toUpperCase();
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <rect x="14" y="16" width="72" height="68" rx="12" fill="rgba(255,255,255,0.78)" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
-    <rect x="20" y="22" width="60" height="36" rx="10" fill="${color}" opacity="0.86"/>
-    <rect x="20" y="62" width="60" height="14" rx="7" fill="rgba(0,0,0,0.06)"/>
-    <text x="50" y="48" text-anchor="middle" font-size="10" font-family="Inter Tight, sans-serif" fill="white">${icon.replace(/[^a-z]/gi, '').slice(0, 6)}</text>
-    <text x="50" y="72" text-anchor="middle" font-size="18" font-family="JetBrains Mono, monospace" fill="rgba(0,0,0,0.7)">${label || 'ES'}</text>
+    <rect x="14" y="16" width="72" height="68" rx="12" fill="rgba(255,255,255,0.82)" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+    <rect x="20" y="24" width="60" height="32" rx="10" fill="${color}" opacity="0.86"/>
+    <rect x="22" y="62" width="56" height="12" rx="6" fill="rgba(0,0,0,0.06)"/>
+    <text x="50" y="71" text-anchor="middle" font-size="18" font-family="JetBrains Mono, monospace" fill="rgba(0,0,0,0.68)">${label || 'ES'}</text>
   </svg>`;
 }
 
@@ -446,4 +531,13 @@ function svgPlaceholder() {
   </svg>`;
 }
 
-export const CatalogModal = { init, open, close, isOpen };
+export const CatalogModal = {
+  init,
+  open,
+  close,
+  isOpen,
+  hasPendingPlacement,
+  getPendingDefinition,
+  createPendingItem,
+  clearPendingPlacement
+};
