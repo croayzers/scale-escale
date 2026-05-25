@@ -137,9 +137,10 @@ function exportPayload(modeLabel, filename, items = AppState.items) {
 }
 
 async function syncCompany(company = AppState.company) {
+  // silent: no lanza si el server local no está activo
   const data = await requestJson('POST', '/api/dashboard/company', {
     company: companyPayload(company)
-  });
+  }, { silent: true });
 
   if (data?.company) {
     mergeSyncedCompany(company, data.company, data.syncedAt);

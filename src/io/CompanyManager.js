@@ -700,33 +700,25 @@ async function savePending() {
   }
 
   AppState.company = { ...AppState.company, ...pending };
-  const syncErrors = [];
 
-  try {
-    await DashboardSync.syncCompany(AppState.company);
-  } catch (error) {
-    syncErrors.push(`dashboard local: ${error.message}`);
-    console.warn('No se pudo sincronizar la empresa con el dashboard local:', error);
-  }
+  // Dashboard local — falla silenciosamente si el server no está activo
+  DashboardSync.syncCompany(AppState.company).catch(error => {
+    console.warn('No se pudo sincronizar con el dashboard local:', error);
+  });
 
-  try {
-    const cloudResponse = await CloudSync.syncCompany(AppState.company);
+  // Cloud sync — falla silenciosamente, no interrumpe el guardado
+  CloudSync.syncCompany(AppState.company).then(cloudResponse => {
     if (cloudResponse?.reason === 'auth_required') {
       AppState.company.cloudSyncStatus = 'needs_auth';
     }
-  } catch (error) {
-    syncErrors.push(`cloud sync: ${error.message}`);
-    console.warn('No se pudo sincronizar la empresa con servicios cloud:', error);
-  }
+  }).catch(error => {
+    console.warn('No se pudo sincronizar con servicios cloud:', error);
+  });
 
   storeCompanyProfile(AppState.company);
   saveCompanyState();
   syncBrandUI();
   closeModal({ keepPreview: true, completeOnboarding: true });
-
-  if (syncErrors.length) {
-    alert(`Los datos se guardaron en la app, pero hubo sincronizaciones pendientes.\n\n${syncErrors.join('\n')}`);
-  }
 }
 
 function init() {
