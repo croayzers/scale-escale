@@ -2015,11 +2015,6 @@ input[type=range]::-webkit-slider-thumb {
   padding: 0 0 10px 0;
 }
 
-/* Wrapper de cada pill + su panel desplegable */
-.tpl-pill-wrap {
-  position: relative;
-}
-
 /* Botón pill */
 .tpl-pill {
   display: flex;
@@ -2079,14 +2074,26 @@ input[type=range]::-webkit-slider-thumb {
   transform: rotate(180deg);
 }
 
-/* Panel desplegable con lista filtrable */
+/* Panel desplegable con lista filtrable — flotante (no empuja contenido) */
+.tpl-pill-wrap {
+  position: relative;
+  z-index: 1;
+}
+.tpl-pill-wrap:has(.tpl-pill.open) {
+  z-index: 10;
+}
+
 .tpl-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 10;
   border: 1px solid var(--border, rgba(0,0,0,0.12));
   border-radius: 8px;
   background: var(--surface, #fff);
-  margin-top: 4px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
 }
 .tpl-panel.hidden { display: none; }
 

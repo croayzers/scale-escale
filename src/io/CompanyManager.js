@@ -437,27 +437,25 @@ function syncAccountChip() {
 function syncCompanyButton() {
   const btn = document.getElementById('btn-company');
   if (!btn) return;
+
   const label = document.getElementById('btn-company-label');
-  const name = String(AppState.company?.name || '').trim();
+  const preview = document.getElementById('company-logo-preview');
+  const empty = document.getElementById('btn-company-logo-empty');
+  const formName = cleanText(document.getElementById('company-name')?.value || '');
+  const name = cleanText(AppState.company?.name || formName);
+  const logo = AppState.company?.logo || '';
+
   if (label) label.textContent = name || 'Mi empresa';
+  if (preview) {
+    preview.classList.toggle('hidden', !logo);
+    if (logo) preview.src = logo;
+  }
+  if (empty) empty.classList.toggle('hidden', Boolean(logo));
+
   btn.classList.toggle('btn-company--empty', !name);
 }
 
 function syncBrandUI() {
-  const { name, logo } = AppState.company;
-  const brandEl = document.getElementById('brand-name');
-  if (brandEl) brandEl.textContent = name || 'E-scale';
-
-  const preview = document.getElementById('company-logo-preview');
-  if (preview) {
-    if (logo) {
-      preview.classList.remove('hidden');
-      preview.src = logo;
-    } else {
-      preview.classList.add('hidden');
-    }
-  }
-
   syncAccountChip();
   syncCompanyButton();
 }
