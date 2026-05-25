@@ -732,7 +732,10 @@ function removeItem(id) {
   scene.remove(g);
   disposeGroup(g);
   meshes.delete(id);
-  if (_appState?.showCotas) drawCotas();
+  // ⚠️ No llamar drawCotas() aquí: cuando viene de AppState.remove(),
+  // el item todavía está en AppState.items y las cotas se redibujarían
+  // incluyendo la zona eliminada. drawCotas() se llama desde AppState.remove()
+  // DESPUÉS del splice, y desde spawn() tras un rebuild().
 }
 
 function disposeGroup(group) {
@@ -1338,10 +1341,13 @@ function updatePlanMove(point) {
   _appState.grid.offsetZ = planMeshStart.z + dz;
   applyGridOffsets();
 }
-
 function endPlanMove() {
   planMoveStart = null;
   planMeshStart = null;
+}
+
+function redrawCotas() {
+  if (_appState?.showCotas) drawCotas();
 }
 
 export const SceneManager = {
@@ -1352,6 +1358,7 @@ export const SceneManager = {
   spawn, rebuild, removeItem, moveItem, rotateItem,
   highlightSelection,
   drawCotas,
+  redrawCotas,
   setCamera,
   setControlsEnabled,
   setZoomPercent,

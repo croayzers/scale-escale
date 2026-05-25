@@ -205,7 +205,8 @@ export const AppState = {
     if (idx < 0) return;
     this.pushHistory();
     SceneManager.removeItem(id);
-    this.items.splice(idx, 1);
+    this.items.splice(idx, 1);  // primero eliminar del array
+    SceneManager.redrawCotas(); // luego redibujar ya sin el item eliminado
     this.selectedIds.delete(id);
     if (this.selectedId === id) {
       this.selectedId = this.selectedIds.size ? [...this.selectedIds].pop() : null;
