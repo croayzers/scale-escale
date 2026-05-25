@@ -131,8 +131,9 @@ function placementsStairs(item, childConfig) {
 
   return Array.from({ length: count }, (_, index) => {
     const progress = index + 1;
-    const distance = progress * depth - depth / 2;
-    const y = progress * stepHeight / 2 - stepHeight / 2;
+    const distance = (count - index) * depth - depth / 2;
+    const heightAtStep = progress * stepHeight;
+    const y = 0;
 
     if (side === 'left') {
       return {
@@ -140,7 +141,7 @@ function placementsStairs(item, childConfig) {
         z: 0,
         y,
         rotY: -Math.PI / 2,
-        dims: { width: depth, length: width, height: stepHeight }
+        dims: { width: depth, length: width, height: heightAtStep }
       };
     }
 
@@ -150,7 +151,7 @@ function placementsStairs(item, childConfig) {
         z: 0,
         y,
         rotY: Math.PI / 2,
-        dims: { width: depth, length: width, height: stepHeight }
+        dims: { width: depth, length: width, height: heightAtStep }
       };
     }
 
@@ -159,7 +160,7 @@ function placementsStairs(item, childConfig) {
       z: parent.width / 2 + distance,
       y,
       rotY: 0,
-      dims: { width: depth, length: width, height: stepHeight }
+      dims: { width: depth, length: width, height: heightAtStep }
     };
   });
 }

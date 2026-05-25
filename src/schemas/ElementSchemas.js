@@ -476,13 +476,14 @@ export const ELEMENT_SCHEMAS = [
         sideParam: 'stairs.side',
         childFactory: ({ parentItem, index, count }) => {
           const stepHeight = (parentItem.dims?.height ?? 0.8) / count;
+          const heightAtStep = stepHeight * (index + 1);
           return {
             type: 'schemaProp',
             schemaId: 'prop.generic-rect',
             dims: {
               width: parentItem.stairs?.depth ?? 0.35,
               length: parentItem.stairs?.width ?? 1.6,
-              height: stepHeight
+              height: heightAtStep
             },
             color: '#45454B',
             labelText: '',
@@ -490,7 +491,8 @@ export const ELEMENT_SCHEMAS = [
             physics: { snap: false, collisions: false },
             layout: {
               stepIndex: index,
-              stepHeight
+              stepHeight,
+              heightAtStep
             }
           };
         }

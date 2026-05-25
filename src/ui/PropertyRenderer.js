@@ -45,7 +45,8 @@ function isVisible(item, param) {
 }
 
 function resolveCategory(item, schema) {
-  return item.catalogCategory || schema?.metadata?.category || item.category || '';
+  const definition = item.catalogDefinitionId ? ElementLibrary.find(item.catalogDefinitionId) : null;
+  return definition?.category || item.catalogCategory || schema?.metadata?.category || item.category || '';
 }
 
 function categoryDefinitions(item, schema) {
@@ -229,7 +230,7 @@ function render({ item, panel, content, AppState }) {
   const visibleParams = (schema.params || []).filter(param => isVisible(item, param));
   const basic = visibleParams.filter(param => param.level !== 'advanced');
   const advanced = visibleParams.filter(param => param.level === 'advanced');
-  const title = schema.metadata?.label || item.labelText || item.type;
+  const title = item.catalogName || item.labelText || schema.metadata?.label || item.type;
   const subtitle = [item.name, item.subtype, `ID #${item.id}`].filter(Boolean).join(' · ');
   const definitions = categoryDefinitions(item, schema);
   const selectedDefinitionId = currentDefinitionId(item, schema);

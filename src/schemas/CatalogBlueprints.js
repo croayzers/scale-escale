@@ -160,6 +160,7 @@ function stageItem(id, name, { width = 4, length = 6, height = 0.8, icon = 'gall
     schemaId: 'stage.platform',
     dims: { width, length, height },
     color: '#27272A',
+    labelText: name,
     icon,
     defaultRotation: 0,
     ...rest
@@ -218,7 +219,7 @@ const SCHEMA_CATALOG = {
     roundItem('rotonda_carretera', 'Rotonda carretera', 'structures', { diameter: 8, height: 0.2, color: '#6B7280', icon: 'circle-dot' }),
     rectItem('columna_romana', 'Columna romana', 'structures', { width: 0.8, length: 0.8, height: 3.2, color: '#E5E7EB', icon: 'columns-3' }),
     rectItem('columna_simple', 'Columna', 'structures', { width: 0.5, length: 0.5, height: 3, color: '#D6D3D1', icon: 'columns-3' }),
-    stageItem('escenario_principal', 'Escenario', { width: 6, length: 10, height: 1 }),
+    stageItem('escenario_principal', 'Escenario', { width: 6, length: 10, height: 1, category: 'structures' }),
     rectItem('escalera', 'Escalera', 'structures', { width: 1.4, length: 2.2, height: 1.2, color: '#4B5563', icon: 'stairs' }),
     rectItem('contenedor_casa', 'Contenedores / casa', 'structures', { width: 2.6, length: 6, height: 2.6, color: '#94A3B8', icon: 'container' }),
     surfaceItem('agua_piscina', 'Agua / piscina', 'structures', { width: 4, length: 8, color: '#60A5FA', borderColor: '#1D4ED8', icon: 'waves' })
