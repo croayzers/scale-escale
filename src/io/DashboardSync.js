@@ -50,7 +50,7 @@ function getApiOrigins() {
   return [...new Set(origins)];
 }
 
-async function requestJson(method, path, payload) {
+async function requestJson(method, path, payload, { silent = false } = {}) {
   const errors = [];
 
   for (const origin of getApiOrigins()) {
@@ -67,7 +67,7 @@ async function requestJson(method, path, payload) {
 
       window.clearTimeout(timeout);
 
-      if (response.status === 404 && origin === window.location.origin) continue;
+      if (response.status === 404) continue;
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -77,15 +77,17 @@ async function requestJson(method, path, payload) {
       return data;
     } catch (error) {
       window.clearTimeout(timeout);
-      errors.push(`${origin}: ${error.message}`);
+      if (!silent) errors.push(`${origin}: ${error.message}`);
     }
   }
 
+  if (silent) return null;
   throw new Error(errors.join(' | ') || 'No se pudo contactar con el dashboard local.');
 }
 
 async function flushPending() {
-  return await requestJson('POST', '/api/dashboard/flush', {});
+  // Operación no crítica: falla silenciosamente si el server local no está activo
+  return await requestJson('POST', '/api/dashboard/flush', {}, { silent: true });
 }
 
 function lineCategoryMap(groups) {

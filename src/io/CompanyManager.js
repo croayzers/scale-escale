@@ -655,6 +655,28 @@ async function handleAccessChoice(kind) {
   AppState.company.authEmail = email;
   AppState.company.authDisplayName = fullName || AppState.company.authDisplayName;
   saveCompanyState();
+
+  if (oauthProvider) {
+    // Mostrar confirmación visual en el botón de Google
+    const googleBtn = document.getElementById('access-google');
+    if (googleBtn) {
+      googleBtn.classList.add('google-synced');
+      googleBtn.innerHTML = `
+        <span class="access-google-check" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <span>Sincronizado con Google</span>`;
+      googleBtn.disabled = true;
+    }
+    // Mostrar botón Continuar
+    const continueBtn = document.getElementById('access-continue');
+    if (continueBtn) {
+      continueBtn.classList.remove('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    return;
+  }
+
   closeAccessModal();
   finalizeOnboarding();
 }
@@ -730,9 +752,7 @@ function init() {
   applyBrandColors(AppState.company);
   syncBrandUI();
   buildPalettes();
-  DashboardSync.flushPending().catch(error => {
-    console.warn('No se pudo vaciar la cola del dashboard local:', error);
-  });
+  DashboardSync.flushPending(); // falla silenciosamente si el server local no está activo
 
   document.getElementById('btn-company')?.addEventListener('click', () => openModal());
   document.getElementById('btn-account')?.addEventListener('click', openAccessModal);
@@ -743,6 +763,10 @@ function init() {
   document.getElementById('access-tab-register')?.addEventListener('click', () => setAccessMode('register'));
   document.getElementById('access-google')?.addEventListener('click', () => void handleAccessChoice('google'));
   document.getElementById('access-microsoft')?.addEventListener('click', () => void handleAccessChoice('microsoft'));
+  document.getElementById('access-continue')?.addEventListener('click', () => {
+    closeAccessModal();
+    finalizeOnboarding();
+  });
   document.getElementById('access-plan-badge')?.addEventListener('click', () => {
     PlansModal.open(SubscriptionManager.currentPlanCode() === 'free_lite' ? 'pro' : SubscriptionManager.currentPlanCode());
   });
