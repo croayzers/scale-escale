@@ -5,6 +5,7 @@ import {
   groupInventoryLines
 } from '../core/InventoryRules.js';
 import { DashboardSync } from './DashboardSync.js';
+import { CompanyManager } from './CompanyManager.js';
 import { SceneManager } from '../scene/SceneManager.js';
 import { UIManager } from '../ui/UIManager.js';
 import { CloudSync } from '../services/CloudSync.js';
@@ -110,11 +111,15 @@ function openModal(options = {}) {
   syncExportModalCopy();
 
   if (!SubscriptionManager.ensureFeature(exportIntent.featureKey)) return;
-  void AnalyticsManager.track('export_modal_opened', {
-    planCode: SubscriptionManager.currentPlanCode(),
-    exportKind: exportIntent.kind
+
+  // Gate: si faltan datos de empresa, abrimos primero ese modal
+  CompanyManager.requireReady(() => {
+    void AnalyticsManager.track('export_modal_opened', {
+      planCode: SubscriptionManager.currentPlanCode(),
+      exportKind: exportIntent.kind
+    });
+    document.getElementById('export-modal')?.classList.add('visible');
   });
-  document.getElementById('export-modal')?.classList.add('visible');
 }
 
 function closeModal() {
@@ -499,7 +504,12 @@ async function composePrintCanvas(imageDataUrl, view) {
   return out;
 }
 
-async function printPng({ view = '2d' } = {}) {
+function printPng({ view = '2d' } = {}) {
+  // Gate: si faltan datos de empresa, abrimos primero ese modal
+  CompanyManager.requireReady(() => _doPrintPng({ view }));
+}
+
+async function _doPrintPng({ view = '2d' } = {}) {
   try {
     document.dispatchEvent(new CustomEvent('escale:inventory-close'));
     const normalizedView = String(view).toLowerCase() === '3d' ? '3d' : '2d';

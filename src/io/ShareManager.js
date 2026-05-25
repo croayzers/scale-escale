@@ -4,6 +4,7 @@ import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { ServiceConfig } from '../services/ServiceConfig.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { AnalyticsManager } from '../services/AnalyticsManager.js';
+import { CompanyManager } from './CompanyManager.js';
 
 const TABLE_TYPES = ['mesa', 'mesaRect', 'mesaImperial', 'mesaCurva', 'mesaSerpentina'];
 
@@ -38,6 +39,11 @@ function init() {
 }
 
 function openModal() {
+  // Gate: si faltan datos de empresa, abrimos primero ese modal
+  CompanyManager.requireReady(_showShareModal);
+}
+
+function _showShareModal() {
   updateRecipientSummary();
   document.getElementById('share-modal')?.classList.add('visible');
   if (window.lucide) lucide.createIcons();

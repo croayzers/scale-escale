@@ -561,6 +561,8 @@ function closeModal({ keepPreview = false, completeOnboarding = false } = {}) {
   document.getElementById('company-modal')?.classList.remove('visible');
   pending = null;
   if (!keepPreview) applyBrandColors(AppState.company);
+  // Notifica al gate requireReady (si hay uno esperando)
+  document.dispatchEvent(new CustomEvent('escale:company-modal-closed'));
   if (onboardingActive && !completeOnboarding) {
     if (!openAccessModal()) {
       onboardingActive = false;
@@ -864,9 +866,49 @@ function init() {
   openAccessModal();
 }
 
+/* ─── Company Readiness Gate ─────────────────────────────────────────────────
+   Uso: CompanyManager.requireReady(callback)
+   Si los datos mínimos están rellenos → ejecuta callback inmediatamente.
+   Si faltan → abre el modal con una nota contextual y ejecuta callback
+   cuando el usuario cierre (haya guardado o no).
+   ─────────────────────────────────────────────────────────────────────────── */
+const REQUIRED_FIELDS = ['name'];   // el nombre de empresa es lo mínimo imprescindible
+
+function isCompanyReady() {
+  const c = AppState.company;
+  return REQUIRED_FIELDS.every(f => String(c[f] ?? '').trim().length > 0);
+}
+
+function requireReady(callback) {
+  if (typeof callback !== 'function') return;
+
+  if (isCompanyReady()) {
+    callback();
+    return;
+  }
+
+  // Muestra el modal con un banner de contexto
+  const banner = document.getElementById('company-readiness-hint');
+  if (banner) {
+    banner.textContent = '⚡ Añade al menos el nombre de empresa para que aparezca en el documento.';
+    banner.classList.remove('hidden');
+  }
+
+  openModal();
+
+  // Ejecuta callback en cuanto el modal se cierre (guarde o cancele)
+  function onClose() {
+    if (banner) banner.classList.add('hidden');
+    document.removeEventListener('escale:company-modal-closed', onClose);
+    callback();
+  }
+  document.addEventListener('escale:company-modal-closed', onClose, { once: true });
+}
+
 export const CompanyManager = {
   init,
   openModal,
+  requireReady,
   requestAfterWelcome: () => {},
   syncBrandUI,
   applyBrandColors
