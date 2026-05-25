@@ -54,7 +54,7 @@ function buildSceneInsights(state, reason = 'snapshot') {
     planLengthM: state.plan?.lengthM ?? 0,
     gridMainSizeM: state.grid?.majorSize ?? 1,
     gridSubSizeM: state.grid?.subSize ?? 0.25,
-    gridVisibilityPct: state.grid?.opacity ?? 55,
+    gridVisibilityPct: state.grid?.opacity ?? 15,
     gridOffsetX: state.grid?.offsetX ?? 0,
     gridOffsetZ: state.grid?.offsetZ ?? 0,
     eventName: getEventName(),
@@ -126,7 +126,7 @@ export const AppState = {
   grid: {
     majorSize: 1,
     subSize: 0.25,
-    opacity: 55,
+    opacity: 15,
     extent: 60,
     offsetX: 0,
     offsetZ: 0,

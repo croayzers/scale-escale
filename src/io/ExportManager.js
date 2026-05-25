@@ -311,7 +311,6 @@ async function persistExport(modeLabel, result) {
     await DashboardSync.recordExport({ modeLabel, filename: result.filename });
   } catch (error) {
     console.warn('No se pudo registrar la exportacion en el dashboard local:', error);
-    alert(`El PDF se generó, pero no se pudo registrar la exportación en el dashboard local.\n\n${error.message}`);
   }
   try {
     await CloudSync.recordExport({
