@@ -1258,6 +1258,27 @@ input[type=range]::-webkit-slider-thumb {
   display: none;
 }
 
+/* ── btn-company: borde rojo si falta nombre de empresa ── */
+.btn-company--empty {
+  border: 1.5px solid #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.15);
+}
+
+/* ── Company save feedback — aparece brevemente al guardar ── */
+.company-save-feedback {
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 7px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeSlideIn 0.2s ease both;
+}
+.company-save-feedback.hidden { display: none; }
+
 .company-auth-footer {
   display: flex;
   justify-content: flex-end;
@@ -1980,4 +2001,154 @@ input[type=range]::-webkit-slider-thumb {
   .access-tab {
     font-size: 14px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEMPLATE PILLS — Selector Base / Planning
+   ═══════════════════════════════════════════════════════════ */
+
+/* Contenedor de los dos pills */
+.tpl-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 0 10px 0;
+}
+
+/* Wrapper de cada pill + su panel desplegable */
+.tpl-pill-wrap {
+  position: relative;
+}
+
+/* Botón pill */
+.tpl-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border, rgba(0,0,0,0.12));
+  border-radius: 8px;
+  background: var(--surface-2, rgba(0,0,0,0.04));
+  color: var(--text, #111);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+.tpl-pill:hover {
+  background: var(--surface-3, rgba(0,0,0,0.07));
+  border-color: var(--accent, #2563eb);
+}
+.tpl-pill.open {
+  border-color: var(--accent, #2563eb);
+  background: var(--surface-3, rgba(0,0,0,0.07));
+}
+
+/* Label fijo ("Plant. Base") */
+.tpl-pill-kind {
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted, #888);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Separador | */
+.tpl-pill-sep {
+  color: var(--border, rgba(0,0,0,0.2));
+  flex-shrink: 0;
+}
+
+/* Nombre dinámico de la plantilla */
+.tpl-pill-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Flecha chevron */
+.tpl-pill-arrow {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.tpl-pill.open .tpl-pill-arrow {
+  transform: rotate(180deg);
+}
+
+/* Panel desplegable con lista filtrable */
+.tpl-panel {
+  border: 1px solid var(--border, rgba(0,0,0,0.12));
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  margin-top: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+.tpl-panel.hidden { display: none; }
+
+/* Input de filtro */
+.tpl-filter {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.1));
+  background: var(--surface-2, rgba(0,0,0,0.03));
+  font-size: 11px;
+  color: var(--text, #111);
+  outline: none;
+  box-sizing: border-box;
+}
+.tpl-filter:focus {
+  background: var(--surface-3, rgba(0,0,0,0.05));
+}
+
+/* Lista de resultados */
+.tpl-list {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Item de la lista */
+.tpl-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  gap: 6px;
+  color: var(--text, #111);
+  transition: background 0.12s;
+}
+.tpl-item:hover {
+  background: var(--surface-2, rgba(0,0,0,0.05));
+}
+.tpl-item.is-active {
+  font-weight: 700;
+  color: var(--accent, #2563eb);
+}
+.tpl-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tpl-item-date {
+  font-size: 10px;
+  color: var(--muted, #888);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Mensaje vacío */
+.tpl-empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--muted, #888);
+  font-style: italic;
 }

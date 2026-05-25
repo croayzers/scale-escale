@@ -62,9 +62,18 @@ function closeMenus() {
 
 function refreshTemplateMenu() {
   const meta = TemplateManager.getCurrentTemplateMeta();
-  const currentName = document.getElementById('template-current-name');
-  const source = document.getElementById('template-current-source');
 
+  // Pills: nombre base y planning
+  const baseNameEl     = document.getElementById('tpl-base-name');
+  const planningNameEl = document.getElementById('tpl-planning-name');
+  const folderPathEl   = document.getElementById('template-folder-path');
+
+  if (baseNameEl)     baseNameEl.textContent     = meta.baseName     || 'Sin plantilla base';
+  if (planningNameEl) planningNameEl.textContent  = meta.planningName || 'Sin planning';
+
+  // Compatibilidad legado (por si existen en algún otro lugar)
+  const currentName = document.getElementById('template-current-name');
+  const source      = document.getElementById('template-current-source');
   if (currentName) currentName.textContent = meta.name || 'Escena actual';
   if (source) {
     source.textContent = meta.source === 'loaded'
@@ -148,6 +157,9 @@ function openMenu(menuKey) {
   const { button, menu } = getMenuElements(menuKey);
   if (!button || !menu) return;
 
+  // Al abrir el template-menu, limpiar panels de pills
+  if (menuKey === 'template') TemplateManager.closePillPanels?.();
+
   refreshMenus();
   document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
     detail: { kind: 'header', key: menuKey }
@@ -170,12 +182,20 @@ function toggleMenu(menuKey) {
 }
 
 function handleTemplateAction(action) {
-  closeMenus();
-  if (action === 'load') {
-    TemplateManager.load();
-    return;
+  // Los panels de pills se gestionan dentro de TemplateManager;
+  // no cerramos el menú en acciones de carpeta/pill para que el usuario
+  // siga interactuando con la lista.
+  const keepMenuOpen = ['pick-folder'].includes(action);
+  if (!keepMenuOpen) closeMenus();
+
+  switch (action) {
+    case 'load':         TemplateManager.load();          break;
+    case 'save':         TemplateManager.save();          break;
+    case 'save-base':    void TemplateManager.saveAsBase();    break;
+    case 'save-planning': void TemplateManager.savePlanning(); break;
+    case 'pick-folder':  void TemplateManager.pickFolder();   break;
+    default: break;
   }
-  if (action === 'save') TemplateManager.save();
 }
 
 function handlePrintAction(action, button) {

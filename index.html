@@ -150,7 +150,7 @@
   <!-- Logo E-scale / Mi empresa -->
   <button id="btn-company" class="hdr-chip" title="Mi empresa">
     <img id="app-logo" src="/brand/logo.svg" class="h-5 w-5 object-contain" alt="E-scale" onerror="this.style.display='none'"/>
-    <span class="display-font text-[14px] font-medium">Mi empresa</span>
+    <span id="btn-company-label" class="display-font text-[14px] font-medium">Mi empresa</span>
   </button>
 
   <div class="hdr-sep"></div>
@@ -312,27 +312,82 @@
 </div>
 
 <div id="template-menu" class="hdr-popover hidden" aria-hidden="true">
+
+  <!-- Cabecera: carpeta activa -->
   <div class="hdr-popover-head">
-    <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Plantilla actual</div>
-    <div id="template-current-source" class="hdr-popover-meta">Escena en curso</div>
+    <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Carpeta de plantillas</div>
+    <div id="template-folder-path" class="hdr-popover-meta">Sin carpeta seleccionada</div>
   </div>
-  <button id="template-current-name" class="hdr-popover-current" type="button">Escena actual</button>
+
+  <!-- Dos pills: Base y Planning -->
+  <div class="tpl-pills">
+
+    <!-- Pill Base -->
+    <div class="tpl-pill-wrap">
+      <button id="tpl-base-btn" class="tpl-pill" type="button">
+        <span class="tpl-pill-kind">Plant. Base</span>
+        <span class="tpl-pill-sep">|</span>
+        <span id="tpl-base-name" class="tpl-pill-name">Sin plantilla base</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 tpl-pill-arrow"></i>
+      </button>
+      <div id="tpl-base-panel" class="tpl-panel hidden">
+        <input id="tpl-base-filter" class="tpl-filter" type="text" placeholder="Filtrar bases..." autocomplete="off"/>
+        <div id="tpl-base-list" class="tpl-list">
+          <div class="tpl-empty">Selecciona una carpeta primero</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pill Planning -->
+    <div class="tpl-pill-wrap">
+      <button id="tpl-planning-btn" class="tpl-pill" type="button">
+        <span class="tpl-pill-kind">Plant. Planning</span>
+        <span class="tpl-pill-sep">|</span>
+        <span id="tpl-planning-name" class="tpl-pill-name">Sin planning</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 tpl-pill-arrow"></i>
+      </button>
+      <div id="tpl-planning-panel" class="tpl-panel hidden">
+        <input id="tpl-planning-filter" class="tpl-filter" type="text" placeholder="Filtrar plannings..." autocomplete="off"/>
+        <div id="tpl-planning-list" class="tpl-list">
+          <div class="tpl-empty">Selecciona una carpeta primero</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Acciones -->
   <div class="hdr-popover-actions">
-    <button class="menu-action" type="button" data-template-action="load">
+    <button class="menu-action" type="button" data-template-action="pick-folder">
       <span class="menu-action-icon"><i data-lucide="folder-open" class="w-4 h-4"></i></span>
       <span class="menu-action-copy">
-        <strong>Cargar Plantilla</strong>
-        <small>Importar JSON guardado</small>
+        <strong>Seleccionar carpeta</strong>
+        <small>Carpeta donde se guardan las plantillas</small>
+      </span>
+    </button>
+    <button class="menu-action" type="button" data-template-action="save-base">
+      <span class="menu-action-icon"><i data-lucide="landmark" class="w-4 h-4"></i></span>
+      <span class="menu-action-copy">
+        <strong>Guardar como Base</strong>
+        <small>Masia, venue o estructura actual</small>
+      </span>
+    </button>
+    <button class="menu-action" type="button" data-template-action="save-planning">
+      <span class="menu-action-icon"><i data-lucide="layout-list" class="w-4 h-4"></i></span>
+      <span class="menu-action-copy">
+        <strong>Guardar como Planning</strong>
+        <small>Layout del evento (mesas, sillas...)</small>
       </span>
     </button>
     <button class="menu-action" type="button" data-template-action="save">
       <span class="menu-action-icon"><i data-lucide="save" class="w-4 h-4"></i></span>
       <span class="menu-action-copy">
-        <strong>Guardar Plantilla</strong>
-        <small>Descargar escena actual</small>
+        <strong>Exportar copia completa</strong>
+        <small>Descargar toda la escena como JSON</small>
       </span>
     </button>
   </div>
+
 </div>
 
 <div id="print-menu" class="hdr-popover hidden" aria-hidden="true">
@@ -750,6 +805,7 @@
         Guardar
       </button>
     </div>
+    <div id="company-save-feedback" class="company-save-feedback hidden">✓ Datos de empresa guardados</div>
   </div>
 </div>
 

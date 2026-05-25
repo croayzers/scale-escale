@@ -434,6 +434,15 @@ function syncAccountChip() {
   button.classList.remove('is-connected');
 }
 
+function syncCompanyButton() {
+  const btn = document.getElementById('btn-company');
+  if (!btn) return;
+  const label = document.getElementById('btn-company-label');
+  const name = String(AppState.company?.name || '').trim();
+  if (label) label.textContent = name || 'Mi empresa';
+  btn.classList.toggle('btn-company--empty', !name);
+}
+
 function syncBrandUI() {
   const { name, logo } = AppState.company;
   const brandEl = document.getElementById('brand-name');
@@ -450,6 +459,7 @@ function syncBrandUI() {
   }
 
   syncAccountChip();
+  syncCompanyButton();
 }
 
 function openAccessModal() {
@@ -720,7 +730,20 @@ async function savePending() {
   storeCompanyProfile(AppState.company);
   saveCompanyState();
   syncBrandUI();
-  closeModal({ keepPreview: true, completeOnboarding: true });
+
+  // Feedback inline — el modal se queda abierto
+  const feedback = document.getElementById('company-save-feedback');
+  if (feedback) {
+    feedback.classList.remove('hidden');
+    clearTimeout(feedback._hideTimer);
+    feedback._hideTimer = setTimeout(() => feedback.classList.add('hidden'), 2800);
+  }
+
+  // Notificar al gate requireReady (si estaba esperando)
+  document.dispatchEvent(new CustomEvent('escale:company-modal-closed'));
+
+  // Si estábamos en flujo de onboarding, completarlo sin cerrar el modal
+  if (onboardingActive) finalizeOnboarding();
 }
 
 function init() {
