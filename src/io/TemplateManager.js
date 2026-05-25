@@ -283,7 +283,6 @@ function buildData(kind, items, opts = {}) {
       opacity: AppState.plan.opacity,
       imageDataURL: getPlanImageDataURL()
     },
-    grid:    { ...(AppState.grid || {}) },
     camera:  AppState.camera,
     snap:    { ...AppState.snap },
     cotas:   AppState.showCotas,
@@ -642,20 +641,14 @@ async function restorePlan(data) {
   AppState.plan.widthM  = data.plan.widthM  ?? 30;
   AppState.plan.lengthM = data.plan.lengthM ?? 30;
   AppState.plan.opacity = data.plan.opacity  ?? 0.7;
-  const lx = data.canvasArea?.offsetX ?? 0, lz = data.canvasArea?.offsetZ ?? 0;
-  AppState.grid = { ...(AppState.grid || {}), ...(data.grid || {}), offsetX: data.grid?.offsetX ?? lx, offsetZ: data.grid?.offsetZ ?? lz };
-  AppState.snap.spacing   = data.grid?.subSize ?? data.snap?.spacing ?? AppState.snap.spacing;
-  AppState.grid.subSize   = AppState.grid.subSize ?? AppState.snap.spacing;
-  AppState.grid.majorSize = Math.max(AppState.grid.subSize, AppState.grid.majorSize ?? 1);
+  // El grid NO se restaura desde plantilla — cada escena mantiene su propio grid
   SceneManager.rebuildGrids();
   if (data.plan.imageDataURL) await loadPlanImage(data.plan.imageDataURL);
 }
 
 function restoreSettings(data) {
-  if (data.grid)  AppState.grid = { ...(AppState.grid || {}), ...data.grid };
+  // El grid NO se restaura desde plantilla
   if (data.snap) { AppState.snap.enabled = data.snap.enabled ?? true; AppState.snap.spacing = data.snap.spacing ?? 0.25; }
-  AppState.grid.subSize   = data.grid?.subSize ?? AppState.snap.spacing ?? AppState.grid.subSize;
-  AppState.grid.majorSize = Math.max(AppState.grid.subSize, data.grid?.majorSize ?? AppState.grid.majorSize ?? 1);
   if (data.cotas   !== undefined) AppState.showCotas = data.cotas;
   if (data.shadows !== undefined) AppState.shadows   = data.shadows;
   const ni = document.getElementById('inventory-event-name');

@@ -2312,3 +2312,36 @@ body.planning-select-mode #scene-canvas {
   border: 1.5px solid #d4ff3a !important;
   animation: tplHighlight 1.5s ease infinite;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ZONA — Tooltip de cursor (modo colocación)
+   ═══════════════════════════════════════════════════════════ */
+
+.zone-cursor-tip {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: rgba(10,10,11,0.90);
+  color: #f5f3ee;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  border-radius: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 600;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.30);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+/* Cursor crosshair en el canvas durante colocación de zona */
+body.zone-placing #scene-canvas {
+  cursor: crosshair !important;
+}

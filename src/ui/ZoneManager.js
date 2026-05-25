@@ -5,6 +5,46 @@ import { CatalogModal } from './CatalogModal.js';
 
 let zonePlacement = null;
 
+/* ── Tooltip de cursor ─────────────────────────────────── */
+let _tipEl = null;
+let _tipMove = null;
+
+function showZoneTip(text) {
+  if (!_tipEl) {
+    _tipEl = document.createElement('div');
+    _tipEl.id = 'zone-cursor-tip';
+    _tipEl.className = 'zone-cursor-tip';
+    document.body.appendChild(_tipEl);
+  }
+  _tipEl.textContent = text;
+  _tipEl.style.display = 'flex';
+  document.body.classList.add('zone-placing');
+
+  if (!_tipMove) {
+    _tipMove = e => {
+      if (!_tipEl) return;
+      const tx = Math.min(e.clientX + 20, window.innerWidth  - (_tipEl.offsetWidth  || 200) - 8);
+      const ty = Math.min(e.clientY + 16, window.innerHeight - (_tipEl.offsetHeight || 40)  - 8);
+      _tipEl.style.left = tx + 'px';
+      _tipEl.style.top  = ty + 'px';
+    };
+    document.addEventListener('mousemove', _tipMove, { passive: true });
+  }
+}
+
+function updateZoneTip(text) {
+  if (_tipEl) _tipEl.textContent = text;
+}
+
+function hideZoneTip() {
+  if (_tipEl) { _tipEl.style.display = 'none'; }
+  document.body.classList.remove('zone-placing');
+  if (_tipMove) {
+    document.removeEventListener('mousemove', _tipMove);
+    _tipMove = null;
+  }
+}
+
 function getZones() {
   return AppState.items.filter(item => item?.type === 'zone');
 }
@@ -85,6 +125,10 @@ function startZonePlacement() {
     anchor: null,
     current: null
   };
+  // Cerrar el menú de zonas
+  document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', { detail: { kind: 'zone-placement' } }));
+  // Mostrar tooltip junto al cursor
+  showZoneTip(`✦ ${zonePlacement.name} · Clic en el primer punto`);
   setPlacementStatus();
 }
 
@@ -92,6 +136,7 @@ function cancelPlacement() {
   if (!zonePlacement) return false;
   zonePlacement = null;
   clearPreview();
+  hideZoneTip();
   setPlacementStatus();
   return true;
 }
@@ -111,6 +156,7 @@ function handleCanvasPointerDown(point) {
   if (!zonePlacement.anchor) {
     zonePlacement.anchor = { x: point.x, z: point.z };
     zonePlacement.current = { x: point.x, z: point.z };
+    updateZoneTip(`✦ ${zonePlacement.name} · Clic en la esquina opuesta`);
     updatePreview();
     setPlacementStatus();
     return true;
@@ -122,6 +168,7 @@ function handleCanvasPointerDown(point) {
   AppState.select(placed.id);
   zonePlacement = null;
   clearPreview();
+  hideZoneTip();
   renderZoneMenu();
   emitZoneUiChange('zone-created');
   return true;
