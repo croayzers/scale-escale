@@ -74,6 +74,7 @@ module.exports = async function handler(req, res) {
         source: access?.source || 'anonymous',
         role: access?.role || '',
         requiresAuth: !access?.authenticated,
+        dbNeedsMigration: Boolean(access?.dbNeedsMigration),
         needsInvite: Boolean(access?.needsInvite),
         detectedDomain: access?.detectedDomain || '',
         detectedOrganization: access?.detectedOrganization || null
