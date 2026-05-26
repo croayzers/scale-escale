@@ -55,6 +55,7 @@ const DEFAULT_PUBLIC_CONFIG = {
     customerPortal: '/api/billing/portal',
     sendExportEmail: '/api/email/send-export',
     sendShareEmail: '/api/email/send-share',
+    sendFeedback: '/api/email/send-feedback',
     analyticsCapture: '/api/analytics/capture'
   }
 };

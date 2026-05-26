@@ -401,6 +401,8 @@ function downloadPreview() {
     document.body.removeChild(extraLink);
     setTimeout(() => URL.revokeObjectURL(extraLink.href), 0);
   });
+
+  document.dispatchEvent(new CustomEvent('escale:export-done'));
 }
 
 function downloadBlob(blob, filename) {

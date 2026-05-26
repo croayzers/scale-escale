@@ -2528,6 +2528,76 @@ body.zone-placing #scene-canvas {
 }
 .layer-move-btn:hover { background: rgba(10,10,11,0.07); }
 
+/* ── Layer lock blink (capa bloqueada) ── */
+@keyframes layer-lock-blink {
+  0%, 100% { color: inherit; background: transparent; }
+  50%       { color: #dc2626; background: rgba(220,38,38,0.15); }
+}
+.layer-lock-blink {
+  animation: layer-lock-blink 0.55s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* ── Layer context menu ── */
+.layer-ctx-menu {
+  background: var(--surface, #fff);
+  border: 1px solid rgba(10,10,11,0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px -4px rgba(10,10,11,0.22), 0 2px 8px -2px rgba(10,10,11,0.08);
+  padding: 10px 12px;
+  min-width: 192px;
+  user-select: none;
+}
+.layer-ctx-title {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(10,10,11,0.07);
+  margin-bottom: 8px;
+}
+.layer-ctx-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  cursor: default;
+}
+.layer-ctx-field:last-child { margin-bottom: 0; }
+.layer-ctx-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  min-width: 46px;
+}
+.layer-ctx-input {
+  flex: 1;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 12px;
+  padding: 4px 7px;
+  border: 1px solid rgba(10,10,11,0.14);
+  border-radius: 6px;
+  background: var(--bg, #f5f3ee);
+  color: var(--ink, #1a1a1c);
+  outline: none;
+  min-width: 0;
+}
+.layer-ctx-input:focus { border-color: var(--accent, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+.layer-ctx-color {
+  width: 36px;
+  height: 26px;
+  border: 1px solid rgba(10,10,11,0.14);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: var(--bg, #f5f3ee);
+}
+
 /* ── Format mode: cursor pincel en canvas ── */
 body.format-mode-active #scene-canvas {
   cursor: crosshair !important;

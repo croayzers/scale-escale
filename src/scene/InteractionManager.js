@@ -406,6 +406,20 @@ function onPointerDown(e) {
       AppState.select(item.id, shiftDown);
       return;
     }
+    {
+      const lm = window.LayerManager;
+      if (lm) {
+        const itemLayer = lm.getItemLayer(item);
+        if (itemLayer && itemLayer.locked) {
+          AppState.select(item.id, shiftDown);
+          lm.flashLockWarning(itemLayer.id);
+          lm.showLockedLayerToast(
+            `Elemento bloqueado · Pertenece a la capa "${itemLayer.name}"`
+          );
+          return;
+        }
+      }
+    }
     if ((e.ctrlKey || e.metaKey) && !shiftDown) {
       AppState.duplicate(item.id);
       return;

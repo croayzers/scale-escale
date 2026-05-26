@@ -13,6 +13,7 @@ const DEFAULT_LAYERS = [
 let layers = JSON.parse(JSON.stringify(DEFAULT_LAYERS));
 let activeLayerId = 'principal';
 let _sceneManager = null;
+let _activeCtxMenu = null;
 
 async function bindSceneManager() {
   if (!_sceneManager) {
@@ -43,6 +44,21 @@ function isItemEditable(item) {
 }
 
 /* ─── Layer mutations ─── */
+function setLayerName(layerId, name) {
+  const layer = getLayer(layerId);
+  if (!layer) return;
+  const trimmed = String(name).trim();
+  if (trimmed) layer.name = trimmed;
+  refreshLayerPanel();
+}
+
+function setLayerColor(layerId, color) {
+  const layer = getLayer(layerId);
+  if (!layer) return;
+  layer.color = color;
+  refreshLayerPanel();
+}
+
 function setActiveLayer(layerId) {
   if (!getLayer(layerId)) return;
   activeLayerId = layerId;
@@ -84,6 +100,84 @@ async function moveSelectedToLayer(layerId) {
     _sceneManager?.rebuild(item);
   });
   refreshLayerPanel();
+}
+
+/* ─── Lock flash & toast ─── */
+function flashLockWarning(layerId) {
+  const btn = document.querySelector(`.layer-lock-btn[data-layer-id="${layerId}"]`);
+  if (!btn) return;
+  btn.classList.add('layer-lock-blink');
+  clearTimeout(btn._blinkTimer);
+  btn._blinkTimer = setTimeout(() => btn.classList.remove('layer-lock-blink'), 10000);
+}
+
+function showLockedLayerToast(msg) {
+  let c = document.getElementById('escale-toast');
+  if (!c) {
+    c = document.createElement('div');
+    c.id = 'escale-toast';
+    c.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px;';
+    document.body.appendChild(c);
+  }
+  const t = document.createElement('div');
+  t.style.cssText = 'background:rgba(185,28,28,0.95);color:#fff;padding:10px 20px;border-radius:10px;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:0.04em;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);opacity:0;transform:translateY(8px);transition:opacity 0.3s,transform 0.3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;';
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 350); }, 4000);
+}
+
+/* ─── Layer context menu ─── */
+function _closeLayerCtxMenu() {
+  if (_activeCtxMenu) { _activeCtxMenu.remove(); _activeCtxMenu = null; }
+}
+
+function _showLayerContextMenu(layerId, x, y) {
+  _closeLayerCtxMenu();
+  const layer = getLayer(layerId);
+  if (!layer) return;
+
+  const menu = document.createElement('div');
+  menu.className = 'layer-ctx-menu';
+  // Keep within viewport
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const mw = 192, mh = 100;
+  const left = Math.min(x, vw - mw - 8);
+  const top  = Math.min(y, vh - mh - 8);
+  menu.style.cssText = `position:fixed;left:${left}px;top:${top}px;z-index:9999`;
+  menu.innerHTML = `
+    <div class="layer-ctx-title">Editar capa</div>
+    <label class="layer-ctx-field">
+      <span class="layer-ctx-label">Nombre</span>
+      <input class="layer-ctx-input" type="text" value="${layer.name}" maxlength="32" spellcheck="false"/>
+    </label>
+    <label class="layer-ctx-field">
+      <span class="layer-ctx-label">Color</span>
+      <input class="layer-ctx-color" type="color" value="${layer.color}"/>
+    </label>
+  `;
+  document.body.appendChild(menu);
+  _activeCtxMenu = menu;
+
+  const nameInput  = menu.querySelector('.layer-ctx-input');
+  const colorInput = menu.querySelector('.layer-ctx-color');
+
+  setTimeout(() => nameInput?.select(), 10);
+
+  nameInput?.addEventListener('change', () => setLayerName(layerId, nameInput.value));
+  nameInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { setLayerName(layerId, nameInput.value); _closeLayerCtxMenu(); }
+    if (e.key === 'Escape') _closeLayerCtxMenu();
+    e.stopPropagation();
+  });
+  colorInput?.addEventListener('input', () => setLayerColor(layerId, colorInput.value));
+
+  setTimeout(() => {
+    function onDown(e) { if (!menu.contains(e.target)) { _closeLayerCtxMenu(); document.removeEventListener('mousedown', onDown); } }
+    function onKey(e) { if (e.key === 'Escape') { _closeLayerCtxMenu(); document.removeEventListener('keydown', onKey); } }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+  }, 0);
 }
 
 /* ─── Spawn hook: apply layer visibility after item creation ─── */
@@ -136,8 +230,8 @@ function refreshLayerPanel() {
   panel.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', e => {
       e.stopPropagation();
-      const action    = el.dataset.action;
-      const layerId   = el.dataset.layerId;
+      const action  = el.dataset.action;
+      const layerId = el.dataset.layerId;
       if (action === 'toggle-vis') {
         const layer = getLayer(layerId);
         if (layer) setLayerVisibility(layerId, !layer.visible);
@@ -149,6 +243,15 @@ function refreshLayerPanel() {
       }
     });
   });
+
+  panel.querySelectorAll('.layer-item').forEach(el => {
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      _showLayerContextMenu(el.dataset.layerId, e.clientX, e.clientY);
+    });
+  });
+
   document.getElementById('layer-move-selection')?.addEventListener('click', () => {
     moveSelectedToLayer(activeLayerId);
   });
@@ -189,10 +292,14 @@ export const LayerManager = {
   isItemVisible,
   isItemEditable,
   setActiveLayer,
+  setLayerName,
+  setLayerColor,
   setLayerVisibility,
   setLayerLocked,
   moveSelectedToLayer,
   applyLayerStateToItem,
+  flashLockWarning,
+  showLockedLayerToast,
   refreshLayerPanel,
   exportState,
   importState

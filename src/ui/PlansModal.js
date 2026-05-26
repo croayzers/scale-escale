@@ -1,6 +1,7 @@
 import { PLAN_CATALOG } from '../core/PlanCatalog.js';
 import { getPlanVisual } from '../core/BrandTokens.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
+import { AppState } from '../core/AppState.js';
 
 const PLAN_COMPARE_ROWS = [
   { label: 'Proyectos activos', values: { free_lite: '1 proyecto', pro: 'Ilimitados', premium: 'Ilimitados' } },
@@ -132,6 +133,34 @@ function render() {
   if (window.lucide) lucide.createIcons();
 }
 
+function contactPremium() {
+  const confirmed = window.confirm(
+    '¿Quieres contactar con E-scale para contratar el Plan Premium?\n\n' +
+    'Se abrirá tu cliente de correo con un mensaje listo para enviar.'
+  );
+  if (!confirmed) return;
+
+  const name    = AppState.company.authDisplayName || AppState.company.name || '';
+  const email   = AppState.company.authEmail || AppState.company.email || '';
+  const company = AppState.company.name || '';
+  const logo    = AppState.company.logoFileName || AppState.company.logoRelativePath || '';
+
+  const subject = encodeURIComponent('Solicitud de contratación — Plan Premium E-scale');
+  const body = encodeURIComponent(
+    'Hola,\n\n' +
+    'Me pongo en contacto porque estoy interesado/a en contratar el Plan Premium de E-scale.\n\n' +
+    'Mis datos de contacto:\n' +
+    (name    ? `  Nombre:   ${name}\n`    : '') +
+    (email   ? `  Email:    ${email}\n`   : '') +
+    (company ? `  Empresa:  ${company}\n` : '') +
+    (logo    ? `  Logo:     ${logo}\n`    : '') +
+    '\nQuedo a vuestra disposición para cualquier consulta sobre precios, integraciones o condiciones del plan.\n\n' +
+    'Un saludo.'
+  );
+
+  window.open(`mailto:Rafa27x26@gmail.com?subject=${subject}&body=${body}`, '_self');
+}
+
 async function handlePlanAction(planCode) {
   const currentPlanCode = SubscriptionManager.currentPlanCode();
   if (planCode === 'free_lite') {
@@ -141,6 +170,11 @@ async function handlePlanAction(planCode) {
 
   if (currentPlanCode === planCode || (currentPlanCode === 'premium' && planCode === 'pro')) {
     await SubscriptionManager.openCustomerPortal();
+    return;
+  }
+
+  if (planCode === 'premium') {
+    contactPremium();
     return;
   }
 

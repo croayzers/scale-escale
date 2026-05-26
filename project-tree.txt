@@ -29,6 +29,7 @@ PROJECT STRUCTURE
 │   │   └── webhook.js
 │   ├── email/
 │   │   ├── send-export.js
+│   │   ├── send-feedback.js
 │   │   └── send-share.js
 │   └── public-config.js
 ├── brand/
@@ -165,6 +166,7 @@ PROJECT STRUCTURE
 │   └── ui/
 │       ├── CatalogModal.js
 │       ├── Dock.js
+│       ├── FeedbackModal.js
 │       ├── HeaderActionMenus.js
 │       ├── InventoryPanel.js
 │       ├── PlansModal.js

@@ -25,6 +25,7 @@ import { SubscriptionManager } from './services/SubscriptionManager.js';
 import { AnalyticsManager } from './services/AnalyticsManager.js';
 import { SupportManager } from './services/SupportManager.js';
 import { MessageManager } from './services/MessageManager.js';
+import { FeedbackModal } from './ui/FeedbackModal.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -77,6 +78,7 @@ async function bootstrap() {
   await safeInit('ZoneManager', () => ZoneManager.init());
   await safeInit('InventoryPanel', () => InventoryPanel.init());
   safeInit('MessageManager', () => MessageManager.init());
+  safeInit('FeedbackModal',  () => FeedbackModal.init());
 
   // Exponer al window para acceso desde consola y botones inline
   window.InteractionManager = InteractionManager;
@@ -304,6 +306,10 @@ async function bootstrap() {
   });
   document.getElementById('settings-done')?.addEventListener('click', () => {
     settingsModal?.classList.remove('visible');
+  });
+  document.getElementById('btn-open-feedback')?.addEventListener('click', () => {
+    settingsModal?.classList.remove('visible');
+    FeedbackModal.open();
   });
 
   document.addEventListener('escale:scene-overlay-open', event => {

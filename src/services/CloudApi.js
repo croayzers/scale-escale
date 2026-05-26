@@ -132,6 +132,14 @@ async function sendShareEmail({ blob, filename, ...payload }) {
   });
 }
 
+async function sendFeedback(payload) {
+  return await request(ServiceConfig.getUrl('sendFeedback'), {
+    method: 'POST',
+    body: payload,
+    timeoutMs: 15000
+  });
+}
+
 async function captureEvent(event, payload = {}) {
   return await request(ServiceConfig.getUrl('analyticsCapture'), {
     method: 'POST',
@@ -145,6 +153,7 @@ async function captureEvent(event, payload = {}) {
 export const CloudApi = {
   bootstrapSession,
   syncCompany,
+  sendFeedback,
   recordExport,
   createCheckoutSession,
   openCustomerPortal,

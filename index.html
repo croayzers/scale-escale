@@ -47,9 +47,7 @@
   <div class="access-shell anim-in">
     <div class="access-shell-accent"></div>
 
-    <div class="access-brand-mark" aria-hidden="true" style="background:none;box-shadow:none;width:auto;height:auto;">
-      <img src="brand/Logo_horizontal.png" alt="E_scale" style="height:56px;object-fit:contain;border-radius:16px;"/>
-    </div>
+
     <div class="access-brand-copy">
       <img src="brand/logo_txt.png" alt="E_scale" style="height:20px;object-fit:contain;"/>
       <p class="access-brand-subtitle">Diseño de espacios profesional</p>
@@ -763,6 +761,15 @@
           <button id="btn-clear" class="btn ghost" style="color:#b91c1c"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Vaciar escena</button>
         </div>
       </section>
+
+      <!-- Soporte -->
+      <section class="col-span-2">
+        <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Soporte</div>
+        <button id="btn-open-feedback" class="btn ghost">
+          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+          Reportar problema o sugerencia
+        </button>
+      </section>
     </div>
 
     <div class="rule mt-5"></div>
@@ -775,6 +782,64 @@
       </div>
       <button id="settings-done" class="btn primary">Listo</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ MODAL FEEDBACK ============ -->
+<div id="feedback-modal" class="modal-bg">
+  <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-5">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Soporte · Sugerencias</div>
+        <h3 class="display-font text-2xl leading-tight">¿Cómo podemos ayudarte?</h3>
+        <p class="text-[13px] mt-1" style="color:var(--muted)">Gracias por confiar en E-scale. Tu opinión nos ayuda a mejorar.</p>
+        <p data-feedback-auto-msg class="text-[12px] mt-2 px-3 py-2 rounded-lg" style="background:rgba(37,99,235,0.07);color:#2563eb" hidden>
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 inline-block mr-1"></i>
+          Exportación completada. ¿Encontraste algún problema o tienes alguna sugerencia?
+        </p>
+      </div>
+      <button id="feedback-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <!-- Form state -->
+    <div data-feedback-state="idle,error">
+      <div class="mb-4">
+        <label class="mono text-[10px] tracking-widest uppercase block mb-2" style="color:var(--muted)">Tipo de consulta</label>
+        <select id="feedback-type" class="input-field w-full" style="font-size:13px"></select>
+      </div>
+      <div class="mb-5">
+        <label class="mono text-[10px] tracking-widest uppercase block mb-2" style="color:var(--muted)">Descripción</label>
+        <textarea id="feedback-body" rows="5" placeholder="Describe lo que ha ocurrido o tu sugerencia con el mayor detalle posible…" class="input-field w-full" style="resize:vertical;font-size:13px;line-height:1.5"></textarea>
+      </div>
+      <div data-feedback-state="error" hidden>
+        <p class="text-[12px] mb-4 px-3 py-2 rounded-lg" style="background:rgba(185,28,28,0.08);color:#b91c1c">
+          No se pudo enviar el mensaje. Comprueba tu conexión e inténtalo de nuevo.
+        </p>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button id="feedback-cancel" class="btn ghost">Cancelar</button>
+        <button id="feedback-submit" class="btn primary">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          Enviar
+        </button>
+      </div>
+    </div>
+
+    <!-- Sending state -->
+    <div data-feedback-state="sending" hidden class="py-8 text-center">
+      <div class="mono text-[11px] tracking-widest uppercase" style="color:var(--muted)">Enviando mensaje…</div>
+    </div>
+
+    <!-- Success state -->
+    <div data-feedback-state="success" hidden class="py-6 text-center">
+      <div style="font-size:36px;margin-bottom:12px">✅</div>
+      <div class="display-font text-xl mb-2">¡Mensaje enviado!</div>
+      <p class="text-[13px] mb-6" style="color:var(--muted)">Gracias por tu feedback. Lo revisaremos lo antes posible.</p>
+      <button id="feedback-done" class="btn primary">Cerrar</button>
+    </div>
+
   </div>
 </div>
 
