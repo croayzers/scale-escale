@@ -1417,15 +1417,30 @@ function showDetail(item) {
       color: v => ({ color: v }),
     });
 
-  } else {
+  } else if (item.type === 'schemaSurface') {
+    const title = item.catalogName || item.subtype || 'Superficie';
     content.innerHTML = `
-      <div class="display-font text-2xl mb-1 leading-tight">Buffet</div>
-      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">${item.subtype || 'sin categoría'} · ID #${item.id}</div>
-      <div class="space-y-2 text-[12px]">
-        <div class="flex justify-between"><span style="color:var(--muted)">Longitud</span><span class="mono">${item.dims.length.toFixed(2)}m</span></div>
-        <div class="flex justify-between"><span style="color:var(--muted)">Categoría</span><span class="mono">${item.subtype || '—'}</span></div>
-        <div class="flex justify-between"><span style="color:var(--muted)">Posición X</span><span class="mono">${item.x.toFixed(2)}m</span></div>
-        <div class="flex justify-between"><span style="color:var(--muted)">Posición Z</span><span class="mono">${item.z.toFixed(2)}m</span></div>
+      <div class="display-font text-2xl mb-1 leading-tight">${title}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">Superficie · ID #${item.id}</div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input id="surf-length" type="number" min="0.5" max="200" step="0.5" value="${(item.dims?.length ?? 4).toFixed(1)}" class="input-field"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input id="surf-width" type="number" min="0.5" max="200" step="0.5" value="${(item.dims?.width ?? 4).toFixed(1)}" class="input-field"/>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color relleno</span>
+          <input id="surf-color" type="color" value="${item.color || '#6F8E57'}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Color borde</span>
+          <input id="surf-border" type="color" value="${item.borderColor || '#2F5A29'}" class="input-field" style="padding:2px;height:36px"/>
+        </label>
       </div>
       <div class="rule"></div>
       <div class="flex gap-2">
@@ -1433,6 +1448,70 @@ function showDetail(item) {
         <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
       </div>
     `;
+    panel.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
+    content.querySelector('#surf-length')?.addEventListener('input', e => {
+      A.update(item.id, { dims: { ...(item.dims || {}), length: Math.max(0.5, parseFloat(e.target.value) || 4) } }, { skipDetailRebuild: true });
+    });
+    content.querySelector('#surf-width')?.addEventListener('input', e => {
+      A.update(item.id, { dims: { ...(item.dims || {}), width: Math.max(0.5, parseFloat(e.target.value) || 4) } }, { skipDetailRebuild: true });
+    });
+    content.querySelector('#surf-color')?.addEventListener('input', e => {
+      A.update(item.id, { color: e.target.value }, { skipDetailRebuild: true });
+    });
+    content.querySelector('#surf-border')?.addEventListener('input', e => {
+      A.update(item.id, { borderColor: e.target.value }, { skipDetailRebuild: true });
+    });
+    panel.querySelector('[data-act="dup"]')?.addEventListener('click', () => A.duplicate(item.id));
+    panel.querySelector('[data-act="del"]')?.addEventListener('click', () => A.remove(item.id));
+    return;
+
+  } else {
+    const d = item.dims || {};
+    const hasLength = d.length !== undefined;
+    const hasWidth  = d.width  !== undefined;
+    const hasHeight = d.height !== undefined;
+    const hasDiam   = d.diameter !== undefined;
+    const title = item.catalogName || item.subtype || item.type || 'Elemento';
+    content.innerHTML = `
+      <div class="display-font text-2xl mb-1 leading-tight">${title}</div>
+      <div class="mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--muted)">${item.type} · ID #${item.id}</div>
+      ${hasDiam ? `
+        <label class="block mb-3">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Diámetro (m)</span>
+          <input id="gen-diam" type="number" min="0.2" max="50" step="0.1" value="${d.diameter.toFixed(2)}" class="input-field"/>
+        </label>` : ''}
+      ${hasLength ? `
+        <label class="block mb-3">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo (m)</span>
+          <input id="gen-length" type="number" min="0.2" max="200" step="0.1" value="${d.length.toFixed(2)}" class="input-field"/>
+        </label>` : ''}
+      ${hasWidth ? `
+        <label class="block mb-3">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho (m)</span>
+          <input id="gen-width" type="number" min="0.2" max="200" step="0.1" value="${d.width.toFixed(2)}" class="input-field"/>
+        </label>` : ''}
+      ${hasHeight ? `
+        <label class="block mb-3">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Altura (m)</span>
+          <input id="gen-height" type="number" min="0.1" max="50" step="0.1" value="${d.height.toFixed(2)}" class="input-field"/>
+        </label>` : ''}
+      <div class="rule"></div>
+      <div class="flex gap-2">
+        <button data-act="dup" class="btn ghost flex-1 justify-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Duplicar</button>
+        <button data-act="del" class="btn danger ghost flex-1 justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Eliminar</button>
+      </div>
+    `;
+    panel.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
+    const patchDims = (key, val) => A.update(item.id, { dims: { ...(item.dims || {}), [key]: Math.max(0.1, parseFloat(val) || 1) } }, { skipDetailRebuild: true });
+    content.querySelector('#gen-diam')?.addEventListener('input',   e => patchDims('diameter', e.target.value));
+    content.querySelector('#gen-length')?.addEventListener('input', e => patchDims('length',   e.target.value));
+    content.querySelector('#gen-width')?.addEventListener('input',  e => patchDims('width',    e.target.value));
+    content.querySelector('#gen-height')?.addEventListener('input', e => patchDims('height',   e.target.value));
+    panel.querySelector('[data-act="dup"]')?.addEventListener('click', () => A.duplicate(item.id));
+    panel.querySelector('[data-act="del"]')?.addEventListener('click', () => A.remove(item.id));
+    return;
   }
   
 

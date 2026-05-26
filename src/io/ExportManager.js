@@ -11,6 +11,7 @@ import { UIManager } from '../ui/UIManager.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { AnalyticsManager } from '../services/AnalyticsManager.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
+import { PlanningRegistry } from './PlanningRegistry.js';
 
 let areaSelecting = false;
 let areaStart = null;
@@ -316,6 +317,7 @@ function buildModeLabel(viewLabel, cameraLabel) {
 }
 
 async function buildAndPreview(imageDataUrl, modeLabel) {
+  PlanningRegistry.record('export');
   const pdfResult = await buildPdfBlob(imageDataUrl, modeLabel);
   const result = exportIntent.kind === 'inventory'
     ? attachInventoryDownload(pdfResult, modeLabel)

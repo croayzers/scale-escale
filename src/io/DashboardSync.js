@@ -163,8 +163,13 @@ async function recordExport({ modeLabel, filename, items = AppState.items } = {}
   return data;
 }
 
+async function syncPlanning(record) {
+  return requestJson('POST', '/api/dashboard/planning', { planning: record }, { silent: true });
+}
+
 export const DashboardSync = {
   flushPending,
   syncCompany,
-  recordExport
+  recordExport,
+  syncPlanning
 };

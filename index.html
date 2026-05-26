@@ -807,10 +807,16 @@
         <span id="company-email-help" class="company-field-help">Si vienes del acceso inicial, este correo se reutiliza automÃ¡ticamente.</span>
       </label>
     </div>
-    <label class="block mb-4">
-      <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento</span>
-      <input id="company-venue" type="text" placeholder="Finca, hotel, playa, salÃ³nâ€¦" class="input-field"/>
-    </label>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Cliente</span>
+        <input id="company-cliente" type="text" placeholder="Nombre del cliente" class="input-field"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento</span>
+        <input id="company-venue" type="text" placeholder="Finca, hotel, playa&#8230;" class="input-field"/>
+      </label>
+    </div>
 
     <!-- Logo -->
     <div class="mb-4">

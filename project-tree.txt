@@ -88,6 +88,7 @@ PROJECT STRUCTURE
 │   │   ├── DashboardSync.js
 │   │   ├── ExportManager.js
 │   │   ├── PlanManager.js
+│   │   ├── PlanningRegistry.js
 │   │   ├── ShareManager.js
 │   │   └── TemplateManager.js
 │   ├── main.js

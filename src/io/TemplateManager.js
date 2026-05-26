@@ -5,9 +5,10 @@
    · Naming: LugarEvento_NombrePlantilla_Kind_Date.escale.json
    ───────────────────────────────────────────────────────── */
 
-import { AppState }     from '../core/AppState.js';
-import { SceneManager } from '../scene/SceneManager.js';
-import { UIManager }    from '../ui/UIManager.js';
+import { AppState }          from '../core/AppState.js';
+import { SceneManager }      from '../scene/SceneManager.js';
+import { UIManager }         from '../ui/UIManager.js';
+import { PlanningRegistry }  from './PlanningRegistry.js';
 
 const TEMPLATE_VERSION = '1.0';
 const FOLDER_HANDLE_DB = 'escale_template_folder';
@@ -550,6 +551,7 @@ async function handleFileLoad(e) {
     const kl = data.kind === 'base' ? '[BASE] ' : data.kind === 'planning' ? '[PLANNING] ' : '';
     if (!confirm(`¿Cargar ${kl}"${data.name || 'Sin nombre'}"?\n${c} elemento${c !== 1 ? 's' : ''}.\n\n⚠ Se reemplazará la escena actual.`)) return;
 
+    PlanningRegistry.record('import');
     if (data.kind === 'base')          { await applyBaseTemplate(data, 'replace'); currentBaseMeta = { name: data.name || file.name, filename: null }; }
     else if (data.kind === 'planning') { await applyPlanningTemplate(data, 'replace'); currentPlanningMeta = { name: data.name || file.name, filename: null }; }
     else                               { await applyTemplate(data); }

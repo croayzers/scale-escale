@@ -1,5 +1,6 @@
 ﻿import { AppState } from '../core/AppState.js';
 import { DashboardSync } from './DashboardSync.js';
+import { PlanningRegistry } from './PlanningRegistry.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { AuthManager } from '../services/AuthManager.js';
@@ -523,6 +524,7 @@ function syncModalUI() {
       ? `Correo recuperado del acceso: ${lockedEmail}`
       : 'Puedes editar este correo si quieres guardar la empresa con otro contacto.';
   }
+  document.getElementById('company-cliente').value = pending.cliente || '';
   document.getElementById('company-venue').value = pending.venue || '';
 
   const primary = colorFor(pending, 'colorPrimary');
@@ -702,6 +704,7 @@ async function savePending() {
 
   pending.email = cleanEmail(AppState.company.authEmail || document.getElementById('company-email')?.value || pending.email);
   pending.name = cleanText(document.getElementById('company-name')?.value || pending.name);
+  pending.cliente = cleanText(document.getElementById('company-cliente')?.value || pending.cliente);
   pending.venue = cleanText(document.getElementById('company-venue')?.value || pending.venue);
 
   if (pending.logo && !SubscriptionManager.hasFeature('ownLogo')) {
@@ -731,6 +734,7 @@ async function savePending() {
   storeCompanyProfile(AppState.company);
   saveCompanyState();
   syncBrandUI();
+  PlanningRegistry.record('company-save');
 
   document.getElementById('company-modal')?.classList.remove('visible');
 
