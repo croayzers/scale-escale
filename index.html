@@ -305,11 +305,16 @@
 <div id="grid-menu" class="hdr-popover hidden" aria-hidden="true">
   <div class="hdr-popover-head">
     <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">Grid y subrejilla</div>
-    <div class="hdr-popover-meta">Mueve la rejilla, no el plano</div>
+    <div class="hdr-popover-meta">Grid vinculado a cada zona</div>
   </div>
-  <div class="hdr-popover-note">Ajusta la medida principal, la subrejilla y su visibilidad. El movimiento desplaza la rejilla de referencia.</div>
+  <div class="hdr-popover-note">Cada zona tiene su propio grid con tamaño y configuración independientes.</div>
   <div class="hdr-menu-block">
-    <div class="menu-section-label">Ajustes</div>
+    <div class="menu-section-label">Grids de zona</div>
+    <div id="zone-grids-list" class="zones-list"></div>
+  </div>
+  <div id="zone-grid-editor" class="hdr-menu-block"></div>
+  <div class="hdr-menu-block">
+    <div class="menu-section-label">Grid global</div>
     <div class="menu-field-grid">
       <label class="menu-field">
         <span>Medida grid (m)</span>

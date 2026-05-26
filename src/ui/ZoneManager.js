@@ -4,6 +4,7 @@ import { SnapManager } from '../scene/SnapManager.js';
 import { CatalogModal } from './CatalogModal.js';
 
 let zonePlacement = null;
+let activeGridZoneId = null;
 
 /* ── Tooltip de cursor ─────────────────────────────────── */
 let _tipEl = null;
@@ -93,7 +94,13 @@ function buildZoneItem(anchor, point) {
     showLabel: true,
     locked: false,
     textColor: '#000000',
-    fontSize: 120
+    fontSize: 120,
+    gridConfig: {
+      majorSize: 1,
+      subSize: 0.25,
+      opacity: 55,
+      enabled: true
+    }
   };
 }
 
@@ -348,6 +355,119 @@ function zoneEditorMarkup(zone) {
   `;
 }
 
+/* ─── Zone Grid helpers ───────────────────────────────────── */
+
+function defaultGridConfig() {
+  return { majorSize: 1, subSize: 0.25, opacity: 55, enabled: true };
+}
+
+function zoneGridListMarkup(zones) {
+  if (!zones.length) {
+    return '<div class="menu-empty-copy">Crea zonas para generar sus grids vinculados.</div>';
+  }
+  return zones.map(zone => {
+    const cfg = zone.gridConfig || defaultGridConfig();
+    const active = zone.id === activeGridZoneId;
+    const dims = `${(zone.dims?.length || 0).toFixed(1)}×${(zone.dims?.width || 0).toFixed(1)}m`;
+    const sizeLabel = `${cfg.majorSize || 1}m / ${cfg.subSize || 0.25}m`;
+    return `
+      <div class="zone-chip-row">
+        <button class="zone-chip ${active ? 'active' : ''}" type="button" data-grid-zone-id="${zone.id}">
+          <span class="zone-chip-swatch" style="background:${zone.fillEnabled === false ? 'transparent' : zone.color};border-color:${zone.borderColor || zone.color}"></span>
+          <span class="zone-chip-copy">
+            <strong>Grid · ${zone.labelText || `Zona ${zone.id}`}</strong>
+            <small>${dims} · ${sizeLabel}</small>
+          </span>
+        </button>
+        <button class="zone-disable-btn ${cfg.enabled === false ? 'is-active' : ''}" type="button" data-grid-toggle="${zone.id}" title="${cfg.enabled === false ? 'Activar grid' : 'Desactivar grid'}">
+          ${cfg.enabled === false ? 'Inactivo' : 'Activo'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function zoneGridEditorMarkup(zone) {
+  if (!zone) return '';
+  const cfg = { ...defaultGridConfig(), ...(zone.gridConfig || {}) };
+  return `
+    <div class="menu-section-label">Grid · ${zone.labelText || `Zona ${zone.id}`}</div>
+    <div class="menu-field-grid">
+      <label class="menu-field">
+        <span>Medida grid (m)</span>
+        <input id="zg-main-size" class="input-field" type="number" min="0.1" max="20" step="0.1" value="${cfg.majorSize}"/>
+      </label>
+      <label class="menu-field">
+        <span>Subrejilla (m)</span>
+        <input id="zg-sub-size" class="input-field" type="number" min="0.05" max="5" step="0.05" value="${cfg.subSize}"/>
+      </label>
+      <label class="menu-field menu-field-full">
+        <span>Visibilidad</span>
+        <div class="menu-slider-row">
+          <input id="zg-visibility" type="range" min="0" max="100" step="1" value="${cfg.opacity}"/>
+          <strong id="zg-visibility-value">${cfg.opacity}%</strong>
+        </div>
+      </label>
+    </div>
+  `;
+}
+
+function bindZoneGridEditor(zone) {
+  if (!zone) return;
+  const updateGrid = patch => {
+    const current = zone.gridConfig || defaultGridConfig();
+    AppState.update(zone.id, { gridConfig: { ...current, ...patch } }, { skipDetailRebuild: true });
+  };
+
+  document.getElementById('zg-main-size')?.addEventListener('change', e => {
+    const majorSize = Math.max(0.1, Math.min(20, parseFloat(e.target.value) || 1));
+    updateGrid({ majorSize });
+  });
+  document.getElementById('zg-sub-size')?.addEventListener('change', e => {
+    const subSize = Math.max(0.05, Math.min(5, parseFloat(e.target.value) || 0.25));
+    updateGrid({ subSize });
+  });
+  document.getElementById('zg-visibility')?.addEventListener('input', e => {
+    const opacity = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+    const lbl = document.getElementById('zg-visibility-value');
+    if (lbl) lbl.textContent = `${Math.round(opacity)}%`;
+    updateGrid({ opacity });
+  });
+}
+
+function renderZoneGridMenu() {
+  const list = document.getElementById('zone-grids-list');
+  const editor = document.getElementById('zone-grid-editor');
+  const zones = getZones();
+  const activeZone = zones.find(z => z.id === activeGridZoneId) || null;
+
+  if (list) {
+    list.innerHTML = zoneGridListMarkup(zones);
+    list.querySelectorAll('[data-grid-zone-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.gridZoneId);
+        activeGridZoneId = activeGridZoneId === id ? null : id;
+        renderZoneGridMenu();
+      });
+    });
+    list.querySelectorAll('[data-grid-toggle]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = Number(btn.dataset.gridToggle);
+        const zone = zones.find(z => z.id === id);
+        if (!zone) return;
+        const cfg = zone.gridConfig || defaultGridConfig();
+        AppState.update(id, { gridConfig: { ...cfg, enabled: !cfg.enabled } }, { skipDetailRebuild: true });
+      });
+    });
+  }
+
+  if (editor) {
+    editor.innerHTML = zoneGridEditorMarkup(activeZone);
+    bindZoneGridEditor(activeZone);
+  }
+}
+
 function renderZoneMenu() {
   const note = document.getElementById('zones-menu-note');
   const list = document.getElementById('zones-list');
@@ -445,6 +565,7 @@ function refreshGridMenu() {
     `;
   }
   if (window.lucide) lucide.createIcons();
+  renderZoneGridMenu();
 }
 
 function init() {
@@ -469,6 +590,7 @@ function init() {
 
   document.addEventListener('escale:scene-insights-changed', () => {
     renderZoneMenu();
+    renderZoneGridMenu();
     refreshGridMenu();
   });
   document.addEventListener('escale:header-menu-opened', event => {
@@ -488,6 +610,7 @@ export const ZoneManager = {
   init,
   renderZoneMenu,
   refreshGridMenu,
+  renderZoneGridMenu,
   isPlacementActive,
   getPlacementLabel,
   handleCanvasPointerDown,
