@@ -274,6 +274,14 @@
             <span class="field-label">Botón aceptar</span>
             <input type="text" id="msj_alerta-acceptBtn" placeholder="Entendido"/>
           </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Link al aceptar (Stripe u otro)</span>
+            <input type="url" id="msj_alerta-acceptUrl" placeholder="https://buy.stripe.com/…"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Acción UI (sin link)</span>
+            <select id="msj_alerta-acceptAction"></select>
+          </label>
           <label class="field">
             <span class="field-label">Cooldown (días)</span>
             <input type="number" id="msj_alerta-cooldown" min="0" max="365" step="1"/>
@@ -314,6 +322,14 @@
           <label class="field">
             <span class="field-label">Botón aceptar</span>
             <input type="text" id="msj_oferta-acceptBtn" placeholder="Ver oferta"/>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Link al aceptar (Stripe u otro)</span>
+            <input type="url" id="msj_oferta-acceptUrl" placeholder="https://buy.stripe.com/…"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Acción UI (sin link)</span>
+            <select id="msj_oferta-acceptAction"></select>
           </label>
           <label class="field">
             <span class="field-label">Cooldown (días)</span>
@@ -356,6 +372,14 @@
             <span class="field-label">Botón aceptar</span>
             <input type="text" id="msj_info-acceptBtn" placeholder="Ver más"/>
           </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Link al aceptar (Stripe u otro)</span>
+            <input type="url" id="msj_info-acceptUrl" placeholder="https://buy.stripe.com/…"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Acción UI (sin link)</span>
+            <select id="msj_info-acceptAction"></select>
+          </label>
           <label class="field">
             <span class="field-label">Cooldown (días)</span>
             <input type="number" id="msj_info-cooldown" min="0" max="365" step="1"/>
@@ -396,6 +420,14 @@
           <label class="field">
             <span class="field-label">Botón aceptar</span>
             <input type="text" id="msj_stats-acceptBtn" placeholder="Ver estadísticas"/>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Link al aceptar (Stripe u otro)</span>
+            <input type="url" id="msj_stats-acceptUrl" placeholder="https://buy.stripe.com/…"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Acción UI (sin link)</span>
+            <select id="msj_stats-acceptAction"></select>
           </label>
           <label class="field">
             <span class="field-label">Cooldown (días)</span>
@@ -658,6 +690,7 @@
   <div id="ep-meta" class="ep-meta"></div>
 </div>
 
+<script src="elements-bundle.js"></script>
 <script src="thumb.js"></script>
 <script src="admin.js"></script>
 <script>

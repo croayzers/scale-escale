@@ -71,11 +71,28 @@ function buildOverlay(type, cfg) {
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action) {
       overlay.remove();
+      if (action === 'accept') {
+        if (cfg.acceptUrl) {
+          window.open(cfg.acceptUrl, '_blank', 'noopener,noreferrer');
+        } else if (cfg.acceptAction) {
+          _triggerUiButton(cfg.acceptAction);
+        }
+      }
       document.dispatchEvent(new CustomEvent(`escale:message-${action}`, { detail: { type } }));
     }
   });
 
   return overlay;
+}
+
+function _triggerUiButton(value) {
+  if (!value) return;
+  if (value.startsWith('dock-')) {
+    const catKey = value.slice(5);
+    document.querySelector(`#dock-items button[data-cat="${catKey}"]`)?.click();
+  } else {
+    document.getElementById(value)?.click();
+  }
 }
 
 function escHtml(str) {

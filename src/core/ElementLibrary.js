@@ -2,6 +2,7 @@ import { AppState } from './AppState.js';
 import { buildCatalogData } from '../schemas/CatalogBlueprints.js';
 import { CATALOG_CATEGORIES, CATEGORY_KEYS } from '../schemas/CatalogCategories.js';
 import { createItemFromCatalog } from '../schemas/SchemaItemFactory.js';
+import BUNDLED_ELEMENTS from '../data/elementsData.js';
 
 const ADMIN_LS_KEY = 'escale_admin_config';
 
@@ -29,9 +30,8 @@ export const ElementLibrary = {
       this.data = buildCatalogData(await res.json());
       console.info('[ElementLibrary] cargada desde elements.json + schemas');
     } catch (error) {
-      console.error('[ElementLibrary] error cargando elements.json:', error.message);
-      console.warn('[ElementLibrary] usa un servidor local para evitar restricciones de file://');
-      this.data = buildCatalogData(this.data);
+      console.info('[ElementLibrary] fetch falló, usando datos integrados:', error.message);
+      this.data = buildCatalogData(BUNDLED_ELEMENTS);
     }
     this._applyAdminLayout();
     this._listenAdminConfig();

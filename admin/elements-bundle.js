@@ -1,0 +1,59 @@
+/* Datos del catálogo integrados — fallback cuando fetch falla con file:// */
+window.__BUNDLED_ELEMENTS__ = {
+  "version": 1,
+  "chairs": [
+    { "id": "silla_plegable", "name": "Plegable plástico", "category": "chairs", "type": "sillaCatering", "subtype": "plegable", "dims": { "width": 0.44, "depth": 0.44, "seatHeight": 0.45, "totalHeight": 0.85 }, "color": "#f5f3ee", "chairs": 1, "defaultRotation": 0 },
+    { "id": "silla_chiavari", "name": "Chiavari", "category": "chairs", "type": "sillaCatering", "subtype": "chiavari", "dims": { "width": 0.40, "depth": 0.42, "seatHeight": 0.46, "totalHeight": 0.92 }, "color": "#c9a55a", "chairs": 1, "defaultRotation": 0 },
+    { "id": "silla_tiffany", "name": "Tiffany", "category": "chairs", "type": "sillaCatering", "subtype": "tiffany", "dims": { "width": 0.40, "depth": 0.42, "seatHeight": 0.46, "totalHeight": 0.92 }, "color": "#d4c89a", "chairs": 1, "defaultRotation": 0 },
+    { "id": "silla_tolix", "name": "Tolix", "category": "chairs", "type": "sillaCatering", "subtype": "tolix", "dims": { "width": 0.42, "depth": 0.42, "seatHeight": 0.45, "totalHeight": 0.84 }, "color": "#3a4d5c", "chairs": 1, "defaultRotation": 0 },
+    { "id": "silla_lineal_chiavari", "name": "Lineal · Chiavari", "category": "chairs", "type": "sillaLineal", "subtype": "chiavari", "count": 6, "gap": 0.55, "dims": { "width": 0.40, "depth": 0.42, "seatHeight": 0.46, "totalHeight": 0.92 }, "color": "#c9a55a", "chairs": 6, "defaultRotation": 0 },
+    { "id": "silla_lineal_plegable", "name": "Lineal · Plegable", "category": "chairs", "type": "sillaLineal", "subtype": "plegable", "count": 6, "gap": 0.50, "dims": { "width": 0.44, "depth": 0.44, "seatHeight": 0.45, "totalHeight": 0.85 }, "color": "#f5f3ee", "chairs": 6, "defaultRotation": 0 }
+  ],
+  "tables": [
+    { "id": "mesa_redonda_20", "name": "Mesa redonda 2m", "category": "tables", "type": "mesa", "subtype": "standard", "dims": { "diameter": 2.0 }, "chairs": 10, "defaultRotation": 0 },
+    { "id": "mesa_redonda_18", "name": "Mesa Ø 1.8m", "category": "tables", "type": "mesa", "subtype": "standard", "dims": { "diameter": 1.8 }, "chairs": 8, "defaultRotation": 0 },
+    { "id": "mesa_redonda_15", "name": "Mesa Ø 1.5m", "category": "tables", "type": "mesa", "subtype": "standard", "dims": { "diameter": 1.5 }, "chairs": 6, "defaultRotation": 0 },
+    { "id": "mesa_napoleon_20", "name": "Napoleón Ø 2.0m", "category": "tables", "type": "mesa", "subtype": "napoleon", "dims": { "diameter": 2.0 }, "chairs": 10, "defaultRotation": 0 },
+    { "id": "mesa_rect_180", "name": "Mesa Rectangular", "category": "tables", "type": "mesaRect", "dims": { "length": 1.8, "width": 0.8 }, "chairs": 6, "chairSep": 0.60, "color": "#4a4744", "defaultRotation": 0 },
+    { "id": "mesa_cuadrada_2x3", "name": "Mesa cuadrada 2x3m", "category": "tables", "type": "mesaRect", "dims": { "length": 3.0, "width": 2.0 }, "chairs": 10, "chairSep": 0.60, "color": "#4a4744", "defaultRotation": 0 },
+    { "id": "mesa_cocktail", "name": "Cocktail Alta", "category": "tables", "type": "mesaCocktail", "dims": { "diameter": 0.80, "height": 1.10 }, "color": "#ffffff", "chairs": 0, "defaultRotation": 0 },
+    { "id": "mesa_presi_20x12", "name": "Presidencial", "category": "tables", "type": "mesa", "subtype": "presi", "dims": { "length": 2.0, "width": 1.2 }, "chairs": 10, "endHead": true, "endFoot": true, "defaultRotation": 0 },
+    { "id": "mesa_imperial", "name": "Imperial", "category": "tables", "type": "mesaImperial", "dims": { "length": 6.0, "width": 1.2 }, "color": "#4a4744", "chairSep": 0.60, "chairs": 20, "defaultRotation": 0 },
+    { "id": "mesa_curva_90", "name": "Curva 90°", "category": "tables", "type": "mesaCurva", "dims": { "radioInt": 2.0, "anchoTab": 0.7, "anguloDeg": 90, "alto": 0.74 }, "distrib": "externa", "chairSep": 0.60, "color": "#4a4744", "chairs": 0, "defaultRotation": 0 },
+    { "id": "mesa_serpentina", "name": "Serpentina", "category": "tables", "type": "mesaSerpentina", "dims": { "radioInt": 2.0, "anchoTab": 0.7, "anguloDeg": 60, "alto": 0.74 }, "distrib": "externa", "chairSep": 0.60, "color": "#4a4744", "chairs": 0, "defaultRotation": 0 }
+  ],
+  "bars": [
+    { "id": "buffet_arroces_360", "name": "Buffet Arroces", "category": "bars", "type": "buffet", "subtype": "arroces", "dims": { "length": 3.6 }, "chairs": 0, "defaultRotation": 0 },
+    { "id": "buffet_feria", "name": "Buffet Feria", "category": "bars", "type": "buffet", "subtype": "feria", "dims": { "length": 3.6 }, "chairs": 0, "defaultRotation": 0 },
+    { "id": "barra_libre_3m", "name": "Barra Libre 3m", "category": "bars", "type": "barraLibre", "dims": { "length": 3.0, "width": 0.8, "height": 0.90 }, "cubiteras": 2, "cubSep": 1.0, "color": "#1a1a1c", "chairs": 0, "defaultRotation": 0 },
+    { "id": "barra_libre_5m", "name": "Barra Libre 5m", "category": "bars", "type": "barraLibre", "dims": { "length": 5.0, "width": 0.8, "height": 0.90 }, "cubiteras": 4, "cubSep": 1.0, "color": "#1a1a1c", "chairs": 0, "defaultRotation": 0 }
+  ],
+  "stages": [],
+  "decor": [
+    { "id": "tent_cuadrada", "name": "Cuadrada", "category": "decor", "type": "carpaCuadrada", "dims": { "size": 6.0, "height": 3.0, "ridgeRise": 1.6 }, "tarpColor": "#f5f1e8", "poleColor": "#6b4423", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_star", "name": "Star", "category": "decor", "type": "carpaStar", "dims": { "size": 8.0, "height": 2.6, "peakRise": 2.2 }, "tarpColor": "#ede7d6", "poleColor": "#6b4423", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_pabellon", "name": "Pabellón", "category": "decor", "type": "carpaPabellon", "dims": { "length": 12.0, "width": 6.0, "height": 3.0, "ridgeRise": 1.8, "modSpacing": 3.0 }, "tarpColor": "#f0ead8", "poleColor": "#3a4d5c", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_transparente", "name": "Transparente", "category": "decor", "type": "carpaTransparente", "dims": { "length": 10.0, "width": 5.0, "height": 3.0, "ridgeRise": 1.5 }, "glassColor": "#a8d8e8", "poleColor": "#ffffff", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_beduina", "name": "Beduina", "category": "decor", "type": "carpaBeduina", "dims": { "length": 12.0, "width": 7.0, "cornerHeight": 2.2, "peakHeight": 4.0, "sideDrop": 1.4 }, "tarpColor": "#d9b88a", "poleColor": "#3a2d1f", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_sailcloth", "name": "Sailcloth", "category": "decor", "type": "carpaSailcloth", "dims": { "length": 14.0, "width": 8.0, "eaveHeight": 2.6, "peakHeight": 5.0, "peaks": 2 }, "tarpColor": "#f8f5ec", "poleColor": "#5d4a36", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_tipi", "name": "Tipi", "category": "decor", "type": "carpaTipi", "dims": { "diameter": 6.0, "height": 5.5 }, "tarpColor": "#e8dcc4", "poleColor": "#3a2d1f", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_domo", "name": "Domo", "category": "decor", "type": "carpaDomo", "dims": { "diameter": 8.0, "height": 4.0 }, "tarpColor": "#e8e2d0", "poleColor": "#3a4d5c", "transparent": false, "chairs": 0, "defaultRotation": 0 },
+    { "id": "tent_rect_8x4", "name": "Rectangular (clásica)", "category": "decor", "type": "carpa", "dims": { "length": 8.0, "width": 4.0 }, "chairs": 0, "posts": { "enabled": true, "diameter": 0.10, "spacing": 2.0, "height": 3.0 }, "columns": { "enabled": false, "rows": 1, "cols": 2, "diameter": 0.15 }, "defaultRotation": 0 },
+    { "id": "poste_individual", "name": "Poste", "category": "decor", "type": "poste", "dims": { "diameter": 0.12, "height": 3.0 }, "color": "#6b4423", "chairs": 0, "defaultRotation": 0 }
+  ],
+  "structures": [
+    { "id": "room_4walls_6x4", "name": "4 Paredes", "category": "structures", "icon": "square", "style": "ghost", "type": "room", "dims": { "length": 6.0, "width": 4.0, "height": 3.0, "thickness": 0.10 }, "color": "#ffffff", "chairs": 0, "defaultRotation": 0 },
+    { "id": "bush_15", "name": "Arbusto", "category": "structures", "icon": "leaf", "style": "ghost", "type": "arbusto", "dims": { "width": 1.5, "height": 1.0 }, "color": "#3e7a3a", "chairs": 0, "defaultRotation": 0 },
+    { "id": "tree_5m", "name": "Árbol", "category": "structures", "icon": "trees", "style": "ghost", "type": "arbol", "dims": { "height": 5.0, "crownWidth": 2.5 }, "crownColor": "#2f6a3f", "trunkColor": "#5a3a1f", "chairs": 0, "defaultRotation": 0 },
+    { "id": "cable_lights_8", "name": "Cable con Luces", "category": "structures", "icon": "lightbulb", "style": "ghost", "type": "cableLuces", "height": 4.0, "count": 8, "spacing": 1.0, "lightColor": "#ffd454", "cableColor": "#1a1a1c", "chairs": 0, "defaultRotation": 0 }
+  ],
+  "ambient": [
+    { "id": "spot_luz", "name": "Spot de Luz", "category": "ambient", "type": "ambiente", "subtype": "spot", "dims": { "height": 2.0 }, "color": "#fffbe8", "chairs": 0, "defaultRotation": 0 },
+    { "id": "alfombra_3x2", "name": "Alfombra 3×2m", "category": "ambient", "type": "ambiente", "subtype": "alfombra", "dims": { "length": 3.0, "width": 2.0 }, "color": "#8b1a1a", "borderColor": "#c9a55a", "chairs": 0, "defaultRotation": 0 },
+    { "id": "alfombra_redonda_2m", "name": "Alfombra redonda 2m", "category": "ambient", "type": "ambiente", "subtype": "alfombra", "shape": "round", "dims": { "diameter": 2.0 }, "color": "#8b1a1a", "borderColor": "#c9a55a", "chairs": 0, "defaultRotation": 0 },
+    { "id": "alfombra_pasillo", "name": "Alfombra Pasillo", "category": "ambient", "type": "ambiente", "subtype": "alfombra", "dims": { "length": 6.0, "width": 1.2 }, "color": "#1a1a4a", "borderColor": "#c9a55a", "chairs": 0, "defaultRotation": 0 },
+    { "id": "planta_deco", "name": "Planta Decorativa", "category": "ambient", "type": "ambiente", "subtype": "planta", "dims": { "height": 1.2 }, "color": "#3e7a3a", "potColor": "#8b5e3c", "chairs": 0, "defaultRotation": 0 },
+    { "id": "planta_grande", "name": "Planta Grande", "category": "ambient", "type": "ambiente", "subtype": "planta", "dims": { "height": 1.8 }, "color": "#2f6a3f", "potColor": "#5a3a1f", "chairs": 0, "defaultRotation": 0 }
+  ],
+  "freebar": []
+};

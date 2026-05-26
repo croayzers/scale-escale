@@ -33,7 +33,7 @@ function init() {
 
   // Atajo S
   document.addEventListener('keydown', e => {
-    if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
+    if (e.key?.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
       if (document.activeElement?.tagName === 'INPUT') return;
       setEnabled(!AppState.snap.enabled);
     }

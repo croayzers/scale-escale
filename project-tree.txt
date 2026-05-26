@@ -12,6 +12,7 @@ PROJECT STRUCTURE
 ├── admin/
 │   ├── admin.css
 │   ├── admin.js
+│   ├── elements-bundle.js
 │   ├── index.html
 │   ├── project-tree.json
 │   └── thumb.js
@@ -93,6 +94,8 @@ PROJECT STRUCTURE
 │   │   ├── InventoryRules.js
 │   │   ├── LayerManager.js
 │   │   └── PlanCatalog.js
+│   ├── data/
+│   │   └── elementsData.js
 │   ├── io/
 │   │   ├── CompanyManager.js
 │   │   ├── DashboardSync.js

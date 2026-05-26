@@ -43,19 +43,21 @@ async function loadConfig() {
 }
 
 async function loadElementsData() {
+  let raw = null;
   try {
     const r = await fetch(ELEMENTS_URL, { cache: 'no-cache' });
-    if (!r.ok) return;
-    const raw = await r.json();
-    _elemsById = {};
-    _elemsRaw  = {};
-    for (const [cat, items] of Object.entries(raw)) {
-      if (cat === 'version' || !Array.isArray(items)) continue;
-      _elemsRaw[cat] = items;
-      items.forEach(el => { _elemsById[el.id] = el; });
-    }
+    if (r.ok) raw = await r.json();
   } catch (e) {
-    console.warn('[Admin] No se pudo cargar elements.json:', e.message);
+    console.info('[Admin] fetch elements.json falló, usando datos integrados:', e.message);
+  }
+  if (!raw && window.__BUNDLED_ELEMENTS__) raw = window.__BUNDLED_ELEMENTS__;
+  if (!raw) return;
+  _elemsById = {};
+  _elemsRaw  = {};
+  for (const [cat, items] of Object.entries(raw)) {
+    if (cat === 'version' || !Array.isArray(items)) continue;
+    _elemsRaw[cat] = items;
+    items.forEach(el => { _elemsById[el.id] = el; });
   }
 }
 
@@ -704,6 +706,39 @@ function triggerOptionsHTML(selected) {
   ).join('');
 }
 
+const UI_ACCEPT_ACTIONS = [
+  { value: '',                   label: '— ninguna —' },
+  { value: 'btn-company',        label: 'Header · Mi empresa' },
+  { value: 'btn-upload-plan',    label: 'Header · Subir Plano' },
+  { value: 'btn-calibrate',      label: 'Header · Calibrar (regla)' },
+  { value: 'btn-zones-menu',     label: 'Header · Zonas' },
+  { value: 'btn-grid-menu',      label: 'Header · Grid' },
+  { value: 'btn-template-menu',  label: 'Header · Plantilla' },
+  { value: 'btn-print-menu',     label: 'Header · Imprimir' },
+  { value: 'btn-pro-menu',       label: 'Header · PRO' },
+  { value: 'btn-settings',       label: 'Header · Ajustes' },
+  { value: 'btn-account',        label: 'Header · Cuenta / Acceso' },
+  { value: 'dock-chairs',        label: 'Dock · Sillas' },
+  { value: 'dock-tables',        label: 'Dock · Mesas' },
+  { value: 'dock-decor',         label: 'Dock · Carpas' },
+  { value: 'dock-bars',          label: 'Dock · Buffet' },
+  { value: 'dock-structures',    label: 'Dock · Estructuras' },
+  { value: 'dock-ambient',       label: 'Dock · Ambiente' },
+  { value: 'dock-scenography',   label: 'Dock · Escenografía' },
+  { value: 'dock-services',      label: 'Dock · Servicios' },
+  { value: 'dock-staff',         label: 'Dock · Personal' },
+  { value: 'dock-hospitality',   label: 'Dock · Hostelería' },
+  { value: 'dock-decoration',    label: 'Dock · Decoración' },
+  { value: 'dock-lighting',      label: 'Dock · Iluminación' },
+  { value: 'dock-inventory-btn', label: 'Dock · Inventario' },
+];
+
+function acceptActionOptionsHTML(selected) {
+  return UI_ACCEPT_ACTIONS.map(t =>
+    `<option value="${t.value}"${t.value === (selected || '') ? ' selected' : ''}>${esc(t.label)}</option>`
+  ).join('');
+}
+
 function renderMensajes() {
   const msgs  = _cfg.messages || {};
   const types = ['msj_alerta', 'msj_oferta', 'msj_info', 'msj_stats'];
@@ -714,6 +749,7 @@ function renderMensajes() {
     setVal(`${key}-text`,          m.text  || '');
     setVal(`${key}-cancelBtn`,     m.cancelBtn || 'Cancelar');
     setVal(`${key}-acceptBtn`,     m.acceptBtn || 'Aceptar');
+    setVal(`${key}-acceptUrl`,     m.acceptUrl  || '');
     setVal(`${key}-cooldown`,      m.cooldownDays ?? 1);
 
     // Populate trigger select dynamically
@@ -723,12 +759,20 @@ function renderMensajes() {
       trigSel.addEventListener('change', () => { setMsgCfg(key, 'trigger', trigSel.value); markDirty(); });
     }
 
-    bindCheck(`${key}-enabled`,   v => setMsgCfg(key, 'enabled', v));
-    bindField(`${key}-title`,     v => setMsgCfg(key, 'title', v));
-    bindField(`${key}-text`,      v => setMsgCfg(key, 'text', v));
-    bindField(`${key}-cancelBtn`, v => setMsgCfg(key, 'cancelBtn', v));
-    bindField(`${key}-acceptBtn`, v => setMsgCfg(key, 'acceptBtn', v));
-    bindField(`${key}-cooldown`,  v => setMsgCfg(key, 'cooldownDays', Number(v)));
+    // Populate accept-action select
+    const actSel = document.getElementById(`${key}-acceptAction`);
+    if (actSel) {
+      actSel.innerHTML = acceptActionOptionsHTML(m.acceptAction || '');
+      actSel.addEventListener('change', () => { setMsgCfg(key, 'acceptAction', actSel.value); markDirty(); });
+    }
+
+    bindCheck(`${key}-enabled`,     v => setMsgCfg(key, 'enabled', v));
+    bindField(`${key}-title`,       v => setMsgCfg(key, 'title', v));
+    bindField(`${key}-text`,        v => setMsgCfg(key, 'text', v));
+    bindField(`${key}-cancelBtn`,   v => setMsgCfg(key, 'cancelBtn', v));
+    bindField(`${key}-acceptBtn`,   v => setMsgCfg(key, 'acceptBtn', v));
+    bindField(`${key}-acceptUrl`,   v => setMsgCfg(key, 'acceptUrl', v));
+    bindField(`${key}-cooldown`,    v => setMsgCfg(key, 'cooldownDays', Number(v)));
   });
 }
 
