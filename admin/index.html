@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>E-scale · Admin</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=JetBrains+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css"/>
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- ── Topbar ─────────────────────────────────────────── -->
+  <header class="admin-topbar">
+    <a class="topbar-brand" href="../index.html" title="Volver a la app">
+      <img src="../brand/logo.png" alt="E-scale" onerror="this.style.display='none'"/>
+      E-scale
+    </a>
+    <span class="topbar-badge">Admin</span>
+    <span class="topbar-spacer"></span>
+    <span id="topbar-status" class="topbar-status">Sin cambios</span>
+    <div class="topbar-actions">
+      <button id="btn-reset" class="btn btn-ghost btn-sm">
+        <i data-lucide="rotate-ccw"></i> Restablecer
+      </button>
+      <button id="btn-export" class="btn btn-ghost btn-sm">
+        <i data-lucide="download"></i> Exportar JSON
+      </button>
+      <button id="btn-save-file" class="btn btn-ghost btn-sm">
+        <i data-lucide="folder-open"></i> Guardar archivo
+      </button>
+      <button id="btn-save" class="btn btn-primary btn-sm">
+        <i data-lucide="save"></i> Guardar
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ────────────────────────────────────────── -->
+  <nav class="admin-sidebar">
+    <div class="sidebar-section-label">Escena</div>
+    <button class="sidebar-item" data-section="capas">
+      <i data-lucide="layers"></i> Capas
+    </button>
+    <button class="sidebar-item" data-section="elementos">
+      <i data-lucide="grid-2x2"></i> Elementos
+    </button>
+    <button class="sidebar-item" data-section="zonas">
+      <i data-lucide="map"></i> Zonas
+    </button>
+    <button class="sidebar-item" data-section="grids">
+      <i data-lucide="grid-3x3"></i> Grids
+    </button>
+
+    <div class="sidebar-section-label">Interfaz</div>
+    <button class="sidebar-item" data-section="header">
+      <i data-lucide="menu"></i> Header
+    </button>
+    <button class="sidebar-item" data-section="dock">
+      <i data-lucide="dock"></i> Dock
+    </button>
+    <button class="sidebar-item" data-section="mensajes">
+      <i data-lucide="message-square"></i> Mensajes
+    </button>
+
+    <div class="sidebar-section-label">Marca</div>
+    <button class="sidebar-item" data-section="logos">
+      <i data-lucide="image"></i> Logos
+    </button>
+    <button class="sidebar-item" data-section="texto">
+      <i data-lucide="type"></i> Texto y colores
+    </button>
+
+    <div class="sidebar-section-label">Funciones</div>
+    <button class="sidebar-item" data-section="plantillas">
+      <i data-lucide="folder-open"></i> Plantillas
+    </button>
+    <button class="sidebar-item" data-section="imprimir">
+      <i data-lucide="printer"></i> Imprimir
+    </button>
+  </nav>
+
+  <!-- ── Main ───────────────────────────────────────────── -->
+  <main class="admin-main">
+
+    <!-- ═══════════════ CAPAS ════════════════════ -->
+    <section id="sec-capas" class="admin-section">
+      <div class="section-title">Capas</div>
+      <div class="section-subtitle">Visibilidad y bloqueo predeterminados para cada tipo de elemento en la escena.</div>
+      <div class="card">
+        <div class="card-title">Capas disponibles</div>
+        <div id="sec-capas-list"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ ELEMENTOS ════════════════ -->
+    <section id="sec-elementos" class="admin-section">
+      <div class="section-title">Elementos</div>
+      <div class="section-subtitle">Gestiona los elementos del catálogo: orden dentro de cada categoría y reasignación entre categorías. Los cambios se sincronizan con la app al guardar.</div>
+
+      <!-- Categorías del dock -->
+      <details class="card" style="padding:0;overflow:hidden">
+        <summary style="padding:14px 18px;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted)">
+          Categorías del dock <span style="font-size:11px;opacity:0.5">▾ visibilidad · orden · etiqueta</span>
+        </summary>
+        <div style="padding:4px 18px 14px">
+          <div id="sec-dock-cats-list" class="order-list"></div>
+        </div>
+      </details>
+
+      <!-- Árbol de elementos -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">Elementos por categoría · arrastra para reordenar o cambiar categoría</div>
+        <div id="sec-elem-tree"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ ZONAS ═════════════════════ -->
+    <section id="sec-zonas" class="admin-section">
+      <div class="section-title">Zonas</div>
+      <div class="section-subtitle">Valores por defecto al crear una nueva zona.</div>
+      <div class="card">
+        <div class="card-title">Texto de la zona</div>
+        <div class="card-grid cols-2">
+          <label class="field">
+            <span class="field-label">Color de texto</span>
+            <div class="color-row">
+              <span id="zone-textColor-preview" class="color-preview" style="background:#000000"></span>
+              <input type="color" id="zone-textColor-picker" value="#000000"/>
+              <input type="text" id="zone-textColor" value="#000000" placeholder="#000000"/>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Tamaño de fuente (px canvas)</span>
+            <input type="number" id="zone-fontSize" min="40" max="400" step="10"/>
+          </label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Grid de zona</div>
+        <div class="card-grid cols-2">
+          <label class="field">
+            <span class="field-label">Tamaño rejilla principal (m)</span>
+            <input type="number" id="zone-majorSize" min="0.1" max="20" step="0.1"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Tamaño subrejilla (m)</span>
+            <input type="number" id="zone-subSize" min="0.05" max="5" step="0.05"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Opacidad del grid (%)</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="range" id="zone-gridOpacity" min="0" max="100" step="1" style="flex:1"/>
+              <span id="zone-gridOpacity-val" style="font-family:var(--font-mono);font-size:11px;width:28px;text-align:right">55</span>
+            </div>
+          </label>
+          <div class="toggle-row" style="padding:0">
+            <div class="toggle-label">Grid activado por defecto</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="zone-gridEnabled" checked/>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ GRIDS ═════════════════════ -->
+    <section id="sec-grids" class="admin-section">
+      <div class="section-title">Grid global</div>
+      <div class="section-subtitle">Configuración del grid que se muestra cuando no hay zonas con grid activo.</div>
+      <div class="card">
+        <div class="card-grid cols-2">
+          <label class="field">
+            <span class="field-label">Rejilla principal (m)</span>
+            <input type="number" id="grid-majorSize" min="0.1" max="20" step="0.1"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Subrejilla (m)</span>
+            <input type="number" id="grid-subSize" min="0.05" max="5" step="0.05"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Extensión X (m)</span>
+            <input type="number" id="grid-extentX" min="10" max="500" step="5"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Extensión Z (m)</span>
+            <input type="number" id="grid-extentZ" min="10" max="500" step="5"/>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Opacidad (%)</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="range" id="grid-opacity" min="0" max="100" step="1" style="flex:1"/>
+              <span id="grid-opacity-val" style="font-family:var(--font-mono);font-size:11px;width:28px;text-align:right">55</span>
+            </div>
+          </label>
+          <div class="toggle-row" style="padding:0">
+            <div class="toggle-label">Grid global activo</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="grid-enabled" checked/>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ HEADER ════════════════════ -->
+    <section id="sec-header" class="admin-section">
+      <div class="section-title">Header</div>
+      <div class="section-subtitle">Visibilidad y etiqueta de cada botón del header-mac. Arrastra para reordenar.</div>
+      <div class="card">
+        <div class="card-title">Elementos · arrastra para reordenar</div>
+        <div id="sec-header-list" class="order-list"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ DOCK ══════════════════════ -->
+    <section id="sec-dock" class="admin-section">
+      <div class="section-title">Dock inferior</div>
+      <div class="section-subtitle">Los mismos ajustes del dock se gestionan desde la sección Elementos.</div>
+      <div class="card" style="text-align:center;padding:32px">
+        <p style="color:var(--muted);font-size:13px">La configuración del dock está en
+          <button class="btn btn-ghost btn-sm" onclick="showSection('elementos')">
+            <i data-lucide="grid-2x2"></i> Elementos
+          </button>
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════ MENSAJES ══════════════════ -->
+    <section id="sec-mensajes" class="admin-section">
+      <div class="section-title">Mensajes en la app</div>
+      <div class="section-subtitle">Overlays informativos con dos botones. Cada tipo tiene su propio cooldown para no repetirse demasiado.</div>
+
+      <!-- msj_alerta -->
+      <div class="msg-card">
+        <div class="msg-card-header">
+          <div class="msg-card-title">
+            <i data-lucide="alert-triangle" style="width:15px;height:15px;color:#c53030"></i>
+            Alerta
+            <span class="msg-type-badge msg-type-alerta">msj_alerta</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="msj_alerta-enabled"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="msg-grid">
+          <label class="field">
+            <span class="field-label">Título</span>
+            <input type="text" id="msj_alerta-title" placeholder="Aviso importante"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Disparador</span>
+            <select id="msj_alerta-trigger"></select>
+          </label>
+          <label class="field msg-grid full" style="grid-column:1/-1">
+            <span class="field-label">Texto del mensaje</span>
+            <textarea id="msj_alerta-text" rows="3" placeholder="Escribe el mensaje aquí…"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón cancelar</span>
+            <input type="text" id="msj_alerta-cancelBtn" placeholder="Ignorar"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón aceptar</span>
+            <input type="text" id="msj_alerta-acceptBtn" placeholder="Entendido"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Cooldown (días)</span>
+            <input type="number" id="msj_alerta-cooldown" min="0" max="365" step="1"/>
+          </label>
+        </div>
+      </div>
+
+      <!-- msj_oferta -->
+      <div class="msg-card">
+        <div class="msg-card-header">
+          <div class="msg-card-title">
+            <i data-lucide="tag" style="width:15px;height:15px;color:#553c9a"></i>
+            Oferta
+            <span class="msg-type-badge msg-type-oferta">msj_oferta</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="msj_oferta-enabled"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="msg-grid">
+          <label class="field">
+            <span class="field-label">Título</span>
+            <input type="text" id="msj_oferta-title" placeholder="Oferta especial"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Disparador</span>
+            <select id="msj_oferta-trigger"></select>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Texto del mensaje</span>
+            <textarea id="msj_oferta-text" rows="3" placeholder="Escribe el mensaje aquí…"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón cancelar</span>
+            <input type="text" id="msj_oferta-cancelBtn" placeholder="No, gracias"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón aceptar</span>
+            <input type="text" id="msj_oferta-acceptBtn" placeholder="Ver oferta"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Cooldown (días)</span>
+            <input type="number" id="msj_oferta-cooldown" min="0" max="365" step="1"/>
+          </label>
+        </div>
+      </div>
+
+      <!-- msj_info -->
+      <div class="msg-card">
+        <div class="msg-card-header">
+          <div class="msg-card-title">
+            <i data-lucide="info" style="width:15px;height:15px;color:#276749"></i>
+            Info
+            <span class="msg-type-badge msg-type-info">msj_info</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="msj_info-enabled"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="msg-grid">
+          <label class="field">
+            <span class="field-label">Título</span>
+            <input type="text" id="msj_info-title" placeholder="Novedad en E-scale"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Disparador</span>
+            <select id="msj_info-trigger"></select>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Texto del mensaje</span>
+            <textarea id="msj_info-text" rows="3" placeholder="Escribe el mensaje aquí…"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón cancelar</span>
+            <input type="text" id="msj_info-cancelBtn" placeholder="Cerrar"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón aceptar</span>
+            <input type="text" id="msj_info-acceptBtn" placeholder="Ver más"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Cooldown (días)</span>
+            <input type="number" id="msj_info-cooldown" min="0" max="365" step="1"/>
+          </label>
+        </div>
+      </div>
+
+      <!-- msj_stats -->
+      <div class="msg-card">
+        <div class="msg-card-header">
+          <div class="msg-card-title">
+            <i data-lucide="bar-chart-2" style="width:15px;height:15px;color:#975a16"></i>
+            Estadísticas
+            <span class="msg-type-badge msg-type-stats">msj_stats</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="msj_stats-enabled"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="msg-grid">
+          <label class="field">
+            <span class="field-label">Título</span>
+            <input type="text" id="msj_stats-title" placeholder="Resumen de uso"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Disparador</span>
+            <select id="msj_stats-trigger"></select>
+          </label>
+          <label class="field" style="grid-column:1/-1">
+            <span class="field-label">Texto del mensaje</span>
+            <textarea id="msj_stats-text" rows="3" placeholder="Escribe el mensaje aquí…"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón cancelar</span>
+            <input type="text" id="msj_stats-cancelBtn" placeholder="Cerrar"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Botón aceptar</span>
+            <input type="text" id="msj_stats-acceptBtn" placeholder="Ver estadísticas"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Cooldown (días)</span>
+            <input type="number" id="msj_stats-cooldown" min="0" max="365" step="1"/>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ LOGOS ═════════════════════ -->
+    <section id="sec-logos" class="admin-section">
+      <div class="section-title">Logos</div>
+      <div class="section-subtitle">Rutas de los archivos de imagen de la marca. Las rutas son relativas a la raíz del proyecto.</div>
+
+      <div class="card">
+        <div class="card-title">Logo principal (header)</div>
+        <div class="card-grid cols-2">
+          <div>
+            <label class="field">
+              <span class="field-label">Ruta del archivo</span>
+              <input type="text" id="logo-main" placeholder="/brand/logo.png"/>
+            </label>
+          </div>
+          <div id="logo-preview-main" class="logo-preview-box"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Logo horizontal (modal de acceso)</div>
+        <div class="card-grid cols-2">
+          <div>
+            <label class="field">
+              <span class="field-label">Ruta del archivo</span>
+              <input type="text" id="logo-horizontal" placeholder="/brand/Logo_horizontal.png"/>
+            </label>
+          </div>
+          <div id="logo-preview-horizontal" class="logo-preview-box dark"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Texto del logo (modal de acceso)</div>
+        <div class="card-grid cols-2">
+          <div>
+            <label class="field">
+              <span class="field-label">Ruta del archivo</span>
+              <input type="text" id="logo-txt" placeholder="/brand/logo_txt.png"/>
+            </label>
+          </div>
+          <div id="logo-preview-txt" class="logo-preview-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ TEXTO Y COLORES ══════════════ -->
+    <section id="sec-texto" class="admin-section">
+      <div class="section-title">Texto y colores</div>
+      <div class="section-subtitle">Tipografías y paleta de colores de la interfaz. Los cambios se aplican via variables CSS en la app.</div>
+
+      <div class="card">
+        <div class="card-title">Tipografías</div>
+        <div class="card-grid cols-1">
+          <label class="field">
+            <span class="field-label">Fuente display (titulares)</span>
+            <input type="text" id="typo-display" placeholder="'Fraunces', Georgia, serif"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Fuente cuerpo</span>
+            <input type="text" id="typo-body" placeholder="'Inter Tight', system-ui, sans-serif"/>
+          </label>
+          <label class="field">
+            <span class="field-label">Fuente monospace</span>
+            <input type="text" id="typo-mono" placeholder="'JetBrains Mono', monospace"/>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Paleta de colores</div>
+        <div class="card-grid cols-2">
+          <label class="field">
+            <span class="field-label">Primary</span>
+            <div class="color-row">
+              <span id="color-primary-preview" class="color-preview"></span>
+              <input type="color" id="color-primary-picker"/>
+              <input type="text" id="color-primary" placeholder="#4a5568"/>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Secondary</span>
+            <div class="color-row">
+              <span id="color-secondary-preview" class="color-preview"></span>
+              <input type="color" id="color-secondary-picker"/>
+              <input type="text" id="color-secondary" placeholder="#718096"/>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Accent</span>
+            <div class="color-row">
+              <span id="color-accent-preview" class="color-preview"></span>
+              <input type="color" id="color-accent-picker"/>
+              <input type="text" id="color-accent" placeholder="#667eea"/>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Surface (fondo)</span>
+            <div class="color-row">
+              <span id="color-surface-preview" class="color-preview"></span>
+              <input type="color" id="color-surface-picker"/>
+              <input type="text" id="color-surface" placeholder="#f5f3ee"/>
+            </div>
+          </label>
+          <label class="field">
+            <span class="field-label">Text (texto)</span>
+            <div class="color-row">
+              <span id="color-text-preview" class="color-preview"></span>
+              <input type="color" id="color-text-picker"/>
+              <input type="text" id="color-text" placeholder="#1a202c"/>
+            </div>
+          </label>
+        </div>
+        <div class="rule"></div>
+        <button id="btn-preview-colors" class="btn btn-ghost btn-sm">
+          <i data-lucide="eye"></i> Previsualizar en este dashboard
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Botones</div>
+        <label class="field">
+          <span class="field-label">Border radius</span>
+          <input type="text" id="btn-radius" placeholder="8px" style="max-width:120px"/>
+        </label>
+      </div>
+    </section>
+
+    <!-- ═══════════════ PLANTILLAS ═══════════════════ -->
+    <section id="sec-plantillas" class="admin-section">
+      <div class="section-title">Plantillas</div>
+      <div class="section-subtitle">Configuración del sistema de plantillas (guardar/cargar diseños).</div>
+      <div class="card">
+        <div class="card-grid cols-2">
+          <div class="toggle-row" style="padding:0">
+            <div>
+              <div class="toggle-label">Sistema de plantillas activo</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="tpl-enabled" checked/>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="toggle-row" style="padding:0">
+            <div>
+              <div class="toggle-label">Autoguardado</div>
+              <div class="toggle-desc">Guarda automáticamente al cerrar</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="tpl-autoSave"/>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <label class="field">
+            <span class="field-label">Máximo de plantillas guardadas</span>
+            <input type="number" id="tpl-maxSlots" min="1" max="50" step="1"/>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ IMPRIMIR ══════════════════════ -->
+    <section id="sec-imprimir" class="admin-section">
+      <div class="section-title">Imprimir y exportar</div>
+      <div class="section-subtitle">Opciones predeterminadas para la exportación a PDF.</div>
+      <div class="card">
+        <div class="card-grid cols-2">
+          <label class="field">
+            <span class="field-label">Formato por defecto</span>
+            <select id="print-format">
+              <option value="A4">A4</option>
+              <option value="A3">A3</option>
+              <option value="letter">Letter</option>
+              <option value="legal">Legal</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Orientación</span>
+            <select id="print-orientation">
+              <option value="landscape">Horizontal</option>
+              <option value="portrait">Vertical</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Texto de marca de agua</span>
+            <input type="text" id="print-watermarkText" placeholder="E-scale"/>
+          </label>
+        </div>
+        <div class="rule"></div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Incluir marca de agua</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="print-watermark" checked/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Incluir grid en PDF</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="print-grid"/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Incluir estadísticas (PAX, m²)</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="print-stats" checked/>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div id="admin-toast"></div>
+
+<script src="admin.js"></script>
+<script>
+  // Range slider live value display
+  document.addEventListener('DOMContentLoaded', () => {
+    [['zone-gridOpacity', 'zone-gridOpacity-val'],
+     ['grid-opacity', 'grid-opacity-val']].forEach(([id, valId]) => {
+      const r = document.getElementById(id);
+      const v = document.getElementById(valId);
+      if (r && v) {
+        r.addEventListener('input', () => v.textContent = r.value);
+      }
+    });
+    // Init lucide icons
+    if (window.lucide) lucide.createIcons();
+    // Expose showSection globally for dock redirect button
+    window.showSection = function(id) {
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      const sec = document.getElementById('sec-' + id);
+      const btn = document.querySelector(`.sidebar-item[data-section="${id}"]`);
+      if (sec) sec.classList.add('active');
+      if (btn) btn.classList.add('active');
+    };
+  });
+</script>
+</body>
+</html>

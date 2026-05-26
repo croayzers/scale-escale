@@ -1,0 +1,166 @@
+{
+  "_comment": "Configuración global de E-scale. Edita desde admin/index.html y exporta para reemplazar este archivo.",
+
+  "app": {
+    "name": "E-scale",
+    "tagline": "Diseño de espacios profesional",
+    "version": "1.0"
+  },
+
+  "layers": {
+    "zones":       { "visible": true, "locked": false, "label": "Zonas" },
+    "chairs":      { "visible": true, "locked": false, "label": "Sillas" },
+    "tables":      { "visible": true, "locked": false, "label": "Mesas" },
+    "decor":       { "visible": true, "locked": false, "label": "Carpas" },
+    "bars":        { "visible": true, "locked": false, "label": "Buffet" },
+    "structures":  { "visible": true, "locked": false, "label": "Estructuras" },
+    "ambient":     { "visible": true, "locked": false, "label": "Ambiente" },
+    "scenography": { "visible": true, "locked": false, "label": "Escenografía" },
+    "services":    { "visible": true, "locked": false, "label": "Servicios" },
+    "staff":       { "visible": true, "locked": false, "label": "Personal" },
+    "hospitality": { "visible": true, "locked": false, "label": "Hostelería" },
+    "decoration":  { "visible": true, "locked": false, "label": "Decoración" },
+    "lighting":    { "visible": true, "locked": false, "label": "Iluminación" }
+  },
+
+  "dock": {
+    "categories": [
+      { "key": "chairs",      "label": "Sillas",       "icon": "armchair",          "visible": true, "order": 1 },
+      { "key": "tables",      "label": "Mesas",        "icon": "circle-dot",        "visible": true, "order": 2 },
+      { "key": "decor",       "label": "Carpas",       "icon": "tent",              "visible": true, "order": 3 },
+      { "key": "bars",        "label": "Buffet",       "icon": "utensils-crossed",  "visible": true, "order": 4 },
+      { "key": "structures",  "label": "Estructuras",  "icon": "columns-3",         "visible": true, "order": 5 },
+      { "key": "ambient",     "label": "Ambiente",     "icon": "sparkles",          "visible": true, "order": 6 },
+      { "key": "scenography", "label": "Escenografía", "icon": "gallery-horizontal","visible": true, "order": 7 },
+      { "key": "services",    "label": "Servicios",    "icon": "shield-check",      "visible": true, "order": 8 },
+      { "key": "staff",       "label": "Personal",     "icon": "users",             "visible": true, "order": 9 },
+      { "key": "hospitality", "label": "Hostelería",   "icon": "martini",           "visible": true, "order": 10 },
+      { "key": "decoration",  "label": "Decoración",   "icon": "flower-2",          "visible": true, "order": 11 },
+      { "key": "lighting",    "label": "Iluminación",  "icon": "lamp",              "visible": true, "order": 12 }
+    ]
+  },
+
+  "header": {
+    "items": [
+      { "id": "btn-company",       "label": "Mi empresa",  "visible": true, "order": 1 },
+      { "id": "btn-upload-plan",   "label": "Subir Plano", "visible": true, "order": 2 },
+      { "id": "btn-calibrate",     "label": "Calibrar",    "visible": true, "order": 3 },
+      { "id": "btn-zones-menu",    "label": "Zonas",       "visible": true, "order": 4 },
+      { "id": "btn-grid-menu",     "label": "Grid",        "visible": true, "order": 5 },
+      { "id": "btn-template-menu", "label": "Plantilla",   "visible": true, "order": 6 },
+      { "id": "btn-print-menu",    "label": "Imprimir",    "visible": true, "order": 7 },
+      { "id": "btn-pro-menu",      "label": "PRO",         "visible": true, "order": 8 },
+      { "id": "btn-settings",      "label": "Ajustes",     "visible": true, "order": 9 },
+      { "id": "btn-account",       "label": "Cuenta",      "visible": true, "order": 10 }
+    ]
+  },
+
+  "zones": {
+    "defaults": {
+      "textColor": "#000000",
+      "fontSize": 120,
+      "majorSize": 1,
+      "subSize": 0.25,
+      "gridOpacity": 55,
+      "gridEnabled": true
+    }
+  },
+
+  "grids": {
+    "global": {
+      "enabled": true,
+      "majorSize": 1,
+      "subSize": 0.25,
+      "opacity": 55,
+      "extentX": 60,
+      "extentZ": 60
+    }
+  },
+
+  "templates": {
+    "enabled": true,
+    "maxSlots": 10,
+    "autoSave": false
+  },
+
+  "print": {
+    "defaultFormat": "A4",
+    "orientation": "landscape",
+    "includeWatermark": true,
+    "watermarkText": "E-scale",
+    "includeGrid": false,
+    "includeStats": true
+  },
+
+  "logos": {
+    "main":       "/brand/logo.png",
+    "horizontal": "/brand/Logo_horizontal.png",
+    "logoTxt":    "/brand/logo_txt.png"
+  },
+
+  "messages": {
+    "msj_alerta": {
+      "enabled": false,
+      "title": "Aviso importante",
+      "text": "Mensaje de alerta para los usuarios.",
+      "cancelBtn": "Ignorar",
+      "acceptBtn": "Entendido",
+      "cooldownDays": 1,
+      "trigger": "onload"
+    },
+    "msj_oferta": {
+      "enabled": false,
+      "title": "Oferta especial",
+      "text": "Tenemos una oferta exclusiva para ti.",
+      "cancelBtn": "No, gracias",
+      "acceptBtn": "Ver oferta",
+      "cooldownDays": 7,
+      "trigger": "onload"
+    },
+    "msj_info": {
+      "enabled": false,
+      "title": "Novedad en E-scale",
+      "text": "Descubre las nuevas funcionalidades disponibles.",
+      "cancelBtn": "Cerrar",
+      "acceptBtn": "Ver más",
+      "cooldownDays": 3,
+      "trigger": "onload"
+    },
+    "msj_stats": {
+      "enabled": false,
+      "title": "Resumen de uso",
+      "text": "Revisa tus estadísticas de diseño del mes.",
+      "cancelBtn": "Cerrar",
+      "acceptBtn": "Ver estadísticas",
+      "cooldownDays": 30,
+      "trigger": "onload"
+    }
+  },
+
+  "typography": {
+    "displayFont": "'Fraunces', Georgia, serif",
+    "bodyFont": "'Inter Tight', 'Inter', system-ui, sans-serif",
+    "monoFont": "'JetBrains Mono', 'Fira Code', monospace"
+  },
+
+  "colors": {
+    "primary":   "#4a5568",
+    "secondary": "#718096",
+    "accent":    "#667eea",
+    "surface":   "#f5f3ee",
+    "text":      "#1a202c"
+  },
+
+  "buttons": {
+    "borderRadius": "8px",
+    "primaryBg": "#1a202c",
+    "primaryText": "#f5f3ee",
+    "ghostBg": "transparent",
+    "ghostText": "#1a202c"
+  },
+
+  "catalog": {
+    "_comment": "layout: { catKey: [id, id, ...] } — orden y categoría de cada elemento. Vacío = orden original de elements.json",
+    "layout": {}
+  }
+}

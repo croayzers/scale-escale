@@ -159,6 +159,13 @@ function init() {
   document.addEventListener('escale:scene-overlay-open', event => {
     if (event.detail?.kind !== 'catalog') close();
   });
+
+  // Live re-render when admin dashboard updates catalog layout
+  document.addEventListener('escale:catalog-updated', () => {
+    if (!document.getElementById('catalog-modal')?.classList.contains('hidden')) {
+      renderCatalogContent();
+    }
+  });
 }
 
 function clearSearch() {

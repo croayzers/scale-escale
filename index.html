@@ -767,7 +767,12 @@
 
     <div class="rule mt-5"></div>
     <div class="flex justify-between items-center">
-      <div class="text-[10px]" style="color:var(--muted)">Los cambios se aplican al instante.</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="text-[10px]" style="color:var(--muted)">Los cambios se aplican al instante.</div>
+        <a href="admin/index.html" target="_blank" class="text-[10px] underline" style="color:var(--muted);text-decoration:underline;text-decoration-color:rgba(26,32,44,0.25)">
+          Admin ↗
+        </a>
+      </div>
       <button id="settings-done" class="btn primary">Listo</button>
     </div>
   </div>
@@ -1169,6 +1174,10 @@
 </div>
 
 <input id="file-template" type="file" accept=".json,.escale.json" class="hidden"/>
+
+<!-- ============ MESSAGE OVERLAYS (MessageManager) ============ -->
+<div id="msg-overlays"></div>
+
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

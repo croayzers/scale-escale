@@ -2662,3 +2662,99 @@ body.format-mode-active #btn-format-tool {
   color: var(--muted, #888);
   font-style: italic;
 }
+
+/* ============== MESSAGE OVERLAYS (MessageManager) ============== */
+.msg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(26,32,44,0.40);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: msg-fade-in 280ms ease;
+}
+@keyframes msg-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.msg-shell {
+  background: rgba(245,243,238,0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(26,32,44,0.10);
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(26,32,44,0.18), 0 4px 16px rgba(26,32,44,0.08);
+  animation: msg-slide-up 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes msg-slide-up {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.msg-accent-bar {
+  height: 3px;
+  background: var(--brand-accent, #667eea);
+}
+.msg-variant-alerta .msg-accent-bar { background: #e53e3e; }
+.msg-variant-oferta .msg-accent-bar { background: #667eea; }
+.msg-variant-info   .msg-accent-bar { background: #38a169; }
+.msg-variant-stats  .msg-accent-bar { background: #d69e2e; }
+
+.msg-body { padding: 24px 28px 22px; }
+.msg-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: #1a202c;
+  margin-bottom: 10px;
+}
+.msg-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5568;
+  margin-bottom: 22px;
+  white-space: pre-line;
+}
+.msg-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.msg-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 140ms;
+}
+.msg-btn-cancel {
+  background: transparent;
+  border-color: rgba(26,32,44,0.15);
+  color: #4a5568;
+}
+.msg-btn-cancel:hover { background: rgba(26,32,44,0.05); }
+.msg-btn-accept {
+  background: #1a202c;
+  color: #f5f3ee;
+  border-color: #1a202c;
+}
+.msg-btn-accept:hover { opacity: 0.85; }
+.msg-variant-alerta .msg-btn-accept { background: #e53e3e; border-color: #e53e3e; }
+.msg-variant-oferta .msg-btn-accept { background: #667eea; border-color: #667eea; }
+.msg-variant-info   .msg-btn-accept { background: #38a169; border-color: #38a169; }
+.msg-variant-stats  .msg-btn-accept { background: #d69e2e; border-color: #d69e2e; }

@@ -24,6 +24,7 @@ import { BrandConfig } from './services/BrandConfig.js';
 import { SubscriptionManager } from './services/SubscriptionManager.js';
 import { AnalyticsManager } from './services/AnalyticsManager.js';
 import { SupportManager } from './services/SupportManager.js';
+import { MessageManager } from './services/MessageManager.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -75,6 +76,7 @@ async function bootstrap() {
   await safeInit('PlansModal', () => PlansModal.init());
   await safeInit('ZoneManager', () => ZoneManager.init());
   await safeInit('InventoryPanel', () => InventoryPanel.init());
+  safeInit('MessageManager', () => MessageManager.init());
 
   // Exponer al window para acceso desde consola y botones inline
   window.InteractionManager = InteractionManager;

@@ -9,6 +9,10 @@ PROJECT STRUCTURE
 ├── .edge-cdp/
 ├── .env.example
 ├── .gitignore
+├── admin/
+│   ├── admin.css
+│   ├── admin.js
+│   └── index.html
 ├── api/
 │   ├── analytics/
 │   │   └── capture.js
@@ -27,7 +31,10 @@ PROJECT STRUCTURE
 ├── brand/
 │   ├── brand.json
 │   ├── logo.png
+│   ├── Logo_horizontal.png
 │   └── logo_txt.png
+├── config/
+│   └── app.config.json
 ├── dashboard_api.py
 ├── dashboard_sharepoint_mock/
 │   ├── build_dashboard_workbook.mjs
@@ -145,6 +152,7 @@ PROJECT STRUCTURE
 │   │   ├── BrandConfig.js
 │   │   ├── CloudApi.js
 │   │   ├── CloudSync.js
+│   │   ├── MessageManager.js
 │   │   ├── ServiceConfig.js
 │   │   ├── SubscriptionManager.js
 │   │   └── SupportManager.js

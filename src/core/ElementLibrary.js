@@ -3,6 +3,8 @@ import { buildCatalogData } from '../schemas/CatalogBlueprints.js';
 import { CATALOG_CATEGORIES, CATEGORY_KEYS } from '../schemas/CatalogCategories.js';
 import { createItemFromCatalog } from '../schemas/SchemaItemFactory.js';
 
+const ADMIN_LS_KEY = 'escale_admin_config';
+
 export const ElementLibrary = {
   data: {
     version: 1,
@@ -31,7 +33,62 @@ export const ElementLibrary = {
       console.warn('[ElementLibrary] usa un servidor local para evitar restricciones de file://');
       this.data = buildCatalogData(this.data);
     }
+    this._applyAdminLayout();
+    this._listenAdminConfig();
     return this.data;
+  },
+
+  // Apply catalog.layout override from localStorage (set by admin dashboard)
+  _applyAdminLayout() {
+    try {
+      const stored = localStorage.getItem(ADMIN_LS_KEY);
+      if (!stored) return;
+      const cfg = JSON.parse(stored);
+      const layout = cfg?.catalog?.layout;
+      if (!layout || Object.keys(layout).length === 0) return;
+
+      // Build flat map of every element by id
+      const byId = {};
+      CATEGORY_KEYS.forEach(k => {
+        (this.data[k] || []).forEach(el => { byId[el.id] = el; });
+      });
+
+      // Reset categories
+      const next = {};
+      CATEGORY_KEYS.forEach(k => { next[k] = []; });
+      const mentioned = new Set();
+
+      for (const [cat, ids] of Object.entries(layout)) {
+        if (!Array.isArray(ids)) continue;
+        if (!next[cat]) next[cat] = [];
+        ids.forEach(id => {
+          const el = byId[id];
+          if (el) {
+            // Clone with updated category so downstream code sees the right value
+            next[cat].push(el.category === cat ? el : { ...el, category: cat });
+            mentioned.add(id);
+          }
+        });
+      }
+
+      // Elements not mentioned keep their original category+position
+      CATEGORY_KEYS.forEach(k => {
+        (this.data[k] || []).forEach(el => {
+          if (!mentioned.has(el.id)) next[k].push(el);
+        });
+      });
+
+      CATEGORY_KEYS.forEach(k => { this.data[k] = next[k]; });
+    } catch {}
+  },
+
+  // Live sync: when admin saves, re-apply and notify the catalog modal
+  _listenAdminConfig() {
+    window.addEventListener('storage', e => {
+      if (e.key !== ADMIN_LS_KEY) return;
+      this._applyAdminLayout();
+      document.dispatchEvent(new CustomEvent('escale:catalog-updated'));
+    });
   },
 
   all() {
