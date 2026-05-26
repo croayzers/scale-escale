@@ -2473,3 +2473,126 @@ body.format-mode-active #btn-format-tool {
   border-color: #ea580c;
   color: #ea580c;
 }
+
+/* ============== CATALOG SEARCH ============== */
+.catalog-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 12px;
+  position: relative;
+}
+
+.catalog-search-icon {
+  color: var(--muted, #888);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.catalog-search-input {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px 0 2px;
+  border: none;
+  border-bottom: 1.5px solid rgba(10,10,11,0.12);
+  background: transparent;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  color: var(--ink, #1a1a1c);
+  outline: none;
+  transition: border-color 150ms;
+}
+.catalog-search-input::placeholder {
+  color: var(--muted, #aaa);
+  font-size: 12px;
+}
+.catalog-search-input:focus {
+  border-bottom-color: rgba(10,10,11,0.45);
+}
+
+.catalog-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(10,10,11,0.07);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--muted, #888);
+  flex-shrink: 0;
+  transition: background 120ms;
+}
+.catalog-search-clear:hover { background: rgba(10,10,11,0.14); }
+.catalog-search-clear.hidden { display: none; }
+
+/* ── Grid normal (por categoría) ── */
+.catalog-grid-items {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+/* ── Resultados de búsqueda ── */
+.catalog-grid-search {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.catalog-search-group {}
+
+.catalog-search-group-label {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(10,10,11,0.07);
+}
+
+.catalog-search-group-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Tarjeta pequeña en modo búsqueda */
+.cat-card-sm {
+  width: 90px;
+}
+.cat-card-sm .cat-thumb {
+  height: 52px;
+}
+.cat-card-sm .cat-name {
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+/* Highlight de coincidencia */
+.catalog-highlight {
+  background: rgba(250,204,21,0.45);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Empty state */
+.catalog-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px 8px;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 12px;
+  color: var(--muted, #888);
+  font-style: italic;
+}

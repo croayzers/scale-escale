@@ -557,7 +557,15 @@
       <div class="mono text-[10px] tracking-widest uppercase" style="color:var(--muted)">CatÃ¡logo</div>
       <button id="catalog-close" class="hdr-icon" title="Cerrar"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
     </div>
-    <div id="catalog-grid" class="grid grid-cols-4 gap-3">
+    <div class="catalog-search-row">
+      <i data-lucide="search" class="w-3.5 h-3.5 catalog-search-icon"></i>
+      <input id="catalog-search" class="catalog-search-input" type="text"
+        placeholder="Buscar categoría o elemento..." autocomplete="off" spellcheck="false"/>
+      <button id="catalog-search-clear" class="catalog-search-clear hidden" title="Limpiar búsqueda" aria-label="Limpiar">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+    <div id="catalog-grid" class="catalog-grid-items">
       <!-- Tarjetas generadas dinÃ¡micamente -->
     </div>
   </div>

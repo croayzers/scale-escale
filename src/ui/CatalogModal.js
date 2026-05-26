@@ -2,10 +2,12 @@
    CATALOG MODAL — Modal flotante con tarjetas por categoría
    ───────────────────────────────────────────────────────── */
 
-import { ElementLibrary } from '../core/ElementLibrary.js';
+import { ElementLibrary }    from '../core/ElementLibrary.js';
+import { CATALOG_CATEGORIES } from '../schemas/CatalogCategories.js';
 
 let currentCategory = null;
 let pendingPlacement = null;
+let searchQuery = '';
 
 function clonePendingPlacement() {
   return pendingPlacement ? JSON.parse(JSON.stringify(pendingPlacement)) : null;
@@ -122,12 +124,31 @@ function createPendingItem({ x = 0, y = 0, z = 0 } = {}) {
 function init() {
   document.getElementById('catalog-close')?.addEventListener('click', close);
 
+  // ── Búsqueda ──
+  const searchInput = document.getElementById('catalog-search');
+  const searchClear = document.getElementById('catalog-search-clear');
+
+  searchInput?.addEventListener('input', () => {
+    searchQuery = searchInput.value;
+    searchClear?.classList.toggle('hidden', !searchQuery);
+    renderCatalogContent();
+  });
+
+  searchInput?.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (searchQuery) { clearSearch(); e.stopPropagation(); }
+      else close();
+    }
+  });
+
+  searchClear?.addEventListener('click', () => clearSearch());
+
   // Cerrar al pulsar fuera
   document.addEventListener('click', e => {
     const modal = document.getElementById('catalog-modal');
     const dock = document.getElementById('dock');
     if (!modal || modal.classList.contains('hidden')) return;
-    if (modal.contains(e.target) || dock.contains(e.target)) return;
+    if (modal.contains(e.target) || dock?.contains(e.target)) return;
     close();
   });
 
@@ -140,38 +161,158 @@ function init() {
   });
 }
 
+function clearSearch() {
+  searchQuery = '';
+  const searchInput = document.getElementById('catalog-search');
+  const searchClear = document.getElementById('catalog-search-clear');
+  if (searchInput) searchInput.value = '';
+  searchClear?.classList.add('hidden');
+  renderCatalogContent();
+  searchInput?.focus();
+}
+
+/* ─── Render helpers ─── */
+
+function getCategoryLabel(key) {
+  return CATALOG_CATEGORIES.find(c => c.key === key)?.label || key;
+}
+
+/** Normaliza texto para comparación: minúsculas sin diacríticos */
+function normalize(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+/** Renderiza el contenido del grid según búsqueda o categoría activa */
+function renderCatalogContent() {
+  const grid = document.getElementById('catalog-grid');
+  if (!grid) return;
+
+  const q = normalize(searchQuery.trim());
+
+  if (q.length >= 1) {
+    renderSearchResults(grid, q);
+  } else {
+    renderCategoryGrid(grid, currentCategory);
+  }
+}
+
+/** Modo normal: grid de tarjetas de la categoría activa */
+function renderCategoryGrid(grid, categoryKey) {
+  grid.className = 'catalog-grid-items';
+  const items = (categoryKey ? ElementLibrary.data[categoryKey] : null) || [];
+
+  if (!categoryKey || items.length === 0) {
+    grid.innerHTML = `<p class="catalog-empty">No hay elementos en esta categoría todavía.</p>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(def => `
+    <div class="cat-card" data-element-id="${escId(def.id)}" data-cat-key="${escId(categoryKey)}">
+      <div class="cat-thumb">${thumbSVG(def)}</div>
+      <div class="cat-name">${escHtml(def.name)}</div>
+    </div>
+  `).join('');
+
+  bindCards(grid, items, categoryKey);
+}
+
+/** Modo búsqueda: resultados agrupados por categoría */
+function renderSearchResults(grid, q) {
+  grid.className = 'catalog-grid-search';
+
+  const groups = [];
+
+  CATALOG_CATEGORIES.forEach(cat => {
+    const catLabel = normalize(cat.label);
+    const catItems = ElementLibrary.data[cat.key] || [];
+    const matchesCat = catLabel.includes(q);
+
+    const hits = catItems.filter(def => {
+      if (matchesCat) return true;
+      return normalize(def.name).includes(q);
+    });
+
+    if (hits.length > 0) groups.push({ cat, hits });
+  });
+
+  if (groups.length === 0) {
+    grid.innerHTML = `<p class="catalog-empty">Sin resultados para <strong>${escHtml(searchQuery)}</strong></p>`;
+    return;
+  }
+
+  grid.innerHTML = groups.map(({ cat, hits }) => `
+    <div class="catalog-search-group">
+      <div class="catalog-search-group-label">${escHtml(cat.label)}</div>
+      <div class="catalog-search-group-cards">
+        ${hits.map(def => `
+          <div class="cat-card cat-card-sm" data-element-id="${escId(def.id)}" data-cat-key="${escId(cat.key)}">
+            <div class="cat-thumb">${thumbSVG(def)}</div>
+            <div class="cat-name">${highlightMatch(def.name, searchQuery)}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Bind clicks para todos los grupos
+  groups.forEach(({ cat, hits }) => {
+    bindCards(grid, hits, cat.key);
+  });
+}
+
+function bindCards(grid, items, categoryKey) {
+  grid.querySelectorAll('.cat-card').forEach(card => {
+    const catKey = card.dataset.catKey || categoryKey;
+    const catItems = ElementLibrary.data[catKey] || items;
+    card.addEventListener('click', () => {
+      const def = catItems.find(d => d.id === card.dataset.elementId)
+                  || items.find(d => d.id === card.dataset.elementId);
+      if (def) {
+        setPendingPlacement(def, { source: 'catalog', sticky: false });
+        close();
+      }
+    });
+  });
+}
+
+/** Resalta la parte que coincide con la búsqueda (case-insensitive) */
+function highlightMatch(text, query) {
+  if (!query) return escHtml(text);
+  const idx = normalize(text).indexOf(normalize(query));
+  if (idx < 0) return escHtml(text);
+  return escHtml(text.slice(0, idx))
+    + `<mark class="catalog-highlight">${escHtml(text.slice(idx, idx + query.length))}</mark>`
+    + escHtml(text.slice(idx + query.length));
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, ch => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+function escId(str) { return String(str || '').replace(/"/g, ''); }
+
+/* ─── Open / Close ─── */
+
 function open(categoryKey) {
   currentCategory = categoryKey;
   const modal = document.getElementById('catalog-modal');
-  const grid  = document.getElementById('catalog-grid');
-  if (!modal || !grid) return;
+  if (!modal) return;
 
-  const items = ElementLibrary.data[categoryKey] || [];
-  if (items.length === 0) {
-    grid.innerHTML = `<div class="col-span-4 text-center py-8 mono text-[11px]" style="color:var(--muted)">No hay elementos en esta categoría todavía.</div>`;
-  } else {
-    grid.innerHTML = items.map(def => `
-      <div class="cat-card" data-element-id="${def.id}">
-        <div class="cat-thumb">${thumbSVG(def)}</div>
-        <div class="cat-name">${def.name}</div>
-      </div>
-    `).join('');
-
-    grid.querySelectorAll('.cat-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const def = items.find(d => d.id === card.dataset.elementId);
-        if (def) {
-          setPendingPlacement(def, { source: 'catalog', sticky: false });
-          close();
-        }
-      });
-    });
-  }
+  // Si hay búsqueda activa, no la limpiamos al cambiar categoría
+  renderCatalogContent();
 
   document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', {
     detail: { kind: 'catalog', key: categoryKey }
   }));
+
   modal.classList.remove('hidden');
+
+  // Foco en búsqueda al abrir
+  setTimeout(() => document.getElementById('catalog-search')?.focus(), 60);
 }
 
 function close() {
