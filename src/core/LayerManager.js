@@ -131,6 +131,7 @@ function refreshLayerPanel() {
   const panel = document.getElementById('layer-panel');
   if (!panel) return;
   panel.innerHTML = buildLayerPanelHTML();
+  panel.style.display = '';
   if (window.lucide) lucide.createIcons();
   panel.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', e => {

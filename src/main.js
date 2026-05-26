@@ -25,11 +25,20 @@ import { SubscriptionManager } from './services/SubscriptionManager.js';
 import { AnalyticsManager } from './services/AnalyticsManager.js';
 import { SupportManager } from './services/SupportManager.js';
 
+function showStartupError(label, error) {
+  console.error(`[E-scale] ${label} falló:`, error);
+  const msg = `[${label}] ${error?.stack || error?.message || String(error)}`;
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:16px 20px;z-index:99999;font:13px/1.5 monospace;white-space:pre-wrap;word-break:break-all;max-height:50vh;overflow:auto';
+  d.textContent = msg;
+  document.body?.prepend(d);
+}
+
 async function safeInit(label, fn) {
   try {
     return await fn();
   } catch (error) {
-    console.warn(`[E-scale] ${label} no se pudo inicializar:`, error);
+    showStartupError(label, error);
     return null;
   }
 }
@@ -48,9 +57,9 @@ async function bootstrap() {
   await safeInit('SupportManager', () => SupportManager.init());
   await safeInit('TextSanitizer', () => TextSanitizer.init());
 
-  await UIManager.init();
-  await SceneManager.init();
-  await ElementLibrary.load();
+  await safeInit('UIManager', () => UIManager.init());
+  await safeInit('SceneManager', () => SceneManager.init());
+  await safeInit('ElementLibrary', () => ElementLibrary.load());
 
   await safeInit('InteractionManager', () => InteractionManager.init());
   await safeInit('LayerManager', () => LayerManager.init());

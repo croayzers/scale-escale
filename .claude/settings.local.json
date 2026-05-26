@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Get-Content \"D:\\\\App\\\\E_scale\\\\index.html\" | Select-Object -Skip 569 -First 5 | ForEach-Object { [System.Convert]::ToBase64String\\([System.Text.Encoding]::UTF8.GetBytes\\($_\\)\\) })"
+      "PowerShell(Get-Content \"D:\\\\App\\\\E_scale\\\\index.html\" | Select-Object -Skip 569 -First 5 | ForEach-Object { [System.Convert]::ToBase64String\\([System.Text.Encoding]::UTF8.GetBytes\\($_\\)\\) })",
+      "PowerShell(node -e $script)",
+      "PowerShell(cd D:\\\\App\\\\E_scale; Start-Process python -ArgumentList \"-m\", \"http.server\", \"8080\" -WindowStyle Hidden; Start-Sleep -Milliseconds 1500; $r = [System.Net.WebClient]::new\\(\\).DownloadString\\(\"http://localhost:8080/src/ui/CatalogModal.js\"\\); \"Status: OK, length: $\\($r.Length\\)\")",
+      "PowerShell($wc = [System.Net.WebClient]::new\\(\\); $r1 = $wc.DownloadString\\(\"http://localhost:8080/src/core/LayerManager.js\"\\); $r2 = $wc.DownloadString\\(\"http://localhost:8080/src/scene/SelectionManager.js\"\\); $r3 = $wc.DownloadString\\(\"http://localhost:8080/src/scene/InteractionManager.js\"\\); \"LayerManager: $\\($r1.Length\\) bytes\"; \"SelectionManager: $\\($r2.Length\\) bytes\"; \"InteractionManager: $\\($r3.Length\\) bytes\")"
     ]
   }
 }

@@ -230,7 +230,7 @@ function updateHole(x, y, w, h) {
   });
 }
 
-function capturePlanoArea(rect) {
+async function capturePlanoArea(rect) {
   document.getElementById('area-overlay')?.classList.add('hidden');
   openPreviewShell();
   SceneManager.renderer.render(SceneManager.scene, SceneManager.activeCam);

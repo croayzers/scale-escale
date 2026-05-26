@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────────
    CATALOG MODAL — Modal flotante con tarjetas por categoría
    ───────────────────────────────────────────────────────── */
 
@@ -182,7 +182,7 @@ function normalize(str) {
   return String(str || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 /** Renderiza el contenido del grid según búsqueda o categoría activa */
@@ -268,8 +268,8 @@ function bindCards(grid, items, categoryKey) {
     const catKey = card.dataset.catKey || categoryKey;
     const catItems = ElementLibrary.data[catKey] || items;
     card.addEventListener('click', () => {
-      const def = catItems.find(d => d.id === card.dataset.elementId)
-                  || items.find(d => d.id === card.dataset.elementId);
+      const def = catItems.find(d => String(d.id) === card.dataset.elementId)
+                  || items.find(d => String(d.id) === card.dataset.elementId);
       if (def) {
         setPendingPlacement(def, { source: 'catalog', sticky: false });
         close();

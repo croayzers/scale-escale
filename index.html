@@ -25,6 +25,18 @@
 <link rel="stylesheet" href="styles/layout.css">
 <link rel="stylesheet" href="styles/components.css">
 <link rel="stylesheet" href="styles/dock.css">
+<script>
+(function(){
+  function showErr(msg) {
+    var d = document.createElement('div');
+    d.setAttribute('style','position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:16px 20px;z-index:99999;font:13px/1.5 monospace;white-space:pre-wrap;word-break:break-all;max-height:50vh;overflow:auto');
+    d.textContent = msg;
+    document.body ? document.body.prepend(d) : document.addEventListener('DOMContentLoaded', function(){ document.body.prepend(d); });
+  }
+  window.addEventListener('error', function(e){ showErr('[JS Error] ' + e.message + '\n' + e.filename + ':' + e.lineno); });
+  window.addEventListener('unhandledrejection', function(e){ showErr('[Promise] ' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason))); });
+})();
+</script>
 </head>
 <body>
 
@@ -580,7 +592,7 @@
 <!-- ============ PANEL IZQUIERDO Â· GUÃA PLANO ============ -->
 
 <!-- ============ PANEL CAPAS ============ -->
-<div id="layer-panel" class="layer-panel glass-mac anim-in" aria-label="Panel de capas">
+<div id="layer-panel" class="layer-panel glass-mac" style="display:none" aria-label="Panel de capas">
   <!-- contenido generado por LayerManager.refreshLayerPanel() -->
 </div>
 <aside id="plan-guide" class="plan-guide glass-mac anim-in hidden">
