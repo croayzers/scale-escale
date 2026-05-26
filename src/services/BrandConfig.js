@@ -3,7 +3,7 @@
  * colores y tipografía como variables CSS en :root.
  *
  * Para cambiar la marca: edita los archivos en la carpeta /brand/
- *   /brand/logo.svg   → logo del header
+ *   /brand/logo.png   → logo del header
  *   /brand/brand.json → colores, tipografía, nombre de la app
  */
 

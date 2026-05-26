@@ -711,11 +711,10 @@ function createZoneSymbol(item) {
   group.add(makeZoneGrid(item));
 
   if (item.labelText && item.showLabel !== false) {
-    const sqm = ((item.dims?.length ?? 4) * (item.dims?.width ?? 4)).toFixed(1);
     group.add(makeZoneLabelSprite(
       item.labelText,
       item.borderColor || item.color || '#22c55e',
-      { fontSize: item.fontSize ?? 120, textColor: item.textColor || '#000000', sqm }
+      { fontSize: item.fontSize ?? 120, textColor: item.textColor || '#000000' }
     ));
   }
 
