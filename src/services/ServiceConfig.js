@@ -57,7 +57,8 @@ const DEFAULT_PUBLIC_CONFIG = {
     sendShareEmail: '/api/email/send-share',
     sendFeedback: '/api/email/send-feedback',
     analyticsCapture: '/api/analytics/capture',
-    aiChat: '/api/ai/chat'
+    aiChat: '/api/ai/chat',
+    plansSearch: '/api/plans/search'
   }
 };
 

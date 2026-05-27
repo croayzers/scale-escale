@@ -12,8 +12,24 @@ import { AppState }     from '../core/AppState.js';
 import { SceneManager } from '../scene/SceneManager.js';
 
 function init() {
-  // ── Botón de cargar plano → abre modal ──
-  document.getElementById('btn-upload-plan')?.addEventListener('click', openFormatModal);
+  // ── Botón cargar plano → desplegable ──────────────────────────────────────
+  document.getElementById('btn-upload-plan')?.addEventListener('click', e => {
+    e.stopPropagation();
+    togglePlanDropdown();
+  });
+  document.getElementById('plan-drop-upload')?.addEventListener('click', () => {
+    closePlanDropdown();
+    openFormatModal();
+  });
+  document.getElementById('plan-drop-search')?.addEventListener('click', () => {
+    closePlanDropdown();
+    openSearchModal();
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#upload-plan-dropdown') && !e.target.closest('#btn-upload-plan')) {
+      closePlanDropdown();
+    }
+  });
 
   document.getElementById('file-plan-img')?.addEventListener('change', handleImageFile);
   document.getElementById('file-plan-pdf')?.addEventListener('change', handlePdfFile);
@@ -37,6 +53,27 @@ function init() {
     document.getElementById('file-plan-dwg').click();
   });
 
+  // ── Búsqueda de planos ────────────────────────────────────────────────────
+  document.getElementById('plan-search-close')?.addEventListener('click', closeSearchModal);
+  document.getElementById('plan-search-modal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('plan-search-modal')) closeSearchModal();
+  });
+
+  const searchInput = document.getElementById('plan-search-input');
+  const clearBtn = document.getElementById('plan-search-clear');
+
+  searchInput?.addEventListener('input', e => {
+    const q = e.target.value.trim();
+    clearBtn?.classList.toggle('hidden', !q);
+    scheduleSearch(q);
+  });
+  clearBtn?.addEventListener('click', () => {
+    if (searchInput) searchInput.value = '';
+    clearBtn.classList.add('hidden');
+    showSearchState('empty');
+    searchInput?.focus();
+  });
+
   // Inputs de dimensiones (sidebar)
   document.getElementById('plan-width')?.addEventListener('input', e => {
     AppState.plan.widthM = Math.max(1, parseFloat(e.target.value) || 1);
@@ -57,6 +94,14 @@ function init() {
   emitCalibrationProgress();
 }
 
+// ── Plan dropdown ─────────────────────────────────────────────────────────────
+function togglePlanDropdown() {
+  document.getElementById('upload-plan-dropdown')?.classList.toggle('hidden');
+}
+function closePlanDropdown() {
+  document.getElementById('upload-plan-dropdown')?.classList.add('hidden');
+}
+
 function openFormatModal() {
   document.getElementById('plan-format-modal')?.classList.add('visible');
 }
@@ -65,6 +110,114 @@ function closeFormatModal() {
 }
 function showDwgInfo() {
   document.getElementById('dwg-info-modal')?.classList.add('visible');
+}
+
+// ── Plan search modal ─────────────────────────────────────────────────────────
+let _searchTimer = null;
+
+function openSearchModal() {
+  const modal = document.getElementById('plan-search-modal');
+  if (!modal) return;
+  modal.classList.add('visible');
+  showSearchState('empty');
+  setTimeout(() => document.getElementById('plan-search-input')?.focus(), 80);
+}
+
+function closeSearchModal() {
+  const modal = document.getElementById('plan-search-modal');
+  if (!modal) return;
+  modal.classList.remove('visible');
+  // reset
+  const inp = document.getElementById('plan-search-input');
+  if (inp) inp.value = '';
+  document.getElementById('plan-search-clear')?.classList.add('hidden');
+  showSearchState('empty');
+}
+
+function showSearchState(state) {
+  ['empty', 'loading', 'none', 'no-service', 'grid'].forEach(s => {
+    document.getElementById(`plan-search-${s}`)?.classList.toggle('hidden', s !== state);
+  });
+}
+
+function scheduleSearch(q) {
+  clearTimeout(_searchTimer);
+  if (!q) { showSearchState('empty'); return; }
+  showSearchState('loading');
+  _searchTimer = setTimeout(() => fetchPlans(q), 320);
+}
+
+async function fetchPlans(q) {
+  const endpoint = '/api/plans/search';
+  try {
+    const res = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
+      headers: { Accept: 'application/json' }
+    });
+
+    if (res.status === 404 || res.status === 503) {
+      showSearchState('no-service');
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    const results = data.results ?? [];
+
+    if (results.length === 0) {
+      const term = document.getElementById('plan-search-term');
+      if (term) term.textContent = q;
+      showSearchState('none');
+      return;
+    }
+
+    renderSearchResults(results);
+  } catch {
+    showSearchState('no-service');
+  }
+}
+
+function renderSearchResults(results) {
+  const grid = document.getElementById('plan-search-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  results.forEach(plan => {
+    const card = document.createElement('button');
+    card.className = 'plan-search-card';
+    card.type = 'button';
+    card.title = plan.venue_name;
+
+    const thumb = plan.thumbnail_url || plan.image_url;
+    card.innerHTML = `
+      <div class="plan-search-thumb">
+        ${thumb
+          ? `<img src="${thumb}" alt="${plan.venue_name}" loading="lazy" onerror="this.parentElement.innerHTML='<i data-lucide=\\"map\\" class=\\"w-8 h-8 opacity-20\\"></i>'">`
+          : '<i data-lucide="map" class="w-8 h-8 opacity-20"></i>'}
+      </div>
+      <div class="plan-search-card-info">
+        <div class="plan-search-card-name">${plan.venue_name}</div>
+        ${plan.city ? `<div class="plan-search-card-city">${plan.city}</div>` : ''}
+      </div>
+    `;
+    card.addEventListener('click', () => loadPlanFromUrl(plan.image_url, plan.venue_name));
+    grid.appendChild(card);
+  });
+
+  showSearchState('grid');
+  if (window.lucide) lucide.createIcons({ nodes: [grid] });
+}
+
+async function loadPlanFromUrl(url, label) {
+  closeSearchModal();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    applyImageToPlan(objectUrl, label ?? 'Biblioteca');
+  } catch (err) {
+    alert(`No se pudo cargar el plano: ${err.message}`);
+  }
 }
 
 /* ── Aplicar imagen como textura ── */
