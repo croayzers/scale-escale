@@ -241,6 +241,10 @@ async function loadSearchFilters() {
   } catch { /* filtros opcionales */ }
 }
 
+function escHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderSearchResults(results) {
   const grid = document.getElementById('plan-search-grid');
   if (!grid) return;
@@ -252,19 +256,38 @@ function renderSearchResults(results) {
     card.type = 'button';
     card.title = plan.venue_name;
 
-    const thumb = plan.thumbnail_url || plan.image_url;
-    card.innerHTML = `
-      <div class="plan-search-thumb">
-        ${thumb
-          ? `<img src="${thumb}" alt="${plan.venue_name}" loading="lazy" onerror="this.parentElement.innerHTML='<i data-lucide=\\"map\\" class=\\"w-8 h-8 opacity-20\\"></i>'">`
-          : '<i data-lucide="map" class="w-8 h-8 opacity-20"></i>'}
-      </div>
-      <div class="plan-search-card-info">
-        <div class="plan-search-card-name">${plan.venue_name}</div>
-        ${plan.zone ? `<div class="plan-search-card-zone">${plan.zone}</div>` : ''}
-        ${plan.city ? `<div class="plan-search-card-city">${plan.city}</div>` : ''}
-      </div>
+    // Only use URLs that look valid (skip placeholder values like "URL_thumb")
+    const rawThumb = plan.thumbnail_url || plan.image_url;
+    const thumb = rawThumb && /^https?:\/\//.test(rawThumb) ? rawThumb : null;
+
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'plan-search-thumb';
+
+    if (thumb) {
+      const img = document.createElement('img');
+      img.src = thumb;
+      img.alt = plan.venue_name;
+      img.loading = 'lazy';
+      img.addEventListener('error', () => {
+        thumbDiv.innerHTML = '<i data-lucide="map" class="w-8 h-8 opacity-20"></i>';
+        if (window.lucide) lucide.createIcons({ nodes: [thumbDiv] });
+      });
+      thumbDiv.appendChild(img);
+    } else {
+      thumbDiv.innerHTML = '<i data-lucide="map" class="w-8 h-8 opacity-20"></i>';
+    }
+
+    const info = document.createElement('div');
+    info.className = 'plan-search-card-info';
+    info.innerHTML = `
+      <div class="plan-search-card-name">${escHtml(plan.venue_name)}</div>
+      ${plan.zone ? `<div class="plan-search-card-zone">${escHtml(plan.zone)}</div>` : ''}
+      ${plan.city ? `<div class="plan-search-card-city">${escHtml(plan.city)}</div>` : ''}
     `;
+
+    card.appendChild(thumbDiv);
+    card.appendChild(info);
+
     const label = plan.zone ? `${plan.venue_name} · ${plan.zone}` : plan.venue_name;
     card.addEventListener('click', () => loadPlanFromUrl(plan.image_url, label));
     grid.appendChild(card);
