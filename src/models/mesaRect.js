@@ -27,7 +27,7 @@ export function createMesaRect(item) {
   // -Z side: rotY=π  → silla mira +Z (hacia la mesa) ✓
   const sep = item.chairSep ?? 0.60;
   const sideChairs = Math.max(1, Math.floor(L / sep));
-  const offsetZ = W / 2 + 0.52;
+  const offsetZ = W / 2 + 0.1;
   for (let i = 0; i < sideChairs; i++) {
     const t = (i + 0.5) / sideChairs;
     const x = -L / 2 + t * L;

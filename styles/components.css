@@ -1504,6 +1504,110 @@ input[type=range]::-webkit-slider-thumb {
   line-height: 1.35;
 }
 
+.hdr-chip.is-active {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563EB;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.3);
+}
+
+.plans-card-highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plans-card-highlight-item {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.plans-card-highlight-item::before {
+  content: '✓';
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.plans-card[data-plan-code="premium"] .plans-card-highlight-item:first-child::before {
+  content: '★';
+  color: var(--plan-premium-accent);
+}
+
+.plans-card-details {
+  border-top: 1px solid rgba(10, 10, 11, 0.07);
+  padding-top: 6px;
+}
+
+.plans-card-details-toggle {
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.plans-card-details-toggle::-webkit-details-marker { display: none; }
+
+.plans-card-details[open] .plans-card-details-toggle {
+  margin-bottom: 6px;
+}
+
+.plans-card-params {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.plans-card-param {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.plans-card-param > span:first-child {
+  font-weight: 600;
+  min-width: 58px;
+  color: var(--ink);
+}
+
+.plans-card-param code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  background: rgba(10, 10, 11, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.plans-card-param-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.plans-card-param-url {
+  font-size: 11px;
+  color: var(--brand-primary, #2563EB);
+  text-decoration: none;
+}
+
+.plans-card-param-url:hover { text-decoration: underline; }
+
 .plans-card-cta {
   min-height: 42px;
   margin-top: auto;
@@ -2485,7 +2589,8 @@ body.zone-placing #scene-canvas {
 }
 
 .layer-vis-btn,
-.layer-lock-btn {
+.layer-lock-btn,
+.layer-edit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2500,7 +2605,8 @@ body.zone-placing #scene-canvas {
   transition: background 120ms, color 120ms;
 }
 .layer-vis-btn:hover,
-.layer-lock-btn:hover {
+.layer-lock-btn:hover,
+.layer-edit-btn:hover {
   background: rgba(10,10,11,0.08);
   color: var(--ink, #1a1a1c);
 }

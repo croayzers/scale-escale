@@ -67,11 +67,11 @@ export function createMesaCurva(item) {
 
   let totalChairs = 0;
   if (dist === 'externa' || dist === 'ambas') {
-    placeChair(rOut + 0.52, true);
+    placeChair(rOut + 0.1, true);
     totalChairs += nChairs;
   }
   if (dist === 'interna' || dist === 'ambas') {
-    placeChair(Math.max(0.32, rIn - 0.52), false);
+    placeChair(Math.max(0.1, rIn - 0.1), false);
     totalChairs += nChairs;
   }
   item.chairs = totalChairs;

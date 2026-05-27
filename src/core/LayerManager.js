@@ -210,6 +210,10 @@ function buildLayerPanelHTML() {
             title="${layer.locked ? 'Desbloquear capa' : 'Bloquear capa'}" aria-label="${layer.locked ? 'Desbloquear' : 'Bloquear'}">
             <i data-lucide="${layer.locked ? 'lock' : 'unlock'}" class="w-3.5 h-3.5"></i>
           </button>
+          <button class="layer-edit-btn" data-action="edit" data-layer-id="${layer.id}"
+            title="Editar capa" aria-label="Editar capa">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+          </button>
         </div>
       `).join('')}
     </div>
@@ -221,11 +225,20 @@ function buildLayerPanelHTML() {
     </div>`;
 }
 
+function togglePanel() {
+  const panel = document.getElementById('layer-panel');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none' || panel.style.display === '';
+  panel.style.display = isHidden ? 'block' : 'none';
+  document.getElementById('btn-layers-toggle')?.classList.toggle('is-active', isHidden);
+}
+
 function refreshLayerPanel() {
   const panel = document.getElementById('layer-panel');
   if (!panel) return;
+  const wasVisible = panel.style.display !== 'none' && panel.style.display !== '';
   panel.innerHTML = buildLayerPanelHTML();
-  panel.style.display = '';
+  if (!wasVisible) panel.style.display = 'none';
   if (window.lucide) lucide.createIcons();
   panel.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', e => {
@@ -240,6 +253,12 @@ function refreshLayerPanel() {
         if (layer) setLayerLocked(layerId, !layer.locked);
       } else if (action === 'set-active') {
         setActiveLayer(layerId);
+      } else if (action === 'edit') {
+        const itemEl = document.querySelector(`.layer-item[data-layer-id="${layerId}"]`);
+        if (itemEl) {
+          const rect = itemEl.getBoundingClientRect();
+          _showLayerContextMenu(layerId, rect.right + 6, rect.top);
+        }
       }
     });
   });
@@ -259,7 +278,7 @@ function refreshLayerPanel() {
 
 function init() {
   refreshLayerPanel();
-  // Bind SelectionManager ← LayerManager reference (breaks potential circular dep)
+  document.getElementById('btn-layers-toggle')?.addEventListener('click', togglePanel);
   import('../scene/SelectionManager.js').then(({ SelectionManager }) => {
     SelectionManager.bindLayerManager(LayerManager);
   });
@@ -285,6 +304,7 @@ function importState(state) {
 export const LayerManager = {
   init,
   reset,
+  togglePanel,
   get layers()        { return layers; },
   get activeLayerId() { return activeLayerId; },
   getLayer,

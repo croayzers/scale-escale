@@ -1,22 +1,7 @@
-import { PLAN_CATALOG } from '../core/PlanCatalog.js';
+import { PLAN_CATALOG, PLAN_COMPARE_ROWS } from '../core/PlanCatalog.js';
 import { getPlanVisual } from '../core/BrandTokens.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { AppState } from '../core/AppState.js';
-
-const PLAN_COMPARE_ROWS = [
-  { label: 'Proyectos activos',        values: { free_lite: '1 proyecto',     pro: 'Ilimitados',        premium: 'Ilimitados' } },
-  { label: 'Elementos por plano',      values: { free_lite: 'Hasta 50',        pro: 'Ilimitados',        premium: 'Ilimitados' } },
-  { label: 'Cat\u00e1logo de elementos', values: { free_lite: 'B\u00e1sico (2 cat.)', pro: 'Completo',   premium: 'Completo' } },
-  { label: 'Exportaci\u00f3n PNG',     values: { free_lite: 'check',           pro: 'check',             premium: 'check' } },
-  { label: 'Exportaci\u00f3n PDF',     values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } },
-  { label: 'Inventario autom\u00e1tico', values: { free_lite: 'dash',          pro: 'check',             premium: 'check' } },
-  { label: 'Compartir planning',       values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } },
-  { label: 'Usuarios del equipo',      values: { free_lite: '1',               pro: '2',                 premium: 'Ilimitados' } },
-  { label: 'Edici\u00f3n simult\u00e1nea', values: { free_lite: 'dash',        pro: 'dash',              premium: 'check' } },
-  { label: 'Sincronizaci\u00f3n Cloud', values: { free_lite: 'dash',           pro: 'dash',              premium: 'check' } },
-  { label: 'Historial de versiones',   values: { free_lite: 'dash',            pro: 'dash',              premium: 'check' } },
-  { label: 'Logo propio',              values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } }
-];
 
 const PLAN_ORDER = ['free_lite', 'pro', 'premium'];
 
@@ -74,6 +59,21 @@ function renderCards(currentPlanCode) {
         ? `<div class="plans-card-price">${formatPlanPrice(planCode)} <small>+ iva</small></div><div class="plans-card-subcopy">/ mes \u00b7 para equipos</div>`
         : `<div class="plans-card-price">${formatPlanPrice(planCode)} <small>+ iva</small></div><div class="plans-card-subcopy">/ mes \u00b7 facturado mensualmente</div>`;
 
+    const highlightsHtml = (plan.highlights || []).map(h =>
+      `<li class="plans-card-highlight-item">${h}</li>`
+    ).join('');
+
+    const paramsRows = [
+      `<div class="plans-card-param"><span>C\u00f3digo</span><code>${planCode}</code></div>`,
+      `<div class="plans-card-param"><span>Precio</span><code>${plan.monthlyPriceEur ? `\u20ac${plan.monthlyPriceEur}/mes` : 'Gratis'}</code></div>`,
+      `<div class="plans-card-param"><span>Color</span><span class="plans-card-param-swatch" style="background:${visual.accent}"></span><code>${visual.accent}</code></div>`,
+      plan.checkoutUrl
+        ? `<div class="plans-card-param"><span>Checkout</span><a class="plans-card-param-url" href="${plan.checkoutUrl}" target="_blank" rel="noopener">Stripe \u2197</a></div>`
+        : plan.stripe_price_monthly
+          ? `<div class="plans-card-param"><span>Price ID</span><code>${plan.stripe_price_monthly}</code></div>`
+          : ''
+    ].filter(Boolean).join('');
+
     return `
       <section
         class="plans-card ${planCode === preferredPlanCode ? 'is-focused' : ''} ${state === 'current' ? 'is-current' : ''}"
@@ -86,6 +86,13 @@ function renderCards(currentPlanCode) {
           <span>${badgeText}</span>
         </div>
         ${priceMarkup}
+        <ul class="plans-card-highlights" aria-label="Ventajas del plan ${plan.name}">
+          ${highlightsHtml}
+        </ul>
+        <details class="plans-card-details">
+          <summary class="plans-card-details-toggle">Ver par\u00e1metros</summary>
+          <div class="plans-card-params">${paramsRows}</div>
+        </details>
         <button
           type="button"
           class="plans-card-cta ${state === 'current' ? 'is-current' : ''}"
@@ -174,7 +181,12 @@ async function handlePlanAction(planCode) {
   }
 
   if (planCode === 'premium') {
-    contactPremium();
+    const checkoutUrl = PLAN_CATALOG.premium.checkoutUrl;
+    if (checkoutUrl) {
+      window.open(checkoutUrl, '_blank', 'noopener');
+    } else {
+      contactPremium();
+    }
     return;
   }
 
@@ -200,7 +212,7 @@ function bindActions() {
     }
 
     const card = event.target.closest('[data-plan-card]');
-    if (card) {
+    if (card && !event.target.closest('.plans-card-details')) {
       preferredPlanCode = normalizePlanCode(card.dataset.planCode);
       render();
     }

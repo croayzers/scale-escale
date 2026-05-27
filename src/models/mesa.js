@@ -67,7 +67,7 @@ export function createMesa(item) {
   }
 
   // Sillas dispuestas radialmente (respaldo afuera)
-  const chairRadius = r + 0.52;
+  const chairRadius = r + 0.1;
   for (let i = 0; i < item.chairs; i++) {
     const angle = (i / item.chairs) * Math.PI * 2;
     const cx = Math.cos(angle) * chairRadius;
@@ -120,7 +120,7 @@ export function createMesaPresi(item) {
 
   // Sillas en lados largos (4 por lado = 8)
   const sideChairs = 4;
-  const sideOffsetZ = W / 2 + 0.52;
+  const sideOffsetZ = W / 2 + 0.1;
   for (let i = 0; i < sideChairs; i++) {
     const t = (i + 0.5) / sideChairs;
     const x = -L / 2 + t * L;
@@ -137,7 +137,7 @@ export function createMesaPresi(item) {
   }
 
   // Sillas de los extremos (opcionales)
-  const endOffsetX = L / 2 + 0.52;
+  const endOffsetX = L / 2 + 0.1;
   if (item.endHead !== false) {
     const chairHead = createChair();
     chairHead.position.set(endOffsetX, 0, 0);
