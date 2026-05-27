@@ -1410,26 +1410,26 @@ function onKeyDown(e) {
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(activeTag) || document.activeElement?.isContentEditable) return;
 
   // ── Ctrl+Z: Undo ──
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+  if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'z') {
     e.preventDefault(); AppState.undo(); return;
   }
 
   // ── Ctrl+D: Duplicar selección ──
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+  if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'd') {
     e.preventDefault();
     SelectionManager.duplicateSelected();
     return;
   }
 
   // ── Ctrl+Alt+V: Aplicar formato a selección ──
-  if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'v') {
+  if ((e.ctrlKey || e.metaKey) && e.altKey && e.key?.toLowerCase() === 'v') {
     e.preventDefault();
     SelectionManager.applyCopiedFormatToSelection();
     return;
   }
 
   // ── Ctrl+C: copiar formato (si pincel activo) o copiar item ──
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+  if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'c') {
     if (formatModeActive && AppState.selectedId !== null) {
       const item = AppState.items.find(i => i.id === AppState.selectedId);
       if (item) { SelectionManager.copyItemFormat(item); e.preventDefault(); return; }
@@ -1439,18 +1439,18 @@ function onKeyDown(e) {
   }
 
   // ── Ctrl+V: pegar item ──
-  if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'v') {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key?.toLowerCase() === 'v') {
     if (activateCopiedPlacement()) e.preventDefault();
     return;
   }
 
-  if (e.key.toLowerCase() === 'b') {
+  if (e.key?.toLowerCase() === 'b') {
     bKeyDown = true;
     return;
   }
 
   // ── Ctrl+A: seleccionar todos visibles y no bloqueados en capa activa ──
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+  if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'a') {
     e.preventDefault();
     const lm = window.LayerManager;
     const activeLayerId = lm?.activeLayerId || null;
@@ -1470,7 +1470,7 @@ function onKeyDown(e) {
     return;
   }
 
-  if (e.key.toLowerCase() === 'r' && !rKeyDown) {
+  if (e.key?.toLowerCase() === 'r' && !rKeyDown) {
     rKeyDown = true;
     rotateSelectionStep();
     return;
@@ -1506,10 +1506,8 @@ function onKeyDown(e) {
 
 function onKeyUp(e) {
   if (e.key === 'Shift') shiftDown = false;
-  if (e.key.toLowerCase() === 'b') bKeyDown = false;
-  if (e.key.toLowerCase() === 'r') {
-    rKeyDown = false;
-  }
+  if (e.key?.toLowerCase() === 'b') bKeyDown = false;
+  if (e.key?.toLowerCase() === 'r') rKeyDown = false;
 }
 
 function rotateSelectionStep() {

@@ -16,6 +16,8 @@ const FEEDBACK_TYPES = [
 
 let _state = 'idle'; // idle | sending | success | error
 let _autoTriggered = false;
+let _lastType = '';
+let _lastMessage = '';
 
 function modal() { return document.getElementById('feedback-modal'); }
 function typeEl()  { return document.getElementById('feedback-type'); }
@@ -65,11 +67,29 @@ export function close() {
   modal()?.classList.remove('visible');
 }
 
+function openMailtoFallback() {
+  const subject = encodeURIComponent(`[E-scale] ${_lastType || 'Feedback'}`);
+  const meta    = buildMeta();
+  const footer  = [
+    meta.company ? `Empresa: ${meta.company}` : '',
+    meta.name    ? `Nombre:  ${meta.name}`    : '',
+    meta.email   ? `Email:   ${meta.email}`   : '',
+    meta.plan    ? `Plan:    ${meta.plan}`     : '',
+  ].filter(Boolean).join('\n');
+  const body = encodeURIComponent(
+    (_lastMessage || '') + (footer ? `\n\n---\n${footer}` : '')
+  );
+  window.open(`mailto:Rafa27x26@gmail.com?subject=${subject}&body=${body}`, '_self');
+}
+
 async function submit() {
   const type    = typeEl()?.value?.trim();
   const message = bodyEl()?.value?.trim();
   if (!type)    { typeEl()?.focus();  return; }
   if (!message) { bodyEl()?.focus();  return; }
+
+  _lastType    = type;
+  _lastMessage = message;
 
   setState('sending');
   try {
@@ -102,6 +122,7 @@ export function init() {
   document.getElementById('feedback-cancel')?.addEventListener('click', close);
   submitEl()?.addEventListener('click', submit);
   document.getElementById('feedback-retry')?.addEventListener('click', resetForm);
+  document.getElementById('feedback-mailto')?.addEventListener('click', openMailtoFallback);
   document.getElementById('feedback-done')?.addEventListener('click', close);
 
   document.addEventListener('keydown', e => {

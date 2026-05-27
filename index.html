@@ -350,6 +350,29 @@
 
 <div id="template-menu" class="hdr-popover hidden" aria-hidden="true">
 
+  <!-- ── GUARDAR / CREAR ── -->
+  <div class="tpl-section">
+    <div class="tpl-section-label">Crear</div>
+    <div class="hdr-popover-actions tpl-actions-compact">
+      <button class="menu-action" type="button" data-template-action="save-base">
+        <span class="menu-action-icon"><i data-lucide="landmark" class="w-4 h-4"></i></span>
+        <span class="menu-action-copy">
+          <strong>Crear Base</strong>
+          <small>Estructura fija del establecimiento</small>
+        </span>
+      </button>
+      <button class="menu-action" type="button" data-template-action="save-planning">
+        <span class="menu-action-icon"><i data-lucide="layout-list" class="w-4 h-4"></i></span>
+        <span class="menu-action-copy">
+          <strong>Guardar Planning</strong>
+          <small>Selecciona los elementos del evento</small>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div class="tpl-divider"></div>
+
   <!-- ── IMPORTAR ── -->
   <div class="tpl-section">
     <div class="tpl-section-label">Seleccione una plantilla</div>
@@ -384,29 +407,6 @@
           <div class="tpl-empty">Selecciona una carpeta primero</div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="tpl-divider"></div>
-
-  <!-- ── GUARDAR / CREAR ── -->
-  <div class="tpl-section">
-    <div class="tpl-section-label">Crear</div>
-    <div class="hdr-popover-actions tpl-actions-compact">
-      <button class="menu-action" type="button" data-template-action="save-base">
-        <span class="menu-action-icon"><i data-lucide="landmark" class="w-4 h-4"></i></span>
-        <span class="menu-action-copy">
-          <strong>Crear Base</strong>
-          <small>Estructura fija del establecimiento</small>
-        </span>
-      </button>
-      <button class="menu-action" type="button" data-template-action="save-planning">
-        <span class="menu-action-icon"><i data-lucide="layout-list" class="w-4 h-4"></i></span>
-        <span class="menu-action-copy">
-          <strong>Guardar Planning</strong>
-          <small>Selecciona los elementos del evento</small>
-        </span>
-      </button>
     </div>
   </div>
 
@@ -814,9 +814,13 @@
         <textarea id="feedback-body" rows="5" placeholder="Describe lo que ha ocurrido o tu sugerencia con el mayor detalle posible…" class="input-field w-full" style="resize:vertical;font-size:13px;line-height:1.5"></textarea>
       </div>
       <div data-feedback-state="error" hidden>
-        <p class="text-[12px] mb-4 px-3 py-2 rounded-lg" style="background:rgba(185,28,28,0.08);color:#b91c1c">
-          No se pudo enviar el mensaje. Comprueba tu conexión e inténtalo de nuevo.
-        </p>
+        <div class="mb-4 px-3 py-3 rounded-lg" style="background:rgba(185,28,28,0.08);border:1px solid rgba(185,28,28,0.15)">
+          <p class="text-[12px] mb-2" style="color:#b91c1c">No se pudo enviar automáticamente. Puedes enviarlo por correo:</p>
+          <button id="feedback-mailto" class="btn ghost" style="font-size:12px;padding:6px 12px">
+            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+            Abrir cliente de correo
+          </button>
+        </div>
       </div>
       <div class="flex gap-3 justify-end">
         <button id="feedback-cancel" class="btn ghost">Cancelar</button>
