@@ -63,16 +63,17 @@ function init() {
   const clearBtn = document.getElementById('plan-search-clear');
 
   searchInput?.addEventListener('input', e => {
-    const q = e.target.value.trim();
-    clearBtn?.classList.toggle('hidden', !q);
-    scheduleSearch(q);
+    clearBtn?.classList.toggle('hidden', !e.target.value.trim());
+    scheduleSearch();
   });
   clearBtn?.addEventListener('click', () => {
     if (searchInput) searchInput.value = '';
     clearBtn.classList.add('hidden');
-    showSearchState('empty');
+    scheduleSearch();
     searchInput?.focus();
   });
+  document.getElementById('plan-filter-city')?.addEventListener('change', scheduleSearch);
+  document.getElementById('plan-filter-type')?.addEventListener('change', scheduleSearch);
 
   // Inputs de dimensiones (sidebar)
   document.getElementById('plan-width')?.addEventListener('input', e => {
@@ -131,6 +132,7 @@ function openSearchModal() {
   if (!modal) return;
   modal.classList.add('visible');
   showSearchState('empty');
+  loadSearchFilters();
   setTimeout(() => document.getElementById('plan-search-input')?.focus(), 80);
 }
 
@@ -138,10 +140,13 @@ function closeSearchModal() {
   const modal = document.getElementById('plan-search-modal');
   if (!modal) return;
   modal.classList.remove('visible');
-  // reset
   const inp = document.getElementById('plan-search-input');
   if (inp) inp.value = '';
   document.getElementById('plan-search-clear')?.classList.add('hidden');
+  const cityEl = document.getElementById('plan-filter-city');
+  const typeEl = document.getElementById('plan-filter-type');
+  if (cityEl) cityEl.value = '';
+  if (typeEl) typeEl.value = '';
   showSearchState('empty');
 }
 
@@ -151,17 +156,29 @@ function showSearchState(state) {
   });
 }
 
-function scheduleSearch(q) {
-  clearTimeout(_searchTimer);
-  if (!q) { showSearchState('empty'); return; }
-  showSearchState('loading');
-  _searchTimer = setTimeout(() => fetchPlans(q), 320);
+function getSearchParams() {
+  const q    = (document.getElementById('plan-search-input')?.value || '').trim();
+  const city = document.getElementById('plan-filter-city')?.value  || '';
+  const type = document.getElementById('plan-filter-type')?.value  || '';
+  return { q, city, type };
 }
 
-async function fetchPlans(q) {
-  const endpoint = '/api/plans/search';
+function scheduleSearch() {
+  clearTimeout(_searchTimer);
+  const { q, city, type } = getSearchParams();
+  if (!q && !city && !type) { showSearchState('empty'); return; }
+  showSearchState('loading');
+  _searchTimer = setTimeout(() => fetchPlans(q, city, type), 320);
+}
+
+async function fetchPlans(q, city, type) {
+  const params = new URLSearchParams();
+  if (q)    params.set('q',    q);
+  if (city) params.set('city', city);
+  if (type) params.set('type', type);
+
   try {
-    const res = await fetch(`${endpoint}?q=${encodeURIComponent(q)}`, {
+    const res = await fetch(`/api/plans/search?${params}`, {
       headers: { Accept: 'application/json' }
     });
 
@@ -176,7 +193,7 @@ async function fetchPlans(q) {
 
     if (results.length === 0) {
       const term = document.getElementById('plan-search-term');
-      if (term) term.textContent = q;
+      if (term) term.textContent = q || city || type;
       showSearchState('none');
       return;
     }
@@ -185,6 +202,39 @@ async function fetchPlans(q) {
   } catch {
     showSearchState('no-service');
   }
+}
+
+async function loadSearchFilters() {
+  try {
+    const res = await fetch('/api/plans/filters', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const cityEl = document.getElementById('plan-filter-city');
+    const typeEl = document.getElementById('plan-filter-type');
+
+    if (cityEl && data.cities?.length) {
+      const prev = cityEl.value;
+      cityEl.innerHTML = '<option value="">Ciudad…</option>';
+      data.cities.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        cityEl.appendChild(opt);
+      });
+      if (prev) cityEl.value = prev;
+    }
+
+    if (typeEl && data.types?.length) {
+      const prev = typeEl.value;
+      typeEl.innerHTML = '<option value="">Tipo…</option>';
+      data.types.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        typeEl.appendChild(opt);
+      });
+      if (prev) typeEl.value = prev;
+    }
+  } catch { /* filtros opcionales */ }
 }
 
 function renderSearchResults(results) {
@@ -207,10 +257,12 @@ function renderSearchResults(results) {
       </div>
       <div class="plan-search-card-info">
         <div class="plan-search-card-name">${plan.venue_name}</div>
+        ${plan.zone ? `<div class="plan-search-card-zone">${plan.zone}</div>` : ''}
         ${plan.city ? `<div class="plan-search-card-city">${plan.city}</div>` : ''}
       </div>
     `;
-    card.addEventListener('click', () => loadPlanFromUrl(plan.image_url, plan.venue_name));
+    const label = plan.zone ? `${plan.venue_name} · ${plan.zone}` : plan.venue_name;
+    card.addEventListener('click', () => loadPlanFromUrl(plan.image_url, label));
     grid.appendChild(card);
   });
 

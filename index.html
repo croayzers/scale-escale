@@ -1032,13 +1032,23 @@
         id="plan-search-input"
         class="plan-search-input"
         type="text"
-        placeholder="Nombre del lugar, ciudad…"
+        placeholder="Nombre del lugar…"
         autocomplete="off"
         spellcheck="false"
       />
       <button id="plan-search-clear" class="plan-search-clear hidden" title="Limpiar">
         <i data-lucide="x" class="w-3.5 h-3.5"></i>
       </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="plan-search-filters">
+      <select id="plan-filter-city" class="plan-filter-select">
+        <option value="">Ciudad…</option>
+      </select>
+      <select id="plan-filter-type" class="plan-filter-select">
+        <option value="">Tipo…</option>
+      </select>
     </div>
 
     <!-- Results -->

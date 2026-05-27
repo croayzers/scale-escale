@@ -7,23 +7,29 @@ const MAX_RESULTS  = 24;
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(req, res, ['GET']);
 
-  // ── Guard: Supabase no configurado ─────────────────────────────────────────
   if (!hasSupabaseServiceRole()) {
     return json(res, 503, { ok: false, error: 'floor_plan_library_unavailable', results: [] });
   }
 
-  // ── Validar parámetro q ────────────────────────────────────────────────────
-  const raw = String(req.query?.q ?? '').trim();
-  if (!raw) return badRequest(res, 'El parámetro q es obligatorio.');
-  if (raw.length > MAX_Q_LENGTH) return badRequest(res, `q no puede superar ${MAX_Q_LENGTH} caracteres.`);
+  const rawQ    = String(req.query?.q    ?? '').trim();
+  const rawCity = String(req.query?.city ?? '').trim();
+  const rawType = String(req.query?.type ?? '').trim();
 
-  // Escapar wildcards para que no rompan la query ilike
-  const q = raw.replace(/[%_]/g, '\\$&');
+  if (!rawQ && !rawCity && !rawType) {
+    return badRequest(res, 'Indica al menos un filtro: q, city o type.');
+  }
+  if (rawQ.length > MAX_Q_LENGTH) {
+    return badRequest(res, `q no puede superar ${MAX_Q_LENGTH} caracteres.`);
+  }
+
+  // Escapar wildcards para ilike
+  const q    = rawQ.replace(/[%_]/g, '\\$&');
+  const city = rawCity.slice(0, 100);
+  const type = rawType.slice(0, 80);
 
   try {
-    const results = await searchFloorPlans(q, MAX_RESULTS);
+    const results = await searchFloorPlans(q, MAX_RESULTS, { city, type });
     return json(res, 200, { ok: true, results });
-
   } catch (error) {
     console.error('[plans/search]', error.message);
     return serverError(res, error);
