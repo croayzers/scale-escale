@@ -595,6 +595,7 @@ const TYPE_LABELS = {
   sillaCatering: 'Silla',
   sillaLineal: 'Lineal de sillas',
   buffet: 'Buffet',
+  carritoBuf: 'Carrito buffet',
   buffetCarro: 'Buffet carro',
   barraLibre: 'Barra libre',
   carpa: 'Carpa clasica',
@@ -1013,7 +1014,7 @@ function buildUnifiedContextMenuHTML(item) {
 
       ${tableAssignmentHTML(item)}
 
-      ${(item.type === 'buffet' || item.type === 'buffetCarro') ? `
+      ${(item.type === 'buffet' || item.type === 'buffetCarro' || item.type === 'carritoBuf') ? `
         <div class="ctx-block">
           <div class="ctx-label">Rótulo</div>
           <label class="ctx-field ctx-field-full">

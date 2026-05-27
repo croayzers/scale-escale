@@ -370,6 +370,7 @@ function decorateExistingDefinitions(data) {
 
   data.bars = data.bars.map(item => {
     if (item.type === 'buffet') return { ...item, schemaId: item.schemaId || 'buffet.station' };
+    if (item.type === 'carritoBuf') return { ...item, schemaId: item.schemaId || 'buffet.carrito' };
     if (item.type === 'buffetCarro') return { ...item, schemaId: item.schemaId || 'buffet.cart' };
     return item;
   });

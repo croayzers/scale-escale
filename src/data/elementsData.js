@@ -205,6 +205,17 @@ export default {
       "defaultRotation": 0
     },
     {
+      "id": "carrito_buffet",
+      "name": "Carrito buffet",
+      "category": "bars",
+      "type": "carritoBuf",
+      "dims": { "length": 1.2, "width": 0.7, "height": 0.9 },
+      "labelText": "Carrito",
+      "color": "#E0DDD8",
+      "chairs": 0,
+      "defaultRotation": 0
+    },
+    {
       "id": "buffet_carro",
       "name": "Buffet carro",
       "category": "bars",

@@ -378,6 +378,34 @@ export const ELEMENT_SCHEMAS = [
     ]
   },
   {
+    id: 'buffet.carrito',
+    family: 'buffet',
+    match: item => item.schemaId === 'buffet.carrito',
+    metadata: {
+      label: 'Carrito buffet',
+      icon: 'shopping-cart',
+      category: 'bars'
+    },
+    builder: { preset: 'buffetCarrito' },
+    ui: { dynamic: true },
+    defaults: {
+      dims: { length: 1.2, width: 0.7, height: 0.9 },
+      color: '#E0DDD8',
+      labelText: 'Carrito',
+      visual: { materialPreset: 'matte', opacity: 1, shadows: true }
+    },
+    params: [
+      StandardParams.length({ default: 1.2, min: 0.6, max: 3, step: 0.05 }),
+      StandardParams.width({ default: 0.7, min: 0.4, max: 1.5, step: 0.05 }),
+      StandardParams.height({ default: 0.9, min: 0.5, max: 1.4, step: 0.01 }),
+      StandardParams.rotation(),
+      StandardParams.color({ default: '#E0DDD8' }),
+      StandardParams.text({ label: 'Rotulo' }),
+      StandardParams.opacity(),
+      StandardParams.shadow()
+    ]
+  },
+  {
     id: 'buffet.cart',
     family: 'buffet',
     match: item => item.schemaId === 'buffet.cart',

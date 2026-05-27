@@ -791,7 +791,6 @@ function spawn(item) {
   ensureInteractiveGroup(group, item.id);
   group.position.set(item.x || 0, item.y || 0, item.z || 0);
   if (item.rotY) group.rotation.y = item.rotY;
-  if (item.type === 'schemaSurface' && _appState?.camera === 'iso') group.visible = false;
   meshes.set(item.id, group);
   scene.add(group);
   if (_appState?.showCotas) drawCotas();

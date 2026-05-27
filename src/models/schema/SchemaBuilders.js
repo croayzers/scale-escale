@@ -557,6 +557,48 @@ function buildBuffet(item, view) {
   return group;
 }
 
+function buildBuffetCarrito(item, view) {
+  const group = new THREE.Group();
+  const L = item.dims?.length ?? 1.2;
+  const W = item.dims?.width ?? 0.7;
+  const H = item.dims?.height ?? 0.9;
+  const color = item.color || '#E0DDD8';
+  const metal = '#9CA3AF';
+
+  if (view === 'top') {
+    addTopFootprint(group, item, L, W, color, 0.15);
+    addTopLabel(group, item.labelText || 'Carrito');
+    return group;
+  }
+
+  // lower shelf
+  const shelf1 = addBox(group, { size: [L, 0.03, W], position: [0, H * 0.28, 0], color: '#D1CEC9', preset: 'matte' });
+  markMain(shelf1, color);
+
+  // upper shelf / tray
+  const shelf2 = addBox(group, { size: [L, 0.03, W], position: [0, H * 0.62, 0], color: '#D1CEC9', preset: 'matte' });
+  markMain(shelf2, color);
+
+  // top surface
+  addBox(group, { size: [L + 0.02, 0.025, W + 0.02], position: [0, H, 0], color: '#C8C4BE', preset: 'matte' });
+
+  // 4 corner legs
+  const lh = H;
+  const offX = L / 2 - 0.04;
+  const offZ = W / 2 - 0.04;
+  [[offX, offZ], [-offX, offZ], [offX, -offZ], [-offX, -offZ]].forEach(([x, z]) => {
+    addBox(group, { size: [0.03, lh, 0.03], position: [x, lh / 2, z], color: metal, preset: 'metal' });
+  });
+
+  // small wheels
+  [[offX, offZ], [-offX, offZ], [offX, -offZ], [-offX, -offZ]].forEach(([x, z]) => {
+    addSphere(group, { radius: 0.035, position: [x, 0.035, z], color: '#374151', preset: 'matte' });
+  });
+
+  addLabel(group, item.labelText || 'Carrito', H + 0.35);
+  return group;
+}
+
 function buildBuffetCarro(item, view) {
   const group = new THREE.Group();
   const L = item.dims?.length ?? 3;
@@ -1921,14 +1963,13 @@ function buildSurface(item, view) {
   if (view !== 'top') {
     const box = new THREE.Mesh(
       new THREE.BoxGeometry(L, H, W),
-      makeStandardMaterial(color, item.visual?.materialPreset || 'matte', item.visual?.opacity ?? 0.92)
+      new THREE.MeshStandardMaterial({ color: colorNumber(color), roughness: 0.88, metalness: 0.02, flatShading: true })
     );
     box.position.y = H / 2;
     box.receiveShadow = true;
     box.castShadow = true;
     markMain(box, color);
     group.add(box);
-    // skip decorative detail additions in 3D — return after box
     return group;
   }
 
@@ -2284,6 +2325,7 @@ export const SCHEMA_BUILDERS = {
   chairDining: buildChair,
   chairLine: buildChairLine,
   buffetStation: buildBuffet,
+  buffetCarrito: buildBuffetCarrito,
   buffetCart: buildBuffetCarro,
   stagePlatform: buildStage,
   genericRectProp: buildGenericRect,
