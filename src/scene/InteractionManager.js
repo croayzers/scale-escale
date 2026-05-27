@@ -81,14 +81,14 @@ function init() {
     const str = (wasdKeys.d ? 1 : 0) - (wasdKeys.a ? 1 : 0);
     let delta;
     if (AppState.camera === 'top') {
-      const speed = 0.18 / Math.max(0.3, cam.zoom ?? 1);
+      const speed = 0.05 / Math.max(0.3, cam.zoom ?? 1);
       delta = new THREE.Vector3(str * speed, 0, -fwd * speed);
     } else {
       const toTarget = new THREE.Vector3().subVectors(controls.target, cam.position);
       toTarget.y = 0;
       if (toTarget.lengthSq() < 0.0001) return;
       const dist = cam.position.distanceTo(controls.target);
-      const speed = Math.max(0.05, dist * 0.025);
+      const speed = Math.max(0.015, dist * 0.005);
       toTarget.normalize();
       const right = new THREE.Vector3().crossVectors(toTarget, new THREE.Vector3(0, 1, 0)).normalize();
       delta = new THREE.Vector3()
