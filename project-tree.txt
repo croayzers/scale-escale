@@ -32,7 +32,6 @@ PROJECT STRUCTURE
 │   │   ├── send-feedback.js
 │   │   └── send-share.js
 │   ├── plans/
-│   │   ├── filters.js
 │   │   └── search.js
 │   └── public-config.js
 ├── brand/

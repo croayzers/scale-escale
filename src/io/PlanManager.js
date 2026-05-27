@@ -74,6 +74,10 @@ function init() {
   });
   document.getElementById('plan-filter-city')?.addEventListener('change', scheduleSearch);
   document.getElementById('plan-filter-type')?.addEventListener('change', scheduleSearch);
+  document.getElementById('plan-search-none-upload')?.addEventListener('click', () => {
+    closeSearchModal();
+    openFormatModal();
+  });
 
   // Inputs de dimensiones (sidebar)
   document.getElementById('plan-width')?.addEventListener('input', e => {
@@ -206,7 +210,7 @@ async function fetchPlans(q, city, type) {
 
 async function loadSearchFilters() {
   try {
-    const res = await fetch('/api/plans/filters', { headers: { Accept: 'application/json' } });
+    const res = await fetch('/api/plans/search?mode=filters', { headers: { Accept: 'application/json' } });
     if (!res.ok) return;
     const data = await res.json();
 
