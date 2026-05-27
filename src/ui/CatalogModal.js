@@ -4,6 +4,8 @@
 
 import { ElementLibrary }    from '../core/ElementLibrary.js';
 import { CATALOG_CATEGORIES } from '../schemas/CatalogCategories.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
+import { PlansModal }          from './PlansModal.js';
 
 let currentCategory = null;
 let pendingPlacement = null;
@@ -184,6 +186,13 @@ function getCategoryLabel(key) {
   return CATALOG_CATEGORIES.find(c => c.key === key)?.label || key;
 }
 
+function isCategoryProLocked(key) {
+  const cat = CATALOG_CATEGORIES.find(c => c.key === key);
+  if (!cat?.pro) return false;
+  const code = SubscriptionManager.currentPlanCode();
+  return code !== 'pro' && code !== 'premium';
+}
+
 /** Normaliza texto para comparación: minúsculas sin diacríticos */
 function normalize(str) {
   return String(str || '')
@@ -216,8 +225,10 @@ function renderCategoryGrid(grid, categoryKey) {
     return;
   }
 
+  const proClass = isCategoryProLocked(categoryKey) ? ' cat-card--pro-locked' : '';
+
   grid.innerHTML = items.map(def => `
-    <div class="cat-card" data-element-id="${escId(def.id)}" data-cat-key="${escId(categoryKey)}">
+    <div class="cat-card${proClass}" data-element-id="${escId(def.id)}" data-cat-key="${escId(categoryKey)}">
       <div class="cat-thumb">${thumbSVG(def)}</div>
       <div class="cat-name">${escHtml(def.name)}</div>
     </div>
@@ -250,19 +261,22 @@ function renderSearchResults(grid, q) {
     return;
   }
 
-  grid.innerHTML = groups.map(({ cat, hits }) => `
+  grid.innerHTML = groups.map(({ cat, hits }) => {
+    const proClass = isCategoryProLocked(cat.key) ? ' cat-card--pro-locked' : '';
+    return `
     <div class="catalog-search-group">
       <div class="catalog-search-group-label">${escHtml(cat.label)}</div>
       <div class="catalog-search-group-cards">
         ${hits.map(def => `
-          <div class="cat-card cat-card-sm" data-element-id="${escId(def.id)}" data-cat-key="${escId(cat.key)}">
+          <div class="cat-card cat-card-sm${proClass}" data-element-id="${escId(def.id)}" data-cat-key="${escId(cat.key)}">
             <div class="cat-thumb">${thumbSVG(def)}</div>
             <div class="cat-name">${highlightMatch(def.name, searchQuery)}</div>
           </div>
         `).join('')}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   // Bind clicks para todos los grupos
   groups.forEach(({ cat, hits }) => {
@@ -275,6 +289,10 @@ function bindCards(grid, items, categoryKey) {
     const catKey = card.dataset.catKey || categoryKey;
     const catItems = ElementLibrary.data[catKey] || items;
     card.addEventListener('click', () => {
+      if (isCategoryProLocked(catKey)) {
+        PlansModal.open('pro');
+        return;
+      }
       const def = catItems.find(d => String(d.id) === card.dataset.elementId)
                   || items.find(d => String(d.id) === card.dataset.elementId);
       if (def) {

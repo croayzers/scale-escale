@@ -1,5 +1,18 @@
 import { CatalogModal } from './CatalogModal.js';
 import { CATALOG_CATEGORIES } from '../schemas/CatalogCategories.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
+
+function isProPlan() {
+  const code = SubscriptionManager.currentPlanCode();
+  return code === 'pro' || code === 'premium';
+}
+
+function markProButtons() {
+  const locked = !isProPlan();
+  document.querySelectorAll('#dock-items button[data-pro-cat]').forEach(btn => {
+    btn.classList.toggle('dock-cat-pro-locked', locked);
+  });
+}
 
 function init() {
   const host = document.getElementById('dock-items');
@@ -19,6 +32,9 @@ function init() {
   host.appendChild(makeInventoryButton());
 
   if (window.lucide) lucide.createIcons();
+
+  markProButtons();
+  document.addEventListener('escale:plan-changed', markProButtons);
 }
 
 function makeCategoryButton(category) {
@@ -28,6 +44,13 @@ function makeCategoryButton(category) {
   button.dataset.dockKind = 'category';
   button.title = category.label;
   button.innerHTML = `<i data-lucide="${category.icon}" class="w-5 h-5"></i>`;
+  if (category.pro) {
+    button.dataset.proCat = 'true';
+    const pip = document.createElement('span');
+    pip.className = 'dock-pro-pip';
+    pip.textContent = 'PRO';
+    button.appendChild(pip);
+  }
   button.addEventListener('click', () => toggleCategory(category.key, button));
   return button;
 }
