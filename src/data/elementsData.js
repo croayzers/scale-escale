@@ -448,9 +448,7 @@ export default {
       "icon": "door-open",
       "type": "schemaProp",
       "assetProfile": "paredPuerta",
-      "dims": { "length": 3.0, "width": 0.1, "height": 3.0 },
-      "doorWidth": 1.0,
-      "doorHeight": 2.0,
+      "dims": { "length": 3.0, "width": 0.1, "height": 3.0, "doorWidth": 1.0, "doorHeight": 2.0 },
       "color": "#f0ede8",
       "chairs": 0,
       "defaultRotation": 0
@@ -462,11 +460,10 @@ export default {
       "icon": "layout-panel-top",
       "type": "schemaProp",
       "assetProfile": "techo",
-      "dims": { "length": 3.0, "width": 3.0, "height": 0.1 },
+      "dims": { "length": 3.0, "width": 3.0, "height": 0.1, "floorHeight": 2.0 },
       "color": "#f0ede8",
       "chairs": 0,
-      "defaultRotation": 0,
-      "y": 2.0
+      "defaultRotation": 0
     },
     {
       "id": "muro_8m",

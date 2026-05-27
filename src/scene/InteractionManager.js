@@ -657,7 +657,12 @@ const DIM_LABELS = {
   thickness: 'Grosor',
   crownWidth: 'Copa',
   roofHeight: 'Grosor techo',
-  modSpacing: 'Módulo postes'
+  modSpacing: 'Módulo postes',
+  floorHeight: 'Altura del suelo',
+  doorWidth: 'Ancho puerta',
+  doorHeight: 'Alto puerta',
+  peakHeight: 'Altura pico',
+  curveRadius: 'Radio curv.'
 };
 
 const DIRECT_NUM_LABELS = {

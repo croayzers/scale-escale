@@ -1594,6 +1594,232 @@ function buildTejado4Aguas(group, item, L, W, H, color) {
   addBox(group, { size: [L, 0.02, W], position: [0, 0.01, 0], color, preset: 'matte', opacity: 0.35 });
 }
 
+// ── STRUCTURAL / AMBIENT BUILDERS ────────────────────────────────────────────
+
+function buildPared(group, item, L, W, H, color) {
+  const wall = addBox(group, { size: [L, H, W], position: [0, H / 2, 0], color, preset: 'matte' });
+  markMain(wall, color);
+}
+
+function buildMuro(group, item, L, W, H, color) {
+  const wall = addBox(group, { size: [L, H, W], position: [0, H / 2, 0], color, preset: 'matte' });
+  markMain(wall, color);
+  // Horizontal mortar lines for masonry texture
+  const bands = Math.max(2, Math.round(H / 0.3));
+  for (let i = 1; i < bands; i++) {
+    addBox(group, { size: [L + 0.01, 0.025, W + 0.01], position: [0, (H / bands) * i, 0], color: '#2E1A0E', preset: 'matte' });
+  }
+}
+
+function buildTecho(group, item, L, W, H, color) {
+  const floorH = item.dims?.floorHeight ?? 2.0;
+  const thick = Math.max(0.05, H);
+  const panel = addBox(group, { size: [L, thick, W], position: [0, floorH + thick / 2, 0], color, preset: 'matte' });
+  markMain(panel, color);
+  // Corner support pillars
+  const pillarColor = '#A09B95';
+  const px = L / 2 - 0.08, pz = W / 2 - 0.08;
+  [[px, pz], [px, -pz], [-px, pz], [-px, -pz]].forEach(([x, z]) => {
+    addBox(group, { size: [0.1, floorH, 0.1], position: [x, floorH / 2, z], color: pillarColor, preset: 'matte' });
+  });
+}
+
+function buildParedPuerta(group, item, L, W, H, color) {
+  const doorW = item.dims?.doorWidth ?? 1.0;
+  const doorH = item.dims?.doorHeight ?? 2.0;
+  const sideW = Math.max(0, (L - doorW) / 2);
+  const frameColor = '#C8B89A';
+
+  if (sideW > 0.02) {
+    const lw = addBox(group, { size: [sideW, H, W], position: [-L / 2 + sideW / 2, H / 2, 0], color, preset: 'matte' });
+    markMain(lw, color);
+    addBox(group, { size: [sideW, H, W], position: [L / 2 - sideW / 2, H / 2, 0], color, preset: 'matte' });
+  }
+  const headerH = H - doorH;
+  if (headerH > 0.01) {
+    addBox(group, { size: [doorW, headerH, W], position: [0, doorH + headerH / 2, 0], color, preset: 'matte' });
+  }
+  // Door panel (closed position on front face)
+  addBox(group, { size: [doorW - 0.06, doorH - 0.04, 0.04], position: [0, doorH / 2, -W / 2 - 0.02], color: frameColor, preset: 'matte' });
+  // Door frame strips
+  addBox(group, { size: [0.06, doorH, W + 0.02], position: [-doorW / 2 - 0.03, doorH / 2, 0], color: frameColor, preset: 'matte' });
+  addBox(group, { size: [0.06, doorH, W + 0.02], position: [ doorW / 2 + 0.03, doorH / 2, 0], color: frameColor, preset: 'matte' });
+  addBox(group, { size: [doorW + 0.12, 0.06, W + 0.02], position: [0, doorH + 0.03, 0], color: frameColor, preset: 'matte' });
+
+  // Door swing arc indicator on floor
+  const hx = -doorW / 2, hz = -W / 2;
+  const sectors = 20;
+  const verts = [hx, 0.005, hz];
+  for (let i = 0; i <= sectors; i++) {
+    const a = (i / sectors) * (Math.PI / 2);
+    verts.push(hx + Math.cos(a) * doorW, 0.005, hz - Math.sin(a) * doorW);
+  }
+  const arcGeo = new THREE.BufferGeometry();
+  arcGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(verts), 3));
+  const idx = [];
+  for (let i = 0; i < sectors; i++) idx.push(0, i + 1, i + 2);
+  arcGeo.setIndex(idx);
+  arcGeo.computeVertexNormals();
+  group.add(new THREE.Mesh(arcGeo, new THREE.MeshBasicMaterial({ color: 0x5588CC, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })));
+  // Arc border line
+  const linePts = [new THREE.Vector3(hx, 0.008, hz)];
+  for (let i = 0; i <= sectors; i++) {
+    const a = (i / sectors) * (Math.PI / 2);
+    linePts.push(new THREE.Vector3(hx + Math.cos(a) * doorW, 0.008, hz - Math.sin(a) * doorW));
+  }
+  linePts.push(new THREE.Vector3(hx, 0.008, hz));
+  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(linePts), new THREE.LineBasicMaterial({ color: 0x5588CC, opacity: 0.55, transparent: true })));
+}
+
+function buildTejado1Aguas(group, item, L, W, H, color) {
+  const peakH = Math.max(0.1, H);
+  // Wedge cross-section: Z=-W/2 is high (ridge), Z=W/2 is low eave
+  const profile = new THREE.Shape();
+  profile.moveTo(-W / 2, 0);
+  profile.lineTo(-W / 2, peakH);
+  profile.lineTo(W / 2, 0);
+  profile.lineTo(-W / 2, 0);
+  const geo = new THREE.ExtrudeGeometry(profile, { steps: 1, depth: L, bevelEnabled: false });
+  geo.translate(0, 0, -L / 2);
+  geo.rotateY(-Math.PI / 2);
+  const mat = makeStandardMaterial(color, 'matte', 1);
+  mat.flatShading = true;
+  mat.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(geo, mat);
+  markMain(mesh, color);
+  group.add(mesh);
+  // Ridge cap
+  addBox(group, { size: [L + 0.06, 0.1, 0.14], position: [0, peakH + 0.05, -W / 2], color: '#7A6B5A', preset: 'matte' });
+}
+
+function buildTejado2Aguas(group, item, L, W, H, color) {
+  const peakH = Math.max(0.1, H);
+  // Triangular cross-section: peak at Z=0 top center
+  const profile = new THREE.Shape();
+  profile.moveTo(-W / 2, 0);
+  profile.lineTo(0, peakH);
+  profile.lineTo(W / 2, 0);
+  profile.lineTo(-W / 2, 0);
+  const geo = new THREE.ExtrudeGeometry(profile, { steps: 1, depth: L, bevelEnabled: false });
+  geo.translate(0, 0, -L / 2);
+  geo.rotateY(-Math.PI / 2);
+  const mat = makeStandardMaterial(color, 'matte', 1);
+  mat.flatShading = true;
+  mat.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(geo, mat);
+  markMain(mesh, color);
+  group.add(mesh);
+  // Ridge cap along the top
+  addBox(group, { size: [L + 0.06, 0.1, 0.14], position: [0, peakH + 0.05, 0], color: '#7A6B5A', preset: 'matte' });
+}
+
+function buildTejado4Aguas(group, item, L, W, H, color) {
+  const peakH = Math.max(0.1, H);
+  const hipOff = W / 2;
+  const ridgeLen = Math.max(0, L - 2 * hipOff);
+  const halfL = L / 2, halfW = W / 2, rL = ridgeLen / 2;
+
+  const A = [-halfL, 0, -halfW], B = [halfL, 0, -halfW];
+  const C = [halfL, 0, halfW],  D = [-halfL, 0, halfW];
+
+  let positions;
+  if (ridgeLen < 0.05) {
+    const apex = [0, peakH, 0];
+    positions = new Float32Array([
+      ...A, ...B, ...apex,
+      ...B, ...C, ...apex,
+      ...C, ...D, ...apex,
+      ...D, ...A, ...apex,
+      ...A, ...C, ...B,
+      ...A, ...D, ...C
+    ]);
+  } else {
+    const rLA = [-rL, peakH, 0], rRA = [rL, peakH, 0];
+    positions = new Float32Array([
+      ...A, ...B, ...rRA, ...A, ...rRA, ...rLA,
+      ...D, ...rLA, ...rRA, ...D, ...rRA, ...C,
+      ...A, ...rLA, ...D,
+      ...B, ...C, ...rRA,
+      ...A, ...C, ...B, ...A, ...D, ...C
+    ]);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.computeVertexNormals();
+  const mat = makeStandardMaterial(color, 'matte', 1);
+  mat.flatShading = true;
+  mat.side = THREE.DoubleSide;
+  const mesh = new THREE.Mesh(geo, mat);
+  markMain(mesh, color);
+  group.add(mesh);
+  if (ridgeLen >= 0.05) {
+    addBox(group, { size: [ridgeLen + 0.06, 0.1, 0.14], position: [0, peakH + 0.05, 0], color: '#7A6B5A', preset: 'matte' });
+  } else {
+    addBox(group, { size: [0.2, 0.12, 0.2], position: [0, peakH + 0.05, 0], color: '#7A6B5A', preset: 'matte' });
+  }
+}
+
+function buildArbustoRecto(group, item, L, W, H, color) {
+  addBox(group, { size: [L, H * 0.08, W], position: [0, H * 0.04, 0], color: '#4A3020', preset: 'matte' });
+  const mat = new THREE.MeshStandardMaterial({ color: colorNumber(color), roughness: 0.93, metalness: 0.0, flatShading: true });
+  const sphereR = Math.min(H * 0.52, W * 0.52, 0.55);
+  const nX = Math.max(3, Math.round(L / 0.48));
+  const nZ = Math.max(2, Math.round(W / 0.48));
+  let first = true;
+  for (let i = 0; i < nX; i++) {
+    for (let j = 0; j < nZ; j++) {
+      const x = -L / 2 + (i + 0.5) * (L / nX);
+      const z = -W / 2 + (j + 0.5) * (W / nZ);
+      const vari = Math.sin(i * 2.3 + j * 5.7) * 0.5 + 0.5;
+      const r = sphereR * (0.82 + vari * 0.36);
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 5), mat);
+      sphere.position.set(x, H * 0.08 + r * 0.85, z);
+      if (first) { markMain(sphere, color); first = false; }
+      group.add(sphere);
+    }
+  }
+}
+
+function buildArbustoCorner(group, item, L, W, H, color) {
+  buildArbustoRecto(group, item, L, W, H, color);
+}
+
+function buildArbustoCurvo(group, item, L, W, H, color) {
+  const R = Math.max(0.5, item.curveDiameter ?? 1.0);
+  const totalAngle = L / R;
+  const mat = new THREE.MeshStandardMaterial({ color: colorNumber(color), roughness: 0.93, metalness: 0.0, flatShading: true });
+  const sphereR = Math.min(H * 0.52, W * 0.52, 0.55);
+  const nAlong = Math.max(4, Math.round(L / 0.48));
+  const nDepth = Math.max(2, Math.round(W / 0.48));
+  let first = true;
+  for (let i = 0; i < nAlong; i++) {
+    for (let k = 0; k < nDepth; k++) {
+      const t = i / Math.max(1, nAlong - 1);
+      const angle = (t - 0.5) * totalAngle;
+      const dR = -W / 2 + (k + 0.5) * (W / nDepth);
+      const er = R + dR;
+      const cx = er * Math.sin(angle);
+      const cz = R - er * Math.cos(angle);
+      const vari = Math.sin(i * 3.1 + k * 7.7) * 0.5 + 0.5;
+      const r = sphereR * (0.82 + vari * 0.36);
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 5), mat);
+      sphere.position.set(cx, H * 0.08 + r * 0.85, cz);
+      if (first) { markMain(sphere, color); first = false; }
+      group.add(sphere);
+    }
+  }
+  // Curved base strip using line geometry
+  const pts = [];
+  const steps = Math.max(20, nAlong * 3);
+  for (let i = 0; i <= steps; i++) {
+    const angle = ((i / steps) - 0.5) * totalAngle;
+    pts.push(new THREE.Vector3(R * Math.sin(angle), H * 0.04, R - R * Math.cos(angle)));
+  }
+  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x4A3020 })));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function buildGenericRect(item, view) {
   const group = new THREE.Group();
   const W = item.dims?.width ?? 1.2;

@@ -555,6 +555,172 @@ export const ELEMENT_SCHEMAS = [
       }
     ]
   },
+  // ── STRUCTURE ELEMENT SCHEMAS (match before generic fallback) ───────────────
+  {
+    id: 'structure.wall',
+    family: 'structure',
+    match: item => item.assetProfile === 'pared',
+    metadata: { label: 'Pared', icon: 'square', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 0.1, height: 3 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 0.5, max: 30, step: 0.1 }),
+      StandardParams.height({ default: 3, min: 0.5, max: 12, step: 0.1 }),
+      { key: 'thickness', label: 'Grosor (m)', path: 'dims.width', type: 'number', default: 0.1, min: 0.05, max: 1, step: 0.01, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.muro',
+    family: 'structure',
+    match: item => item.assetProfile === 'muro',
+    metadata: { label: 'Muro', icon: 'rectangle-horizontal', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 8, width: 0.6, height: 5 }, color: '#4A2D1A', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 8, min: 0.5, max: 50, step: 0.1 }),
+      StandardParams.height({ default: 5, min: 0.5, max: 20, step: 0.1 }),
+      { key: 'thickness', label: 'Grosor (m)', path: 'dims.width', type: 'number', default: 0.6, min: 0.1, max: 2, step: 0.05, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.ceiling',
+    family: 'structure',
+    match: item => item.assetProfile === 'techo',
+    metadata: { label: 'Techo plano', icon: 'layout-panel-top', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 3, height: 0.1, floorHeight: 2 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 0.5, max: 30, step: 0.1 }),
+      StandardParams.width({ default: 3, min: 0.5, max: 30, step: 0.1 }),
+      { key: 'floorHeight', label: 'Altura del suelo (m)', path: 'dims.floorHeight', type: 'number', default: 2, min: 0.5, max: 12, step: 0.1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      { key: 'thickness', label: 'Grosor panel (m)', path: 'dims.height', type: 'number', default: 0.1, min: 0.04, max: 0.5, step: 0.01, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.wall_door',
+    family: 'structure',
+    match: item => item.assetProfile === 'paredPuerta',
+    metadata: { label: 'Pared con puerta', icon: 'door-open', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 0.1, height: 3, doorWidth: 1, doorHeight: 2 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 1, max: 30, step: 0.1 }),
+      StandardParams.height({ default: 3, min: 2, max: 12, step: 0.1 }),
+      { key: 'doorWidth', label: 'Ancho puerta (m)', path: 'dims.doorWidth', type: 'number', default: 1, min: 0.5, max: 3, step: 0.05, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      { key: 'doorHeight', label: 'Alto puerta (m)', path: 'dims.doorHeight', type: 'number', default: 2, min: 1, max: 4, step: 0.05, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      { key: 'thickness', label: 'Grosor (m)', path: 'dims.width', type: 'number', default: 0.1, min: 0.05, max: 1, step: 0.01, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color pared' }),
+      StandardParams.rotation(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.roof1agua',
+    family: 'structure',
+    match: item => item.assetProfile === 'tejado1Aguas',
+    metadata: { label: 'Tejado 1 agua', icon: 'triangle', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 3, height: 1 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 1, max: 30, step: 0.1 }),
+      StandardParams.width({ default: 3, min: 1, max: 30, step: 0.1 }),
+      { key: 'peakHeight', label: 'Altura pico (m)', path: 'dims.height', type: 'number', default: 1, min: 0.2, max: 8, step: 0.1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color tejado' }),
+      StandardParams.rotation(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.roof2aguas',
+    family: 'structure',
+    match: item => item.assetProfile === 'tejado2Aguas',
+    metadata: { label: 'Tejado 2 aguas', icon: 'chevron-up', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 3, height: 1 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 1, max: 30, step: 0.1 }),
+      StandardParams.width({ default: 3, min: 1, max: 30, step: 0.1 }),
+      { key: 'peakHeight', label: 'Altura pico (m)', path: 'dims.height', type: 'number', default: 1, min: 0.2, max: 8, step: 0.1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color tejado' }),
+      StandardParams.rotation(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'structure.roof4aguas',
+    family: 'structure',
+    match: item => item.assetProfile === 'tejado4Aguas',
+    metadata: { label: 'Tejado 4 aguas', icon: 'tent', category: 'structures' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 3, height: 1 }, color: '#F0EDE8', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 1, max: 30, step: 0.1 }),
+      StandardParams.width({ default: 3, min: 1, max: 30, step: 0.1 }),
+      { key: 'peakHeight', label: 'Altura pico (m)', path: 'dims.height', type: 'number', default: 1, min: 0.2, max: 8, step: 0.1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color tejado' }),
+      StandardParams.rotation(), StandardParams.opacity(), StandardParams.shadow()
+    ]
+  },
+  {
+    id: 'ambient.hedge_straight',
+    family: 'ambient',
+    match: item => item.assetProfile === 'arbustoRecto',
+    metadata: { label: 'Arbusto recto', icon: 'minus', category: 'ambient' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 1, height: 1 }, color: '#3D7A38', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 0.5, max: 20, step: 0.1 }),
+      StandardParams.width({ default: 1, min: 0.3, max: 4, step: 0.1 }),
+      StandardParams.height({ default: 1, min: 0.2, max: 4, step: 0.1 }),
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity()
+    ]
+  },
+  {
+    id: 'ambient.hedge_corner',
+    family: 'ambient',
+    match: item => item.assetProfile === 'arbustoCorner',
+    metadata: { label: 'Arbusto corner', icon: 'corner-down-right', category: 'ambient' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 1, width: 1, height: 1 }, color: '#3D7A38', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 1, min: 0.3, max: 5, step: 0.1 }),
+      StandardParams.width({ default: 1, min: 0.3, max: 5, step: 0.1 }),
+      StandardParams.height({ default: 1, min: 0.2, max: 4, step: 0.1 }),
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity()
+    ]
+  },
+  {
+    id: 'ambient.hedge_curved',
+    family: 'ambient',
+    match: item => item.assetProfile === 'arbustoCurvo',
+    metadata: { label: 'Arbusto curvo', icon: 'spline', category: 'ambient' },
+    builder: { preset: 'genericRectProp' },
+    ui: { dynamic: true, supportsAdvanced: false },
+    defaults: { dims: { length: 3, width: 1, height: 1 }, curveDiameter: 1, color: '#3D7A38', labelText: '', visual: { opacity: 1, shadows: true } },
+    params: [
+      StandardParams.length({ default: 3, min: 1, max: 20, step: 0.1 }),
+      StandardParams.width({ default: 1, min: 0.3, max: 4, step: 0.1 }),
+      StandardParams.height({ default: 1, min: 0.2, max: 4, step: 0.1 }),
+      { key: 'curveRadius', label: 'Radio curvatura (m)', path: 'curveDiameter', type: 'number', default: 1, min: 0.5, max: 10, step: 0.1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.SIZE },
+      StandardParams.color({ label: 'Color' }),
+      StandardParams.rotation(), StandardParams.text(), StandardParams.opacity()
+    ]
+  },
+  // ── GENERIC FALLBACK ─────────────────────────────────────────────────────────
   {
     id: 'prop.generic-rect',
     family: 'prop',
