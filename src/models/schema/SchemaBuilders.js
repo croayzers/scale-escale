@@ -547,13 +547,42 @@ function buildBuffet(item, view) {
   });
   markMain(body, color);
 
+  // Counter top
   addBox(group, {
     size: [L + 0.04, 0.05, W + 0.04],
     position: [0, H + 0.02, 0],
     color: '#6B6864',
     preset: 'matte'
   });
-  addLabel(group, item.labelText || item.subtype || 'Buffet', H + 0.55);
+
+  // Toldo / awning
+  const toldoColor = item.toldoColor || '#C8A87A';
+  const postH = 0.85;
+  const awningW = W + 0.35;
+  const awningL = L + 0.08;
+  const awningY = H + postH;
+  // Two rear support posts
+  [-(L / 2 - 0.06), (L / 2 - 0.06)].forEach(x => {
+    addBox(group, { size: [0.04, postH, 0.04], position: [x, H + postH / 2, W / 2 - 0.03], color: toldoColor, preset: 'matte' });
+  });
+  // Awning roof panel (slightly angled — front lower than back)
+  const awning = addBox(group, {
+    size: [awningL, 0.06, awningW],
+    position: [0, awningY, (awningW - W) / 2 - 0.05],
+    color: toldoColor,
+    preset: 'fabric'
+  });
+  awning.rotation.x = 0.15;  // slight forward pitch
+
+  // Valance / front edge strip
+  addBox(group, {
+    size: [awningL, 0.22, 0.03],
+    position: [0, awningY - 0.12, -(awningW / 2) + 0.02],
+    color: toldoColor,
+    preset: 'fabric'
+  });
+
+  addLabel(group, item.labelText || item.subtype || 'Buffet', awningY + 0.45);
   return group;
 }
 
@@ -1961,15 +1990,17 @@ function buildSurface(item, view) {
   const defId = item.catalogDefinitionId || '';
 
   if (view !== 'top') {
+    const visH = Math.max(0.3, H);
     const box = new THREE.Mesh(
-      new THREE.BoxGeometry(L, H, W),
-      new THREE.MeshStandardMaterial({ color: colorNumber(color), roughness: 0.88, metalness: 0.02, flatShading: true })
+      new THREE.BoxGeometry(L, visH, W),
+      new THREE.MeshStandardMaterial({ color: colorNumber(color), roughness: 0.85, metalness: 0.0, flatShading: false })
     );
-    box.position.y = H / 2;
+    box.position.y = visH / 2;
     box.receiveShadow = true;
-    box.castShadow = true;
+    box.castShadow = false;
     markMain(box, color);
     group.add(box);
+    if (item.labelText) addLabel(group, item.labelText, visH + 0.4);
     return group;
   }
 
@@ -2320,6 +2351,71 @@ function buildSofa(item, view) {
   return group;
 }
 
+function buildPergola(item, view) {
+  const group = new THREE.Group();
+  const L = item.dims?.length ?? 4;
+  const W = item.dims?.width ?? 4;
+  const postH = item.dims?.height ?? 3;
+  const roofH = item.dims?.roofHeight ?? 0.12;
+  const modSpacing = item.dims?.modSpacing ?? 4;
+  const postColor = item.color || '#C4A265';
+  const roofColor = item.roofColor || '#4A4744';
+  const postDim = 0.1;
+
+  if (view === 'top') {
+    addTopFootprint(group, item, L, W, postColor, 0.10);
+    addTopLabel(group, item.labelText || 'Pérgola');
+    return group;
+  }
+
+  // Post grid positions along length axis
+  const nSegsL = Math.max(1, Math.round(L / modSpacing));
+  const postXs = Array.from({ length: nSegsL + 1 }, (_, i) => -L / 2 + i * (L / nSegsL));
+  const postZs = [-W / 2, W / 2];
+
+  // Posts
+  postXs.forEach(x => {
+    postZs.forEach(z => {
+      const post = addBox(group, {
+        size: [postDim, postH, postDim],
+        position: [x, postH / 2, z],
+        color: postColor,
+        preset: 'matte'
+      });
+      markMain(post, postColor);
+    });
+  });
+
+  // Side header beams (along length, at top of posts, one on each Z side)
+  const beamH = 0.14;
+  const beamD = 0.08;
+  postZs.forEach(z => {
+    addBox(group, {
+      size: [L + postDim, beamH, beamD],
+      position: [0, postH + beamH / 2, z],
+      color: roofColor,
+      preset: 'matte'
+    });
+  });
+
+  // Rafters (perpendicular slats spanning width, between the two header beams)
+  const nRafters = Math.max(3, Math.ceil(L / 0.45) + 1);
+  const rafterW = 0.07;
+  const rafterH = roofH;
+  for (let i = 0; i < nRafters; i++) {
+    const x = -L / 2 + (i / (nRafters - 1)) * L;
+    addBox(group, {
+      size: [rafterW, rafterH, W + postDim * 2],
+      position: [x, postH + beamH + rafterH / 2, 0],
+      color: roofColor,
+      preset: 'matte'
+    });
+  }
+
+  if (item.labelText) addLabel(group, item.labelText, postH + beamH + rafterH + 0.4);
+  return group;
+}
+
 export const SCHEMA_BUILDERS = {
   roundTableBanquet: buildRoundTable,
   chairDining: buildChair,
@@ -2334,5 +2430,6 @@ export const SCHEMA_BUILDERS = {
   genericPerson: buildPerson,
   arrow2D: buildArrow,
   genericLighting: buildLighting,
-  sofaSeat: buildSofa
+  sofaSeat: buildSofa,
+  pergola: buildPergola
 };

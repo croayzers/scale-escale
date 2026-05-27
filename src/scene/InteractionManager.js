@@ -573,15 +573,17 @@ function showContextMenu(x, y, item) {
       if (!el.dataset.keepOpen) hideContextMenu();
     });
   });
-  // Sync dual color inputs (swatch ↔ hex text)
-  const colorSwatch = menu.querySelector('input[type="color"][data-field="color"]');
-  const colorHex = menu.querySelector('input.ctx-color-hex[data-field="color"]');
-  if (colorSwatch && colorHex) {
-    colorSwatch.addEventListener('input', () => { colorHex.value = colorSwatch.value; });
-    colorHex.addEventListener('input', () => {
-      if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorSwatch.value = colorHex.value;
-    });
-  }
+  // Sync dual color inputs (swatch ↔ hex text) for all color fields
+  ['color', 'roofColor'].forEach(fieldName => {
+    const swatch = menu.querySelector(`input[type="color"][data-field="${fieldName}"]`);
+    const hex = menu.querySelector(`input.ctx-color-hex[data-field="${fieldName}"]`);
+    if (swatch && hex) {
+      swatch.addEventListener('input', () => { hex.value = swatch.value; });
+      hex.addEventListener('input', () => {
+        if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) swatch.value = hex.value;
+      });
+    }
+  });
 
   menu.querySelectorAll('[data-field]').forEach(el => {
     const saveField = () => {
@@ -626,7 +628,10 @@ const TYPE_LABELS = {
   arbusto: 'Arbusto',
   arbol: 'Arbol',
   cableLuces: 'Cable con luces',
-  ambiente: 'Ambiente'
+  ambiente: 'Ambiente',
+  pergola: 'Pérgola',
+  schemaProp: 'Elemento',
+  schemaSurface: 'Superficie'
 };
 
 const DIM_LABELS = {
@@ -650,7 +655,9 @@ const DIM_LABELS = {
   anguloDeg: 'Angulo',
   alto: 'Alto',
   thickness: 'Grosor',
-  crownWidth: 'Copa'
+  crownWidth: 'Copa',
+  roofHeight: 'Grosor techo',
+  modSpacing: 'Módulo postes'
 };
 
 const DIRECT_NUM_LABELS = {
@@ -681,7 +688,7 @@ function formatNum(value) {
 }
 
 function contextTitle(item) {
-  const base = TYPE_LABELS[item.type] || item.type || 'Item';
+  const base = item.catalogName || item.name || TYPE_LABELS[item.type] || item.type || 'Item';
   const sub = item.subtype ? ` · ${item.subtype}` : '';
   return `${base}${sub} · ID ${item.id}`;
 }
@@ -1006,12 +1013,26 @@ function quickPresetsHTML(item) {
 function colorFieldHTML(item) {
   const raw = String(item.color || '#CCCCCC').trim();
   const safe = /^#[0-9a-fA-F]{6}$/.test(raw) ? raw : '#CCCCCC';
-  return `
+  const primaryLabel = item.type === 'pergola' ? 'Postes' : 'Color';
+  let html = `
     <div class="ctx-color-wrap">
+      <span class="ctx-color-label">${escapeHtml(primaryLabel)}</span>
       <input type="color" data-field="color" value="${escapeAttr(safe)}" class="ctx-color-swatch"/>
       <input type="text" data-field="color" value="${escapeAttr(safe)}" maxlength="7"
         class="ctx-color-hex" placeholder="#RRGGBB"/>
     </div>`;
+  if (item.type === 'pergola') {
+    const rawR = String(item.roofColor || '#4A4744').trim();
+    const safeR = /^#[0-9a-fA-F]{6}$/.test(rawR) ? rawR : '#4A4744';
+    html += `
+    <div class="ctx-color-wrap" style="margin-top:6px">
+      <span class="ctx-color-label">Techo</span>
+      <input type="color" data-field="roofColor" value="${escapeAttr(safeR)}" class="ctx-color-swatch"/>
+      <input type="text" data-field="roofColor" value="${escapeAttr(safeR)}" maxlength="7"
+        class="ctx-color-hex" placeholder="#RRGGBB"/>
+    </div>`;
+  }
+  return html;
 }
 
 function labelFieldHTML(item) {
@@ -1064,10 +1085,11 @@ function buildUnifiedContextMenuHTML(item) {
         ${item.locked ? '<span class="ctx-lock-badge">Bloqueado</span>' : ''}
       </div>
 
+      ${getSubtypeOptions(item).length > 0 ? `
       <div class="ctx-block">
         <div class="ctx-label">Tipo</div>
         ${typeControlHTML(item)}
-      </div>
+      </div>` : ''}
 
       <div class="ctx-block">
         <div class="ctx-label">Medidas</div>
@@ -1342,10 +1364,10 @@ function handleContextField(field, value, id) {
     return;
   }
 
-  if (field === 'color') {
+  if (field === 'color' || field === 'roofColor') {
     const val = String(value || '').trim();
     if (/^#[0-9a-fA-F]{3,6}$/.test(val)) {
-      applyContextPatch(id, { color: val }, false);
+      applyContextPatch(id, { [field]: val }, false);
     }
     return;
   }

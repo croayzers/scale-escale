@@ -362,6 +362,18 @@ export default {
       "color": "#6b4423",
       "chairs": 0,
       "defaultRotation": 0
+    },
+    {
+      "id": "pergola_4x4",
+      "name": "Pérgola",
+      "category": "decor",
+      "icon": "layout-template",
+      "type": "pergola",
+      "dims": { "length": 4.0, "width": 4.0, "height": 3.0, "roofHeight": 0.12, "modSpacing": 4.0 },
+      "color": "#C4A265",
+      "roofColor": "#4A4744",
+      "chairs": 0,
+      "defaultRotation": 0
     }
   ],
   "structures": [

@@ -619,7 +619,7 @@ export const ELEMENT_SCHEMAS = [
   {
     id: 'surface.generic',
     family: 'surface',
-    match: item => item.schemaId === 'surface.generic',
+    match: item => item.schemaId === 'surface.generic' || item.type === 'schemaSurface',
     metadata: {
       label: 'Superficie',
       icon: 'map',
@@ -652,6 +652,38 @@ export const ELEMENT_SCHEMAS = [
       },
       StandardParams.opacity(),
       StandardParams.text({ label: 'Rotulo superficie' })
+    ]
+  },
+  {
+    id: 'structure.pergola',
+    family: 'structure',
+    match: item => item.type === 'pergola',
+    metadata: {
+      label: 'Pérgola',
+      icon: 'layout-template',
+      category: 'decor'
+    },
+    builder: { preset: 'pergola' },
+    ui: { dynamic: true, supportsAdvanced: true },
+    defaults: {
+      dims: { length: 4, width: 4, height: 3, roofHeight: 0.12, modSpacing: 4 },
+      color: '#C4A265',
+      roofColor: '#4A4744',
+      labelText: '',
+      visual: { opacity: 1, shadows: true }
+    },
+    params: [
+      StandardParams.length({ default: 4, min: 1, max: 50, step: 0.5 }),
+      StandardParams.width({ default: 4, min: 1, max: 50, step: 0.5 }),
+      { key: 'height', label: 'Alto postes (m)', path: 'dims.height', type: 'number', default: 3, min: 1.5, max: 8, step: 0.1, category: PARAM_CATEGORY.GEOMETRY, level: PARAM_LEVEL.BASIC },
+      { key: 'modSpacing', label: 'Módulo entre postes (m)', path: 'dims.modSpacing', type: 'number', default: 4, min: 1, max: 10, step: 0.5, category: PARAM_CATEGORY.GEOMETRY, level: PARAM_LEVEL.BASIC },
+      { key: 'roofHeight', label: 'Grosor lamas (m)', path: 'dims.roofHeight', type: 'number', default: 0.12, min: 0.04, max: 0.4, step: 0.01, category: PARAM_CATEGORY.GEOMETRY, level: PARAM_LEVEL.ADVANCED },
+      StandardParams.color({ label: 'Color postes' }),
+      { key: 'roofColor', label: 'Color techo', path: 'roofColor', type: 'color', default: '#4A4744', level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.APPEARANCE },
+      StandardParams.rotation(),
+      StandardParams.opacity(),
+      StandardParams.shadow(),
+      StandardParams.text()
     ]
   },
   {

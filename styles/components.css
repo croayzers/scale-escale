@@ -970,6 +970,12 @@ input[type=range]::-webkit-slider-thumb {
   align-items: center;
   gap: 9px;
 }
+.ctx-color-label {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 40px;
+  flex-shrink: 0;
+}
 .ctx-color-swatch {
   flex-shrink: 0;
   width: 36px;
