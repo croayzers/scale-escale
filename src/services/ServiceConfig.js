@@ -56,7 +56,8 @@ const DEFAULT_PUBLIC_CONFIG = {
     sendExportEmail: '/api/email/send-export',
     sendShareEmail: '/api/email/send-share',
     sendFeedback: '/api/email/send-feedback',
-    analyticsCapture: '/api/analytics/capture'
+    analyticsCapture: '/api/analytics/capture',
+    aiChat: '/api/ai/chat'
   }
 };
 

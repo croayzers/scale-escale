@@ -35,6 +35,8 @@ export const ElementLibrary = {
     }
     this._applyAdminLayout();
     this._listenAdminConfig();
+    // Expose flat catalog list for AppBridge / AICopilot
+    window.__ESCALE_CATALOG__ = Object.values(this.data).flat().filter(Boolean);
     return this.data;
   },
 

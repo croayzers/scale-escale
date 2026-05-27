@@ -26,6 +26,8 @@ import { AnalyticsManager } from './services/AnalyticsManager.js';
 import { SupportManager } from './services/SupportManager.js';
 import { MessageManager } from './services/MessageManager.js';
 import { FeedbackModal } from './ui/FeedbackModal.js';
+import { AppBridge } from './core/AppBridge.js';
+import { AICopilot } from './ui/AICopilot.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -79,10 +81,13 @@ async function bootstrap() {
   await safeInit('InventoryPanel', () => InventoryPanel.init());
   safeInit('MessageManager', () => MessageManager.init());
   safeInit('FeedbackModal',  () => FeedbackModal.init());
+  AppBridge.init();
+  safeInit('AICopilot', () => AICopilot.init());
 
   // Exponer al window para acceso desde consola y botones inline
   window.InteractionManager = InteractionManager;
   window.SelectionManager   = SelectionManager;
+  window.EscaleAI = window.EscaleAI; // ya registrado por AppBridge.init()
 
   const welcomeModal = document.getElementById('welcome-modal');
   const inventoryPanel = document.getElementById('inventory-panel');
@@ -105,6 +110,9 @@ async function bootstrap() {
       gridAdjusted: false
     }
   };
+
+  // Expose reactive state for AppBridge / AICopilot context
+  window.__ESCALE_STATE__ = state.steps;
 
   const setTopCamera = () => {
     SceneManager.setCamera('top');

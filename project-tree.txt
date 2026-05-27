@@ -89,6 +89,7 @@ PROJECT STRUCTURE
 ├── server.py
 ├── src/
 │   ├── core/
+│   │   ├── AppBridge.js
 │   │   ├── AppState.js
 │   │   ├── BrandTokens.js
 │   │   ├── ElementLibrary.js
@@ -165,6 +166,7 @@ PROJECT STRUCTURE
 │   │   ├── SubscriptionManager.js
 │   │   └── SupportManager.js
 │   └── ui/
+│       ├── AICopilot.js
 │       ├── CatalogModal.js
 │       ├── Dock.js
 │       ├── FeedbackModal.js
@@ -177,6 +179,7 @@ PROJECT STRUCTURE
 │       ├── UIManager.js
 │       └── ZoneManager.js
 ├── styles/
+│   ├── ai.css
 │   ├── base.css
 │   ├── components.css
 │   ├── dock.css
