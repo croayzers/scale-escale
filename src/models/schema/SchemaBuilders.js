@@ -357,6 +357,14 @@ function inferRectProfile(item) {
     case 'arco_decorativo': return 'decorArch';
     case 'letras_gigantes': return 'giantLetters';
     case 'neon_personalizado': return 'neonSign';
+    case 'coche':       return 'coche';
+    case 'moto':        return 'moto';
+    case 'camion':      return 'camion';
+    case 'avioneta':    return 'avioneta';
+    case 'barco':       return 'barco';
+    case 'helicoptero': return 'helicoptero';
+    case 'escalera':    return 'escalera';
+    case 'mesa_dj':     return 'mesaDJ';
     default: return '';
   }
 }
@@ -1067,6 +1075,206 @@ function buildNeonSign(group, item, L, W, H, color) {
   group.add(neon);
 }
 
+function buildCoche(group, item, L, W, H, color) {
+  const bH = H * 0.50;
+  const body = addBox(group, { size: [L, bH, W], position: [0, bH / 2, 0], color, preset: 'matte' });
+  markMain(body, color);
+  addBox(group, { size: [L * 0.48, H - bH, W * 0.88], position: [-L * 0.04, bH + (H - bH) / 2, 0], color, preset: 'matte' });
+  addBox(group, { size: [0.06, (H - bH) * 0.72, W * 0.82], position: [L * 0.19, bH + (H - bH) * 0.36, 0], color: '#9EC8EE', preset: 'glass', opacity: 0.52 });
+  addBox(group, { size: [0.06, (H - bH) * 0.72, W * 0.82], position: [-L * 0.26, bH + (H - bH) * 0.36, 0], color: '#9EC8EE', preset: 'glass', opacity: 0.52 });
+  [-W * 0.28, W * 0.28].forEach(z =>
+    addBox(group, { size: [0.06, 0.1, 0.16], position: [L / 2 - 0.04, bH * 0.58, z], color: '#FFFDE7', preset: 'glass', opacity: 0.9 })
+  );
+  const wr = H * 0.22;
+  const wt = wr * 0.52;
+  [[L * 0.3, W / 2 + wt / 2], [L * 0.3, -(W / 2 + wt / 2)],
+   [-L * 0.3, W / 2 + wt / 2], [-L * 0.3, -(W / 2 + wt / 2)]].forEach(([wx, wz]) => {
+    addWheel(group, wx, wr, wz, wr, '#1C1C1E');
+    addCylinder(group, { radiusTop: wr * 0.44, height: 0.02, position: [wx, wr, wz + (wz > 0 ? -wt * 0.4 : wt * 0.4)], color: '#94A3B8', preset: 'metal', radialSegments: 14, rotation: [Math.PI / 2, 0, 0] });
+  });
+}
+
+function buildMoto(group, item, L, W, H, color) {
+  const wr = H * 0.3;
+  const frameW = Math.min(W * 0.28, 0.22);
+  addBox(group, { size: [L * 0.32, H * 0.32, frameW], position: [0, wr * 1.1, 0], color: '#374151', preset: 'metal' });
+  const frame = addBox(group, { size: [L * 0.54, 0.08, 0.06], position: [-L * 0.04, wr + H * 0.28, 0], color, preset: 'metal' });
+  markMain(frame, color);
+  addBox(group, { size: [L * 0.24, H * 0.18, frameW * 1.4], position: [L * 0.08, wr + H * 0.36, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.26, 0.08, frameW * 1.6], position: [-L * 0.08, wr + H * 0.44, 0], color: '#111827', preset: 'matte' });
+  addBox(group, { size: [0.06, 0.06, W * 0.78], position: [L * 0.3, wr + H * 0.5, 0], color: '#94A3B8', preset: 'metal' });
+  addBox(group, { size: [0.04, wr * 0.9, 0.04], position: [L * 0.36, wr * 0.64, frameW * 0.4], color: '#9CA3AF', preset: 'metal' });
+  addBox(group, { size: [0.04, wr * 0.9, 0.04], position: [L * 0.36, wr * 0.64, -frameW * 0.4], color: '#9CA3AF', preset: 'metal' });
+  addBox(group, { size: [L * 0.32, 0.06, 0.06], position: [-L * 0.08, wr * 0.82, frameW * 0.6], color: '#6B7280', preset: 'metal' });
+  addWheel(group, L * 0.36, wr, 0, wr, '#1C1C1E');
+  addWheel(group, -L * 0.36, wr, 0, wr, '#1C1C1E');
+}
+
+function buildCamion(group, item, L, W, H, color) {
+  const cabL = L * 0.24;
+  const cargoL = L - cabL;
+  const cargoH = H * 0.74;
+  const cabX = L / 2 - cabL / 2;
+  const cargoX = -L / 2 + cargoL / 2;
+  const cargo = addBox(group, { size: [cargoL, cargoH, W], position: [cargoX, cargoH / 2, 0], color: '#E2E8F0', preset: 'matte' });
+  markMain(cargo, '#E2E8F0');
+  addBox(group, { size: [cargoL + 0.06, 0.04, W + 0.06], position: [cargoX, cargoH, 0], color: '#CBD5E1', preset: 'metal' });
+  addBox(group, { size: [cabL, H, W], position: [cabX, H / 2, 0], color, preset: 'matte' });
+  addBox(group, { size: [0.08, H * 0.36, W * 0.82], position: [L / 2 - cabL + 0.04, H * 0.66, 0], color: '#9EC8EE', preset: 'glass', opacity: 0.52 });
+  addBox(group, { size: [0.08, H * 0.22, W * 0.68], position: [L / 2 - 0.04, H * 0.22, 0], color: '#4B5563', preset: 'metal' });
+  [-W * 0.32, W * 0.32].forEach(z =>
+    addBox(group, { size: [0.06, 0.14, 0.2], position: [L / 2 - 0.04, H * 0.26, z], color: '#FFFDE7', preset: 'glass', opacity: 0.9 })
+  );
+  addCylinder(group, { radiusTop: 0.06, height: H * 0.42, position: [L / 2 - cabL + 0.18, H * 1.06, -W * 0.38], color: '#374151', preset: 'metal' });
+  const wr = H * 0.16;
+  const wz = W / 2 + wr * 0.5;
+  [[L * 0.36, wz], [L * 0.36, -wz], [-cargoL * 0.2, wz], [-cargoL * 0.2, -wz], [-cargoL * 0.44, wz], [-cargoL * 0.44, -wz]].forEach(([wx, wz_]) =>
+    addWheel(group, wx, wr, wz_, wr, '#1C1C1E')
+  );
+}
+
+function buildAvioneta(group, item, L, W, H, color) {
+  const fR = H * 0.21;
+  const fuselage = new THREE.Mesh(
+    new THREE.CylinderGeometry(fR, fR * 0.72, L * 0.86, 18),
+    makeStandardMaterial(color, 'matte', 1)
+  );
+  fuselage.rotation.z = Math.PI / 2;
+  fuselage.position.set(-L * 0.06, fR * 1.6, 0);
+  markMain(fuselage, color);
+  group.add(fuselage);
+  const nose = new THREE.Mesh(
+    new THREE.ConeGeometry(fR, fR * 1.6, 16),
+    makeStandardMaterial(color, 'matte', 1)
+  );
+  nose.rotation.z = Math.PI / 2;
+  nose.position.set(L * 0.4, fR * 1.6, 0);
+  group.add(nose);
+  addBox(group, { size: [L * 0.26, 0.1, W], position: [-L * 0.06, fR * 1.16, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.18, H * 0.44, 0.1], position: [-L * 0.38, fR * 1.6 + H * 0.18, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.16, 0.08, W * 0.28], position: [-L * 0.38, fR * 1.6 + 0.04, 0], color, preset: 'matte' });
+  addBox(group, { size: [0.08, H * 0.52, 0.06], position: [L * 0.42 + fR * 0.8, fR * 1.6, 0], color: '#374151', preset: 'metal' });
+  const cockpit = new THREE.Mesh(
+    new THREE.SphereGeometry(fR * 0.78, 14, 8, 0, Math.PI * 0.9, 0, Math.PI * 0.55),
+    makeStandardMaterial('#9EC8EE', 'glass', 0.48)
+  );
+  cockpit.rotation.z = Math.PI / 2;
+  cockpit.position.set(L * 0.22, fR * 1.82, 0);
+  group.add(cockpit);
+  const lgY = fR * 1.16;
+  addCylinder(group, { radiusTop: 0.04, height: lgY, position: [L * 0.1, lgY / 2, W * 0.22], color: '#6B7280', preset: 'metal' });
+  addCylinder(group, { radiusTop: 0.04, height: lgY, position: [L * 0.1, lgY / 2, -W * 0.22], color: '#6B7280', preset: 'metal' });
+  addWheel(group, L * 0.1, fR * 0.36, W * 0.22, fR * 0.36, '#1C1C1E');
+  addWheel(group, L * 0.1, fR * 0.36, -W * 0.22, fR * 0.36, '#1C1C1E');
+  addCylinder(group, { radiusTop: 0.025, height: lgY * 0.48, position: [-L * 0.38, lgY * 0.24, 0], color: '#6B7280', preset: 'metal' });
+  addWheel(group, -L * 0.38, fR * 0.16, 0, fR * 0.16, '#1C1C1E');
+}
+
+function buildBarco(group, item, L, W, H, color) {
+  const hullH = H * 0.38;
+  const hull = addBox(group, { size: [L, hullH, W], position: [0, hullH / 2, 0], color, preset: 'matte' });
+  markMain(hull, color);
+  addBox(group, { size: [L * 0.14, hullH, W * 0.6], position: [L * 0.43, hullH / 2, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.08, hullH, W * 0.24], position: [L * 0.47, hullH / 2, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.82, 0.05, W * 0.92], position: [-L * 0.06, hullH + 0.025, 0], color: '#D4C5A0', preset: 'matte' });
+  const superH = H * 0.48;
+  addBox(group, { size: [L * 0.32, superH, W * 0.76], position: [-L * 0.14, hullH + superH / 2, 0], color: '#F1F5F9', preset: 'matte' });
+  addBox(group, { size: [0.08, superH * 0.46, W * 0.64], position: [-L * 0.14 + L * 0.16, hullH + superH * 0.62, 0], color: '#9EC8EE', preset: 'glass', opacity: 0.52 });
+  [-W * 0.38, W * 0.38].forEach(z =>
+    addBox(group, { size: [L * 0.28, superH * 0.38, 0.08], position: [-L * 0.14, hullH + superH * 0.62, z], color: '#9EC8EE', preset: 'glass', opacity: 0.52 })
+  );
+  addCylinder(group, { radiusTop: 0.05, height: H * 0.72, position: [-L * 0.14, hullH + superH + H * 0.36, 0], color: '#9CA3AF', preset: 'metal' });
+  for (let i = 0; i < 6; i++) {
+    const rx = -L * 0.36 + i * (L * 0.78 / 5);
+    addCylinder(group, { radiusTop: 0.022, height: H * 0.18, position: [rx, hullH + H * 0.09, W * 0.46], color: '#CBD5E1', preset: 'metal' });
+    addCylinder(group, { radiusTop: 0.022, height: H * 0.18, position: [rx, hullH + H * 0.09, -W * 0.46], color: '#CBD5E1', preset: 'metal' });
+  }
+  addBox(group, { size: [L * 0.78, 0.025, 0.04], position: [-L * 0.06, hullH + H * 0.18, W * 0.46], color: '#CBD5E1', preset: 'metal' });
+  addBox(group, { size: [L * 0.78, 0.025, 0.04], position: [-L * 0.06, hullH + H * 0.18, -W * 0.46], color: '#CBD5E1', preset: 'metal' });
+}
+
+function buildHelicoptero(group, item, L, W, H, color) {
+  const bodyH = H * 0.52;
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(bodyH * 0.5, bodyH * 0.44, L * 0.44, 20),
+    makeStandardMaterial(color, 'matte', 1)
+  );
+  body.rotation.z = Math.PI / 2;
+  body.position.set(L * 0.1, bodyH * 0.78, 0);
+  markMain(body, color);
+  group.add(body);
+  const cockpit = new THREE.Mesh(
+    new THREE.SphereGeometry(bodyH * 0.46, 16, 10, 0, Math.PI * 0.82, 0, Math.PI * 0.62),
+    makeStandardMaterial('#9EC8EE', 'glass', 0.5)
+  );
+  cockpit.rotation.z = -Math.PI / 2;
+  cockpit.position.set(L * 0.34, bodyH * 0.78, 0);
+  group.add(cockpit);
+  addBox(group, { size: [L * 0.5, bodyH * 0.24, bodyH * 0.24], position: [-L * 0.26, bodyH * 0.68, 0], color, preset: 'matte' });
+  addBox(group, { size: [L * 0.16, bodyH * 0.44, 0.08], position: [-L * 0.44, bodyH * 0.82, 0], color, preset: 'matte' });
+  addCylinder(group, { radiusTop: W * 0.22, height: 0.04, position: [-L * 0.48, bodyH * 0.82, W * 0.14], color: '#374151', preset: 'metal', radialSegments: 18, rotation: [Math.PI / 2, 0, 0] });
+  addCylinder(group, { radiusTop: 0.06, height: bodyH * 0.34, position: [L * 0.1, bodyH * 1.28, 0], color: '#4B5563', preset: 'metal' });
+  const rotorY = bodyH * 1.62;
+  addBox(group, { size: [L * 0.92, 0.04, 0.12], position: [L * 0.1, rotorY, 0], color: '#1F2937', preset: 'metal' });
+  addBox(group, { size: [0.12, 0.04, L * 0.92], position: [L * 0.1, rotorY, 0], color: '#1F2937', preset: 'metal' });
+  const rotorDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(L * 0.46, 28),
+    new THREE.MeshBasicMaterial({ color: 0x374151, transparent: true, opacity: 0.22, side: THREE.DoubleSide })
+  );
+  rotorDisc.rotation.x = -Math.PI / 2;
+  rotorDisc.position.set(L * 0.1, rotorY + 0.02, 0);
+  group.add(rotorDisc);
+  [-W * 0.4, W * 0.4].forEach(z => {
+    addBox(group, { size: [L * 0.48, 0.04, 0.06], position: [L * 0.04, 0.04, z], color: '#6B7280', preset: 'metal' });
+    addCylinder(group, { radiusTop: 0.025, height: bodyH * 0.44, position: [L * 0.18, bodyH * 0.22, z], color: '#6B7280', preset: 'metal', rotation: [0, 0, 0.18] });
+    addCylinder(group, { radiusTop: 0.025, height: bodyH * 0.44, position: [-L * 0.08, bodyH * 0.22, z], color: '#6B7280', preset: 'metal', rotation: [0, 0, -0.18] });
+  });
+}
+
+function buildEscalera(group, item, L, W, H, color) {
+  const steps = Math.max(3, Math.round(L / 0.55));
+  const stepW = L / steps;
+  const stepH = H / steps;
+  const rW = Math.max(0.03, W * 0.03);
+  for (let i = 0; i < steps; i++) {
+    const block = addBox(group, {
+      size: [(i + 1) * stepW, (i + 1) * stepH, W],
+      position: [-L / 2 + (i + 1) * stepW / 2, (i + 1) * stepH / 2, 0],
+      color, preset: 'matte'
+    });
+    if (i === 0) markMain(block, color);
+    addBox(group, {
+      size: [stepW, 0.03, W],
+      position: [-L / 2 + (i + 1) * stepW, (i + 1) * stepH + 0.015, 0],
+      color: '#374151', preset: 'metal'
+    });
+  }
+  [-W / 2 - rW, W / 2 + rW].forEach(z => {
+    addBox(group, { size: [L * 1.08, rW * 1.2, rW * 1.2], position: [0, H + rW * 0.6, z], color: '#94A3B8', preset: 'metal' });
+    [0, 0.5, 1].forEach(t => {
+      addBox(group, { size: [rW, H * t + H * 0.12, rW], position: [-L / 2 + L * t, (H * t + H * 0.12) / 2, z], color: '#94A3B8', preset: 'metal' });
+    });
+  });
+}
+
+function buildMesaDJ(group, item, L, W, H, color) {
+  const tH = H * 0.68;
+  const base = addBox(group, { size: [L, tH * 0.84, W], position: [0, tH * 0.42, 0], color: '#111827', preset: 'matte' });
+  markMain(base, '#111827');
+  addBox(group, { size: [L + 0.04, 0.05, W + 0.04], position: [0, tH + 0.025, 0], color: '#1E293B', preset: 'metal' });
+  addBox(group, { size: [L * 0.34, tH * 0.14, W * 0.84], position: [0, tH + 0.07, 0], color: '#0F172A', preset: 'matte' });
+  const turntableR = Math.min(L * 0.15, W * 0.36);
+  [-L * 0.24, L * 0.24].forEach(x =>
+    addCylinder(group, { radiusTop: turntableR, height: 0.04, position: [x, tH + 0.07, 0], color: '#0F172A', preset: 'matte', radialSegments: 24 })
+  );
+  [-L * 0.48, L * 0.48].forEach(x => {
+    addBox(group, { size: [L * 0.12, H * 0.86, W * 0.84], position: [x, H * 0.43, 0], color: '#0F172A', preset: 'matte' });
+    addSphere(group, { radius: W * 0.24, position: [x, H * 0.36, W * 0.42 + 0.04], color: '#1E293B', preset: 'metal' });
+    addSphere(group, { radius: W * 0.1, position: [x, H * 0.62, W * 0.42 + 0.04], color: '#374151', preset: 'metal' });
+  });
+  addSphere(group, { radius: 0.055, position: [0, tH + 0.2, W * 0.42 + 0.04], color: '#FF00AA', emissive: true });
+}
+
 function buildGenericRect(item, view) {
   const group = new THREE.Group();
   const W = item.dims?.width ?? 1.2;
@@ -1179,6 +1387,30 @@ function buildGenericRect(item, view) {
       break;
     case 'neonSign':
       buildNeonSign(group, item, L, W, H, color);
+      break;
+    case 'coche':
+      buildCoche(group, item, L, W, H, color);
+      break;
+    case 'moto':
+      buildMoto(group, item, L, W, H, color);
+      break;
+    case 'camion':
+      buildCamion(group, item, L, W, H, color);
+      break;
+    case 'avioneta':
+      buildAvioneta(group, item, L, W, H, color);
+      break;
+    case 'barco':
+      buildBarco(group, item, L, W, H, color);
+      break;
+    case 'helicoptero':
+      buildHelicoptero(group, item, L, W, H, color);
+      break;
+    case 'escalera':
+      buildEscalera(group, item, L, W, H, color);
+      break;
+    case 'mesaDJ':
+      buildMesaDJ(group, item, L, W, H, color);
       break;
     default: {
       const body = new THREE.Mesh(
@@ -1405,6 +1637,8 @@ function buildSurface(item, view) {
   const L = item.dims?.length ?? 3;
   const color = item.color || '#6F8E57';
   const borderColor = item.borderColor || '#2F5A29';
+  const defId = item.catalogDefinitionId || '';
+
   const fill = new THREE.Mesh(
     new THREE.PlaneGeometry(L, W),
     view === 'top'
@@ -1424,6 +1658,57 @@ function buildSurface(item, view) {
   border.rotation.x = -Math.PI / 2;
   border.position.y = fill.position.y + 0.002;
   group.add(border);
+
+  if (view !== 'top') {
+    if (defId === 'cesped') {
+      const count = Math.min(22, Math.max(6, Math.floor(L * W * 1.4)));
+      for (let i = 0; i < count; i++) {
+        addBox(group, {
+          size: [0.04, 0.06 + Math.abs(Math.sin(i * 2.3)) * 0.04, 0.04],
+          position: [Math.sin(i * 137.5) * L * 0.44, 0.03, Math.cos(i * 137.5) * W * 0.44],
+          color: i % 3 === 0 ? '#22C55E' : '#16A34A', preset: 'matte'
+        });
+      }
+    } else if (defId === 'arena') {
+      const rows = Math.max(2, Math.round(W / 1.2));
+      for (let i = 0; i < rows; i++) {
+        addBox(group, {
+          size: [L * 0.88, 0.025, 0.07],
+          position: [0, 0.012, -W / 2 + (i + 0.5) * (W / rows)],
+          color: '#D4B483', preset: 'matte'
+        });
+      }
+    } else if (defId === 'tierra') {
+      const count = Math.min(14, Math.max(5, Math.floor(L * W * 0.9)));
+      for (let i = 0; i < count; i++) {
+        addSphere(group, {
+          radius: 0.04 + Math.abs(Math.sin(i * 1.7)) * 0.06,
+          position: [Math.sin(i * 137.5) * L * 0.42, 0.03, Math.cos(i * 137.5) * W * 0.42],
+          color: i % 2 === 0 ? '#92400E' : '#78350F', preset: 'matte'
+        });
+      }
+    } else if (defId === 'cemento') {
+      const gX = Math.max(1, Math.round(L / 1.5));
+      const gZ = Math.max(1, Math.round(W / 1.5));
+      for (let i = 1; i < gX; i++) {
+        addBox(group, { size: [0.022, 0.016, W], position: [-L / 2 + (L * i) / gX, 0.008, 0], color: '#9CA3AF', preset: 'matte' });
+      }
+      for (let i = 1; i < gZ; i++) {
+        addBox(group, { size: [L, 0.016, 0.022], position: [0, 0.008, -W / 2 + (W * i) / gZ], color: '#9CA3AF', preset: 'matte' });
+      }
+    } else if (defId === 'agua_piscina') {
+      [0.28, 0.52, 0.74].forEach(t => {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(Math.min(L, W) * t * 0.36, Math.min(L, W) * t * 0.36 + 0.045, 36),
+          new THREE.MeshBasicMaterial({ color: 0xBAE6FD, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.02;
+        group.add(ring);
+      });
+    }
+  }
+
   if (item.labelText) addTopLabel(group, item.labelText);
   return group;
 }

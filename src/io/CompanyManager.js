@@ -445,8 +445,13 @@ function syncCompanyButton() {
   const formName = cleanText(document.getElementById('company-name')?.value || '');
   const name = cleanText(AppState.company?.name || formName);
   const email = AppState.company?.authEmail || '';
-  const domain = email.split('@')[1] || '';
-  const displayName = name || domain;
+  const rawDomain = email.split('@')[1] || '';
+  const FREE_DOMAINS = ['gmail', 'hotmail', 'yahoo', 'msn', 'telefonica', 'outlook', 'live'];
+  const domainBase = rawDomain.split('.')[0] || '';
+  const inferredName = rawDomain
+    ? (FREE_DOMAINS.includes(domainBase) ? 'Sin empresa' : rawDomain.replace(/\.com$/i, ''))
+    : '';
+  const displayName = name || inferredName;
   const logo = AppState.company?.logo || '';
 
   if (label) label.textContent = displayName || 'Mi empresa';
