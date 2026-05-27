@@ -389,6 +389,21 @@ function thumbSVG(def) {
   if (def.subtype === 'planta')   return svgPlantaDeco();
     return svgSpot();
   }
+  const defId = def.id || '';
+  if (defId === 'coche')           return svgCoche(def.color || '#64748B');
+  if (defId === 'moto')            return svgMoto(def.color || '#111827');
+  if (defId === 'camion')          return svgCamion(def.color || '#475569');
+  if (defId === 'avioneta')        return svgAvioneta(def.color || '#E5E7EB');
+  if (defId === 'barco')           return svgBarco(def.color || '#1D4ED8');
+  if (defId === 'helicoptero')     return svgHelicoptero(def.color || '#334155');
+  if (defId === 'escalera')        return svgEscalera(def.color || '#4B5563');
+  if (defId === 'arena')           return svgArena();
+  if (defId === 'cesped')          return svgCesped();
+  if (defId === 'tierra')          return svgTierra();
+  if (defId === 'cemento')         return svgCemento();
+  if (defId === 'mesa_dj')         return svgMesaDJ();
+  if (defId === 'agua_piscina')    return svgAgua();
+  if (defId.startsWith('flecha_')) return svgFlecha(def.color || '#111827');
   if (def.schemaId) return svgSchemaThumb(def);
   return svgPlaceholder();
 }
@@ -766,6 +781,308 @@ function svgSpot() {
 function svgPlaceholder() {
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <rect x="20" y="20" width="60" height="60" fill="#e6e2da" stroke="rgba(0,0,0,0.15)" stroke-width="0.8" rx="6"/>
+  </svg>`;
+}
+
+/* ── Vehículos / transporte ── */
+
+function svgCoche(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="36" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <circle cx="27" cy="70" r="11" fill="#1c1c1e"/><circle cx="27" cy="70" r="6.5" fill="#555"/><circle cx="27" cy="70" r="2.5" fill="#888"/>
+    <circle cx="73" cy="70" r="11" fill="#1c1c1e"/><circle cx="73" cy="70" r="6.5" fill="#555"/><circle cx="73" cy="70" r="2.5" fill="#888"/>
+    <rect x="10" y="51" width="80" height="19" rx="3" fill="${c}"/>
+    <path d="M 27 51 L 31 33 L 69 33 L 73 51 Z" fill="${c}"/>
+    <path d="M 33 35 L 35 51 L 51 51 L 51 35 Z" fill="#9DD3EE" opacity="0.82"/>
+    <path d="M 53 35 L 53 51 L 68 51 L 66 35 Z" fill="#9DD3EE" opacity="0.82"/>
+    <rect x="51" y="35" width="2" height="16" fill="${c}" opacity="0.8"/>
+    <line x1="51" y1="51" x2="51" y2="69" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    <rect x="10" y="54" width="5" height="7" rx="1" fill="#FEF08A"/><circle cx="12" cy="57" r="2" fill="white" opacity="0.6"/>
+    <rect x="85" y="54" width="5" height="7" rx="1" fill="#FCA5A5"/>
+    <rect x="10" y="51" width="80" height="2" fill="white" opacity="0.12" rx="1"/>
+  </svg>`;
+}
+
+function svgMoto(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="85" rx="34" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <circle cx="22" cy="68" r="15" fill="#1c1c1e"/><circle cx="22" cy="68" r="8.5" fill="#555"/><circle cx="22" cy="68" r="3.5" fill="#888"/>
+    <circle cx="78" cy="68" r="15" fill="#1c1c1e"/><circle cx="78" cy="68" r="8.5" fill="#555"/><circle cx="78" cy="68" r="3.5" fill="#888"/>
+    <line x1="22" y1="53" x2="52" y2="47" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+    <line x1="52" y1="47" x2="78" y2="53" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="52" y1="47" x2="56" y2="60" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="78" y1="53" x2="72" y2="60" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+    <rect x="42" y="52" width="22" height="13" rx="3" fill="${c}"/>
+    <rect x="44" y="54" width="8" height="5" rx="1" fill="rgba(255,255,255,0.1)"/>
+    <path d="M 36 41 Q 46 35 56 41 L 56 50 Q 46 52 36 50 Z" fill="${c}"/>
+    <path d="M 21 43 Q 34 39 50 41 L 50 47 Q 34 45 21 49 Z" fill="rgba(0,0,0,0.55)"/>
+    <line x1="70" y1="36" x2="78" y2="53" stroke="#6b7280" stroke-width="2.5"/>
+    <line x1="74" y1="36" x2="82" y2="53" stroke="#6b7280" stroke-width="2"/>
+    <line x1="64" y1="34" x2="84" y2="32" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="64" cy="34" r="2.2" fill="#555"/><circle cx="84" cy="32" r="2.2" fill="#555"/>
+    <path d="M 22 61 Q 17 67 15 73" stroke="#6b7280" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function svgCamion(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="84" rx="46" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <rect x="6" y="42" width="58" height="26" rx="2" fill="${c}" opacity="0.78"/>
+    <rect x="6" y="40" width="58" height="4" fill="${c}" rx="1"/>
+    <line x1="6" y1="52" x2="64" y2="52" stroke="rgba(0,0,0,0.16)" stroke-width="0.8"/>
+    <line x1="6" y1="61" x2="64" y2="61" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>
+    <rect x="64" y="44" width="28" height="24" rx="3" fill="${c}"/>
+    <rect x="64" y="40" width="28" height="6" rx="2" fill="${c}"/>
+    <rect x="67" y="47" width="17" height="11" rx="2" fill="#9DD3EE" opacity="0.82"/>
+    <rect x="67" y="60" width="9" height="5" rx="1" fill="rgba(0,0,0,0.18)"/>
+    <rect x="91" y="52" width="3" height="7" rx="1" fill="#FEF08A"/>
+    <rect x="68" y="26" width="5" height="16" rx="2" fill="#6B7280"/>
+    <ellipse cx="70" cy="26" rx="3" ry="1.2" fill="#555"/>
+    <circle cx="20" cy="70" r="9" fill="#1c1c1e"/><circle cx="20" cy="70" r="5" fill="#555"/>
+    <circle cx="35" cy="70" r="9" fill="#1c1c1e"/><circle cx="35" cy="70" r="5" fill="#555"/>
+    <circle cx="54" cy="70" r="9" fill="#1c1c1e"/><circle cx="54" cy="70" r="5" fill="#555"/>
+    <circle cx="78" cy="70" r="9" fill="#1c1c1e"/><circle cx="78" cy="70" r="5" fill="#555"/>
+    <circle cx="91" cy="70" r="7" fill="#1c1c1e"/><circle cx="91" cy="70" r="4" fill="#555"/>
+  </svg>`;
+}
+
+function svgAvioneta(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="88" rx="14" ry="3" fill="rgba(0,0,0,0.12)"/>
+    <path d="M 44 56 L 5 70 L 5 76 L 44 65 Z" fill="${c}" stroke="rgba(0,0,0,0.14)" stroke-width="0.6"/>
+    <path d="M 56 56 L 95 70 L 95 76 L 56 65 Z" fill="${c}" stroke="rgba(0,0,0,0.14)" stroke-width="0.6"/>
+    <ellipse cx="50" cy="52" rx="7" ry="32" fill="${c}" stroke="rgba(0,0,0,0.14)" stroke-width="0.8"/>
+    <path d="M 45 81 L 22 87 L 22 89 L 45 85 Z" fill="${c}" opacity="0.9"/>
+    <path d="M 55 81 L 78 87 L 78 89 L 55 85 Z" fill="${c}" opacity="0.9"/>
+    <ellipse cx="50" cy="37" rx="4.5" ry="7" fill="#9DD3EE" opacity="0.72"/>
+    <rect x="48" y="17" width="4" height="9" rx="2" fill="#555"/>
+    <rect x="33" y="20" width="34" height="4" rx="2" fill="#333"/>
+    <circle cx="50" cy="20" r="2.5" fill="#444"/>
+    <line x1="6" y1="73" x2="44" y2="63" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+    <line x1="56" y1="63" x2="94" y2="73" stroke="rgba(0,0,0,0.2)" stroke-width="0.6"/>
+  </svg>`;
+}
+
+function svgBarco(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 4 71 Q 20 67 36 71 Q 52 75 68 71 Q 82 67 96 71 L 96 82 L 4 82 Z" fill="#93C5FD" opacity="0.38"/>
+    <path d="M 10 56 L 10 71 Q 50 80 90 71 L 90 56 Z" fill="${c}"/>
+    <path d="M 10 66 Q 50 75 90 66 L 90 71 Q 50 80 10 71 Z" fill="rgba(0,0,0,0.2)"/>
+    <path d="M 86 56 L 98 68 L 90 71 Z" fill="${c}"/>
+    <rect x="10" y="50" width="80" height="7" rx="1" fill="${c}" opacity="0.92"/>
+    <line x1="10" y1="54" x2="90" y2="54" stroke="white" stroke-width="0.8" opacity="0.3"/>
+    <rect x="36" y="36" width="36" height="15" rx="3" fill="${c}" opacity="0.88"/>
+    <rect x="40" y="40" width="10" height="7" rx="1.5" fill="#9DD3EE" opacity="0.8"/>
+    <rect x="55" y="40" width="10" height="7" rx="1.5" fill="#9DD3EE" opacity="0.8"/>
+    <line x1="52" y1="18" x2="52" y2="50" stroke="#6b7280" stroke-width="1.5"/>
+    <line x1="52" y1="18" x2="88" y2="38" stroke="#9ca3af" stroke-width="0.6" opacity="0.5"/>
+    <line x1="52" y1="18" x2="16" y2="40" stroke="#9ca3af" stroke-width="0.6" opacity="0.5"/>
+    <path d="M 52 18 L 64 22 L 52 28 Z" fill="#EF4444" opacity="0.8"/>
+    <circle cx="22" cy="63" r="3.5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+    <circle cx="22" cy="63" r="2" fill="#9DD3EE" opacity="0.35"/>
+  </svg>`;
+}
+
+function svgHelicoptero(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="42" cy="85" rx="27" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <rect x="20" y="78" width="34" height="3" rx="1.5" fill="#555"/>
+    <rect x="24" y="71" width="4" height="8" rx="1" fill="#666"/>
+    <rect x="46" y="71" width="4" height="8" rx="1" fill="#666"/>
+    <path d="M 58 58 L 94 52 L 94 59 L 60 65 Z" fill="${c}" opacity="0.82"/>
+    <ellipse cx="94" cy="52" rx="2" ry="9" fill="#444"/>
+    <ellipse cx="94" cy="52" rx="9" ry="2" fill="#444" opacity="0.45"/>
+    <ellipse cx="40" cy="60" rx="28" ry="18" fill="${c}"/>
+    <path d="M 50 49 Q 68 52 72 62 Q 68 73 56 75 L 50 73 Z" fill="#9DD3EE" opacity="0.62"/>
+    <path d="M 53 51 Q 66 54 68 63" stroke="white" stroke-width="0.8" fill="none" opacity="0.3"/>
+    <path d="M 14 65 Q 40 73 68 65 L 68 68 Q 40 77 14 68 Z" fill="rgba(0,0,0,0.12)"/>
+    <rect x="38" y="40" width="4" height="12" rx="1" fill="#555"/>
+    <line x1="7" y1="44" x2="73" y2="44" stroke="#2a2a2c" stroke-width="3" stroke-linecap="round"/>
+    <line x1="40" y1="18" x2="40" y2="68" stroke="#2a2a2c" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="40" cy="42" r="5" fill="#3a3a3c"/>
+    <circle cx="40" cy="42" r="2.5" fill="#555"/>
+  </svg>`;
+}
+
+function svgEscalera(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="58" cy="87" rx="30" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="38,26 78,26 88,20 48,20" fill="${c}"/>
+    <polygon points="38,26 78,26 88,20 48,20" fill="rgba(0,0,0,0.08)"/>
+    <rect x="38" y="26" width="40" height="18" rx="1" fill="${c}"/>
+    <polygon points="78,26 88,20 88,38 78,44" fill="${c}"/>
+    <polygon points="78,26 88,20 88,38 78,44" fill="rgba(0,0,0,0.28)"/>
+    <polygon points="28,44 78,44 88,38 38,38" fill="${c}"/>
+    <polygon points="28,44 78,44 88,38 38,38" fill="rgba(0,0,0,0.08)"/>
+    <rect x="28" y="44" width="50" height="18" rx="1" fill="${c}"/>
+    <polygon points="78,44 88,38 88,56 78,62" fill="${c}"/>
+    <polygon points="78,44 88,38 88,56 78,62" fill="rgba(0,0,0,0.28)"/>
+    <polygon points="18,62 78,62 88,56 28,56" fill="${c}"/>
+    <polygon points="18,62 78,62 88,56 28,56" fill="rgba(0,0,0,0.08)"/>
+    <rect x="18" y="62" width="60" height="18" rx="1" fill="${c}"/>
+    <polygon points="78,62 88,56 88,74 78,80" fill="${c}"/>
+    <polygon points="78,62 88,56 88,74 78,80" fill="rgba(0,0,0,0.28)"/>
+    <line x1="18" y1="62" x2="38" y2="26" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+    <line x1="78" y1="62" x2="78" y2="26" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+    <line x1="18" y1="62" x2="78" y2="62" stroke="white" stroke-width="0.8" opacity="0.14"/>
+    <line x1="28" y1="44" x2="78" y2="44" stroke="white" stroke-width="0.8" opacity="0.12"/>
+    <line x1="38" y1="26" x2="78" y2="26" stroke="white" stroke-width="0.8" opacity="0.1"/>
+  </svg>`;
+}
+
+/* ── Superficies 3D (tiles isométricos) ── */
+
+function svgArena() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="83" rx="38" ry="5" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="#EAB308"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="rgba(0,0,0,0.22)"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="#EAB308"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="rgba(0,0,0,0.38)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="#EAB308"/>
+    <circle cx="35" cy="42" r="2.5" fill="#FEF08A" opacity="0.7"/>
+    <circle cx="50" cy="34" r="3" fill="#FEF08A" opacity="0.62"/>
+    <circle cx="65" cy="42" r="2.5" fill="#FEF08A" opacity="0.7"/>
+    <circle cx="42" cy="50" r="2.2" fill="#FEF08A" opacity="0.55"/>
+    <circle cx="58" cy="50" r="2.2" fill="#FEF08A" opacity="0.55"/>
+    <circle cx="50" cy="44" r="1.8" fill="#FEF08A" opacity="0.5"/>
+    <circle cx="40" cy="38" r="1.5" fill="rgba(0,0,0,0.12)"/>
+    <circle cx="60" cy="37" r="1.5" fill="rgba(0,0,0,0.1)"/>
+    <circle cx="50" cy="57" r="1.5" fill="#CA8A04" opacity="0.45"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="white" opacity="0.05"/>
+  </svg>`;
+}
+
+function svgCesped() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="83" rx="38" ry="5" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="#65A30D"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="rgba(0,0,0,0.22)"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="#65A30D"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="rgba(0,0,0,0.38)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="#65A30D"/>
+    <line x1="34" y1="44" x2="32" y2="37" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="36" y1="44" x2="38" y2="37" stroke="#A3E635" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="43" y1="40" x2="41" y2="33" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="45" y1="40" x2="47" y2="33" stroke="#A3E635" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="50" y1="36" x2="48" y2="29" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="52" y1="36" x2="54" y2="29" stroke="#A3E635" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="57" y1="40" x2="55" y2="33" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="59" y1="40" x2="61" y2="33" stroke="#A3E635" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="66" y1="44" x2="64" y2="37" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="68" y1="44" x2="70" y2="37" stroke="#A3E635" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="40" y1="52" x2="38" y2="45" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="50" y1="56" x2="48" y2="49" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="60" y1="52" x2="58" y2="45" stroke="#84CC16" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function svgTierra() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="83" rx="38" ry="5" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="#A16207"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="rgba(0,0,0,0.22)"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="#A16207"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="rgba(0,0,0,0.38)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="#A16207"/>
+    <ellipse cx="36" cy="43" rx="6" ry="3.5" fill="#92400E" opacity="0.65"/>
+    <ellipse cx="52" cy="36" rx="7" ry="4" fill="#92400E" opacity="0.55"/>
+    <ellipse cx="65" cy="44" rx="5" ry="3" fill="#78350F" opacity="0.55"/>
+    <ellipse cx="44" cy="52" rx="6" ry="3" fill="#92400E" opacity="0.5"/>
+    <ellipse cx="58" cy="53" rx="5" ry="2.5" fill="#78350F" opacity="0.45"/>
+    <circle cx="42" cy="40" r="2.2" fill="#57534E" opacity="0.7"/>
+    <circle cx="60" cy="39" r="1.8" fill="#57534E" opacity="0.62"/>
+    <circle cx="50" cy="47" r="2" fill="#78716C" opacity="0.6"/>
+    <circle cx="34" cy="50" r="1.5" fill="#57534E" opacity="0.55"/>
+    <circle cx="66" cy="50" r="1.5" fill="#57534E" opacity="0.5"/>
+  </svg>`;
+}
+
+function svgCemento() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="83" rx="38" ry="5" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="#9CA3AF"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="rgba(0,0,0,0.22)"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="#9CA3AF"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="rgba(0,0,0,0.38)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="#9CA3AF"/>
+    <line x1="33" y1="35" x2="67" y2="35" stroke="rgba(0,0,0,0.25)" stroke-width="0.9"/>
+    <line x1="16" y1="44" x2="84" y2="44" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
+    <line x1="33" y1="53" x2="67" y2="53" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
+    <line x1="33" y1="35" x2="33" y2="53" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
+    <line x1="50" y1="26" x2="50" y2="62" stroke="rgba(0,0,0,0.2)" stroke-width="0.9"/>
+    <line x1="67" y1="35" x2="67" y2="53" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
+    <circle cx="42" cy="40" r="1.5" fill="rgba(0,0,0,0.1)"/>
+    <circle cx="58" cy="40" r="1.2" fill="rgba(0,0,0,0.08)"/>
+    <circle cx="50" cy="56" r="1.2" fill="rgba(0,0,0,0.08)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="white" opacity="0.06"/>
+  </svg>`;
+}
+
+function svgMesaDJ() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="85" rx="36" ry="4" fill="rgba(0,0,0,0.12)"/>
+    <rect x="18" y="64" width="4" height="18" rx="1" fill="#2a2a2c"/>
+    <rect x="78" y="64" width="4" height="18" rx="1" fill="#2a2a2c"/>
+    <rect x="22" y="70" width="56" height="3" rx="1" fill="#222" opacity="0.6"/>
+    <rect x="10" y="52" width="80" height="14" rx="2" fill="#1F2937"/>
+    <rect x="10" y="48" width="80" height="6" rx="2" fill="#111827"/>
+    <circle cx="30" cy="51" r="10" fill="#2a2a2c"/>
+    <circle cx="30" cy="51" r="7.5" fill="#111"/>
+    <circle cx="30" cy="51" r="5.5" fill="#1e1e1e"/>
+    <circle cx="30" cy="51" r="2.5" fill="#444"/>
+    <circle cx="30" cy="51" r="1" fill="#777"/>
+    <circle cx="30" cy="51" r="8.5" fill="none" stroke="#333" stroke-width="0.6" opacity="0.7"/>
+    <circle cx="30" cy="51" r="6.5" fill="none" stroke="#333" stroke-width="0.5" opacity="0.6"/>
+    <circle cx="70" cy="51" r="10" fill="#2a2a2c"/>
+    <circle cx="70" cy="51" r="7.5" fill="#111"/>
+    <circle cx="70" cy="51" r="5.5" fill="#1e1e1e"/>
+    <circle cx="70" cy="51" r="2.5" fill="#444"/>
+    <circle cx="70" cy="51" r="1" fill="#777"/>
+    <circle cx="70" cy="51" r="8.5" fill="none" stroke="#333" stroke-width="0.6" opacity="0.7"/>
+    <circle cx="70" cy="51" r="6.5" fill="none" stroke="#333" stroke-width="0.5" opacity="0.6"/>
+    <rect x="42" y="44" width="16" height="12" rx="1.5" fill="#1a1a1c"/>
+    <rect x="44" y="46" width="5" height="4" rx="0.5" fill="#374151"/>
+    <rect x="51" y="46" width="5" height="4" rx="0.5" fill="#374151"/>
+    <circle cx="46.5" cy="52" r="1.8" fill="#6B7280"/>
+    <circle cx="53.5" cy="52" r="1.8" fill="#6B7280"/>
+    <line x1="38" y1="44" x2="33" y2="49" stroke="#555" stroke-width="1.2"/>
+    <circle cx="33" cy="49" r="1.2" fill="#888"/>
+    <line x1="62" y1="44" x2="67" y2="49" stroke="#555" stroke-width="1.2"/>
+    <circle cx="67" cy="49" r="1.2" fill="#888"/>
+    <rect x="14" y="58" width="72" height="2" rx="1" fill="#7C3AED" opacity="0.55"/>
+  </svg>`;
+}
+
+function svgAgua() {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="83" rx="38" ry="5" fill="rgba(0,0,0,0.1)"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="#60A5FA"/>
+    <polygon points="16,44 50,62 50,80 16,62" fill="rgba(0,0,0,0.22)"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="#60A5FA"/>
+    <polygon points="84,44 50,62 50,80 84,62" fill="rgba(0,0,0,0.38)"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="#60A5FA"/>
+    <path d="M 26 44 Q 31 40 36 44 Q 41 48 46 44" stroke="#93C5FD" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M 54 37 Q 59 33 64 37 Q 69 41 74 37" stroke="#93C5FD" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M 36 53 Q 41 49 46 53 Q 51 57 56 53" stroke="#93C5FD" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <path d="M 52 44 Q 57 40 62 44 Q 67 48 72 44" stroke="#93C5FD" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="46" r="1.8" fill="white" opacity="0.4"/>
+    <circle cx="62" cy="38" r="1.5" fill="white" opacity="0.35"/>
+    <circle cx="50" cy="58" r="1.2" fill="white" opacity="0.3"/>
+    <polygon points="16,44 50,26 84,44 50,62" fill="white" opacity="0.06"/>
+  </svg>`;
+}
+
+function svgFlecha(c) {
+  const arrow = 'M 14,48 L 52,48 L 52,36 L 86,54 L 52,72 L 52,60 L 14,60 Z';
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="52" cy="84" rx="36" ry="4" fill="rgba(0,0,0,0.1)"/>
+    <path d="${arrow}" fill="rgba(0,0,0,0.28)" transform="translate(4,8)"/>
+    <path d="M 14,60 L 52,60 L 56,68 L 18,68 Z" fill="${c}" opacity="0.55"/>
+    <path d="M 52,60 L 52,72 L 90,62 L 86,54 Z" fill="${c}" opacity="0.45"/>
+    <path d="${arrow}" fill="${c}"/>
+    <path d="M 16,50 L 52,50 L 52,38 L 80,54" stroke="white" stroke-width="1.2" fill="none" opacity="0.18" stroke-linecap="round"/>
+    <path d="M 14,48 L 14,60 L 16,59 L 16,49 Z" fill="white" opacity="0.18"/>
   </svg>`;
 }
 
