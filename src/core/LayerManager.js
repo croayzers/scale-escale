@@ -5,13 +5,13 @@
 import { AppState } from './AppState.js';
 
 const DEFAULT_LAYERS = [
-  { id: 'principal',   name: 'Principal',   visible: true, locked: false, color: '#2563eb' },
-  { id: 'carpas',      name: 'Carpas',      visible: true, locked: false, color: '#92400e' },
-  { id: 'decoracion',  name: 'Decoración',  visible: true, locked: false, color: '#16a34a' },
+  { id: 'material', name: 'Material', visible: true, locked: false, color: '#16a34a' },
+  { id: 'personal', name: 'Personal', visible: true, locked: false, color: '#2563eb' },
+  { id: 'base',     name: 'Base',     visible: true, locked: false, color: '#6b7280' },
 ];
 
 let layers = JSON.parse(JSON.stringify(DEFAULT_LAYERS));
-let activeLayerId = 'principal';
+let activeLayerId = 'material';
 let _sceneManager = null;
 let _activeCtxMenu = null;
 
@@ -29,7 +29,7 @@ function getLayer(layerId) {
 
 function getItemLayer(item) {
   if (!item) return null;
-  return getLayer(item.layerId || 'principal');
+  return getLayer(item.layerId || 'material');
 }
 
 function isItemVisible(item) {
@@ -72,7 +72,7 @@ async function setLayerVisibility(layerId, visible) {
   await bindSceneManager();
   // Toggle Three.js group visibility for all items in this layer
   AppState.items.forEach(item => {
-    if ((item.layerId || 'principal') === layerId) {
+    if ((item.layerId || 'material') === layerId) {
       const group = _sceneManager?.meshes?.get(item.id);
       if (group) group.visible = visible;
     }
@@ -267,7 +267,7 @@ function init() {
 
 function reset() {
   layers = JSON.parse(JSON.stringify(DEFAULT_LAYERS));
-  activeLayerId = 'principal';
+  activeLayerId = 'material';
 }
 
 /* ─── Persistence helpers ─── */

@@ -56,7 +56,7 @@ export const PLAN_VISUAL_TOKENS = {
   },
   premium: {
     code: 'premium',
-    label: 'Premium',
+    label: 'PRO Unlimited',
     icon: 'crown',
     accent: '#1D4ED8',
     border: '#1D4ED8',

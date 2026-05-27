@@ -47,9 +47,9 @@ export const PLAN_CATALOG = {
   },
   premium: {
     code: 'premium',
-    name: 'Premium',
+    name: 'PRO Unlimited',
     monthlyPriceEur: 120,
-    audience: 'company',
+    audience: 'teams',
     stripe_price_monthly: 'price_1TZqLAJXIT1cvBSGJKY9zsGF',
     stripe_price_yearly:  'price_1TZqMIJXIT1cvBSGOTV5f61x',
     ui: {
@@ -60,11 +60,11 @@ export const PLAN_CATALOG = {
       ownLogo: true,
       pdfExport: true,
       emailPdfToOwner: true,
-      emailPdfToClient: true,
+      emailPdfToClient: false,
       supplierExcelImport: true,
-      crmIntegration: true,
-      erpIntegration: true,
-      sharepointIntegration: true,
+      crmIntegration: false,
+      erpIntegration: false,
+      sharepointIntegration: false,
       companyReporting: true
     }
   }

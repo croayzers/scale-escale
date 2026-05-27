@@ -4,18 +4,18 @@ import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { AppState } from '../core/AppState.js';
 
 const PLAN_COMPARE_ROWS = [
-  { label: 'Proyectos activos', values: { free_lite: '1 proyecto', pro: 'Ilimitados', premium: 'Ilimitados' } },
-  { label: 'Elementos por plano', values: { free_lite: 'Hasta 50', pro: 'Ilimitados', premium: 'Ilimitados' } },
-  { label: 'Cat\u00e1logo de elementos', values: { free_lite: 'B\u00e1sico (2 cat.)', pro: 'Completo', premium: 'Completo + custom' } },
-  { label: 'Exportaci\u00f3n PNG', values: { free_lite: 'check', pro: 'check', premium: 'check' } },
-  { label: 'Exportaci\u00f3n PDF', values: { free_lite: 'dash', pro: 'check', premium: 'check' } },
-  { label: 'Inventario autom\u00e1tico', values: { free_lite: 'dash', pro: 'check', premium: 'check' } },
-  { label: 'Compartir planning', values: { free_lite: 'dash', pro: 'check', premium: 'check' } },
-  { label: 'Colaboraci\u00f3n', values: { free_lite: 'dash', pro: '2 usuarios', premium: 'Ilimitada' } },
-  { label: 'Historial de versiones', values: { free_lite: 'dash', pro: 'dash', premium: 'Ilimitado' } },
-  { label: 'API de integraci\u00f3n', values: { free_lite: 'dash', pro: 'dash', premium: 'check' } },
-  { label: 'Marca blanca', values: { free_lite: 'dash', pro: 'dash', premium: 'check' } },
-  { label: 'Account manager', values: { free_lite: 'dash', pro: 'dash', premium: 'check' } }
+  { label: 'Proyectos activos',        values: { free_lite: '1 proyecto',     pro: 'Ilimitados',        premium: 'Ilimitados' } },
+  { label: 'Elementos por plano',      values: { free_lite: 'Hasta 50',        pro: 'Ilimitados',        premium: 'Ilimitados' } },
+  { label: 'Cat\u00e1logo de elementos', values: { free_lite: 'B\u00e1sico (2 cat.)', pro: 'Completo',   premium: 'Completo' } },
+  { label: 'Exportaci\u00f3n PNG',     values: { free_lite: 'check',           pro: 'check',             premium: 'check' } },
+  { label: 'Exportaci\u00f3n PDF',     values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } },
+  { label: 'Inventario autom\u00e1tico', values: { free_lite: 'dash',          pro: 'check',             premium: 'check' } },
+  { label: 'Compartir planning',       values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } },
+  { label: 'Usuarios del equipo',      values: { free_lite: '1',               pro: '2',                 premium: 'Ilimitados' } },
+  { label: 'Edici\u00f3n simult\u00e1nea', values: { free_lite: 'dash',        pro: 'dash',              premium: 'check' } },
+  { label: 'Sincronizaci\u00f3n Cloud', values: { free_lite: 'dash',           pro: 'dash',              premium: 'check' } },
+  { label: 'Historial de versiones',   values: { free_lite: 'dash',            pro: 'dash',              premium: 'check' } },
+  { label: 'Logo propio',              values: { free_lite: 'dash',            pro: 'check',             premium: 'check' } }
 ];
 
 const PLAN_ORDER = ['free_lite', 'pro', 'premium'];
@@ -71,7 +71,7 @@ function renderCards(currentPlanCode) {
     const priceMarkup = planCode === 'free_lite'
       ? '<div class="plans-card-price">Gratis</div><div class="plans-card-subcopy">Gratis para siempre</div>'
       : planCode === 'premium'
-        ? '<div class="plans-card-subcopy">Integraciones, CRM y marca blanca</div>'
+        ? `<div class="plans-card-price">${formatPlanPrice(planCode)} <small>+ iva</small></div><div class="plans-card-subcopy">/ mes \u00b7 para equipos</div>`
         : `<div class="plans-card-price">${formatPlanPrice(planCode)} <small>+ iva</small></div><div class="plans-card-subcopy">/ mes \u00b7 facturado mensualmente</div>`;
 
     return `
@@ -102,7 +102,7 @@ function renderTable() {
   const labels = {
     free_lite: 'Lite',
     pro: 'PRO',
-    premium: 'Premium'
+    premium: 'PRO Unlimited'
   };
   return PLAN_COMPARE_ROWS.map(row => `
     <div class="plans-table-row">
@@ -135,7 +135,7 @@ function render() {
 
 function contactPremium() {
   const confirmed = window.confirm(
-    '¿Quieres contactar con E-scale para contratar el Plan Premium?\n\n' +
+    '¿Quieres contactar con E-scale para contratar el Plan PRO Unlimited?\n\n' +
     'Se abrirá tu cliente de correo con un mensaje listo para enviar.'
   );
   if (!confirmed) return;
@@ -145,16 +145,16 @@ function contactPremium() {
   const company = AppState.company.name || '';
   const logo    = AppState.company.logoFileName || AppState.company.logoRelativePath || '';
 
-  const subject = encodeURIComponent('Solicitud de contratación — Plan Premium E-scale');
+  const subject = encodeURIComponent('Solicitud de contratación — Plan PRO Unlimited E-scale');
   const body = encodeURIComponent(
     'Hola,\n\n' +
-    'Me pongo en contacto porque estoy interesado/a en contratar el Plan Premium de E-scale.\n\n' +
+    'Me pongo en contacto porque estoy interesado/a en contratar el Plan PRO Unlimited de E-scale para mi equipo.\n\n' +
     'Mis datos de contacto:\n' +
     (name    ? `  Nombre:   ${name}\n`    : '') +
     (email   ? `  Email:    ${email}\n`   : '') +
     (company ? `  Empresa:  ${company}\n` : '') +
     (logo    ? `  Logo:     ${logo}\n`    : '') +
-    '\nQuedo a vuestra disposición para cualquier consulta sobre precios, integraciones o condiciones del plan.\n\n' +
+    '\nQuedo a vuestra disposición para cualquier consulta sobre usuarios, precios de equipo o condiciones del plan.\n\n' +
     'Un saludo.'
   );
 

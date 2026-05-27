@@ -283,6 +283,7 @@ async function bootstrap() {
 
   document.getElementById('inventory-close')?.addEventListener('click', () => setInventoryOpen(false));
   document.getElementById('inv-export-btn')?.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('escale:inventory-close'));
     document.dispatchEvent(new CustomEvent('escale:open-print-menu'));
   });
   inventoryEventName?.addEventListener('input', () => {
