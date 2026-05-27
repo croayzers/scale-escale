@@ -168,6 +168,64 @@ async function bootstrap() {
     if (node) node.dataset.state = value;
   };
 
+  // ── Onboarding ring pulse manager ──────────────────────────────────────────
+  const onboardPulse = (() => {
+    const timers = {};
+    const start = (id, ms = 15000) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('onboard-pulse');
+      void el.offsetWidth;
+      el.classList.add('onboard-pulse');
+      clearTimeout(timers[id]);
+      timers[id] = setTimeout(() => el.classList.remove('onboard-pulse'), ms);
+    };
+    const stop = id => {
+      clearTimeout(timers[id]);
+      document.getElementById(id)?.classList.remove('onboard-pulse');
+    };
+    return { start, stop };
+  })();
+
+  // Pulse the upload button immediately on load for 15 s
+  onboardPulse.start('btn-upload-plan', 15000);
+
+  // ── Calibration hint banner ─────────────────────────────────────────────────
+  const CAL_BANNER_MSGS = {
+    start:   `<span class="cal-banner-icon">📐</span><span class="cal-banner-text">No te preocupes por la escala del plano. Haz clic en el primer punto de una referencia conocida (una pared, una mesa, un pasillo…)</span>`,
+    point1:  `<span class="cal-banner-icon">📍</span><span class="cal-banner-text">¡Ey!! Adivinanza: ¿cuánto mide lo que acabas de marcar? Haz clic en el segundo extremo de esa referencia.</span>`,
+    point2:  `<span class="cal-banner-icon">📏</span><span class="cal-banner-text">Introduce el número — la distancia real en metros de esa referencia — y pulsa <span class="cal-arrow">↵ Aceptar</span>.</span>`,
+    success: `<span class="cal-banner-icon">✅</span><span class="cal-banner-text">¡Listo! Ya tienes el plano a medida real. Te recomendamos que coloques una <strong>Zona</strong> para delimitar el espacio operativo.</span>`,
+  };
+
+  let calBannerTimer = null;
+  const showCalBanner = (html, autoHideMs = 0) => {
+    const el = document.getElementById('cal-banner');
+    if (!el) return;
+    clearTimeout(calBannerTimer);
+    el.innerHTML = `<div class="cal-banner-body">${html}<button class="cal-banner-close" aria-label="Cerrar">✕</button></div>`;
+    el.classList.remove('hidden');
+    if (autoHideMs > 0) calBannerTimer = setTimeout(() => el.classList.add('hidden'), autoHideMs);
+  };
+  const hideCalBanner = () => {
+    clearTimeout(calBannerTimer);
+    document.getElementById('cal-banner')?.classList.add('hidden');
+  };
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('.cal-banner-close')) hideCalBanner();
+  });
+
+  // ── Dock periodic glow ──────────────────────────────────────────────────────
+  setInterval(() => {
+    const dock = document.getElementById('dock');
+    if (!dock) return;
+    dock.classList.remove('dock-glow');
+    void dock.offsetWidth;
+    dock.classList.add('dock-glow');
+    dock.addEventListener('animationend', () => dock.classList.remove('dock-glow'), { once: true });
+  }, 10000);
+
   const pulseGuideTarget = (...targets) => {
     targets.filter(Boolean).forEach(target => {
       target.classList.remove('guide-pulse');
@@ -220,6 +278,13 @@ async function bootstrap() {
     if (guideGrid) guideGrid.disabled = !state.steps.calibrated || !zonesReady;
     if (guideCatalog) guideCatalog.disabled = !state.steps.gridAdjusted;
 
+    // Pulse the border of whichever step card is currently active
+    ['guide-step-calibrate', 'guide-step-zones', 'guide-step-grid', 'guide-step-catalog'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('step-onboard-pulse', el.dataset.state === 'active');
+    });
+
     const dot1 = document.getElementById('step-dot-1');
     const dot2 = document.getElementById('step-dot-2');
     const dot3 = document.getElementById('step-dot-3');
@@ -231,6 +296,8 @@ async function bootstrap() {
   const originalSetPlanTexture = SceneManager.setPlanTexture.bind(SceneManager);
   SceneManager.setPlanTexture = texture => {
     originalSetPlanTexture(texture);
+    onboardPulse.stop('btn-upload-plan');
+    onboardPulse.start('btn-calibrate', 15000);
     state.steps.planLoaded = true;
     state.steps.calibrated = false;
     state.steps.gridAdjusted = false;
@@ -254,7 +321,10 @@ async function bootstrap() {
     updatePlanGuide();
   });
   document.addEventListener('escale:plan-calibrated', () => {
+    onboardPulse.stop('btn-calibrate');
     state.steps.calibrated = true;
+    showCalBanner(CAL_BANNER_MSGS.success, 5000);
+    onboardPulse.start('btn-zones-menu', 10000);
     updatePlanGuide();
   });
   document.addEventListener('escale:plan-calibration-progress', event => {
@@ -264,6 +334,11 @@ async function bootstrap() {
     if (point1 && event.detail?.point1) point1.textContent = event.detail.point1;
     if (point2 && event.detail?.point2) point2.textContent = event.detail.point2;
     if (result && event.detail?.result) result.textContent = event.detail.result;
+    const r = event.detail?.result;
+    if (r === 'Esperando referencia') showCalBanner(CAL_BANNER_MSGS.start);
+    else if (r === 'Marca el segundo punto') showCalBanner(CAL_BANNER_MSGS.point1);
+    else if (r === 'Introduce la distancia real') showCalBanner(CAL_BANNER_MSGS.point2);
+    else if (r === 'Sin calibrar') hideCalBanner();
     updatePlanGuide();
   });
 
@@ -271,6 +346,15 @@ async function bootstrap() {
   camTop?.addEventListener('click', setTopCamera);
   document.getElementById('btn-upload-plan')?.addEventListener('click', setTopCamera);
   document.getElementById('btn-calibrate')?.addEventListener('click', () => {
+    onboardPulse.stop('btn-calibrate');
+    const guide = document.getElementById('plan-guide');
+    if (guide && !guide.classList.contains('hidden')) {
+      guide.classList.remove('guide-panel-pulse');
+      void guide.offsetWidth;
+      guide.classList.add('guide-panel-pulse');
+      setTimeout(() => guide.classList.remove('guide-panel-pulse'), 15000);
+    }
+    showCalBanner(CAL_BANNER_MSGS.start);
     state.planGuideDismissed = false;
     setTopCamera();
     updatePlanGuide();

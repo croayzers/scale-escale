@@ -342,26 +342,6 @@
   </div>
   <div id="zone-grid-editor" class="hdr-menu-block"></div>
   <div class="hdr-menu-block">
-    <div class="menu-section-label">Grid global</div>
-    <div class="menu-field-grid">
-      <label class="menu-field">
-        <span>Medida grid (m)</span>
-        <input id="grid-main-size" class="input-field" type="number" min="0.25" max="20" step="0.25" value="1"/>
-      </label>
-      <label class="menu-field">
-        <span>Subrejilla (m)</span>
-        <input id="grid-sub-size" class="input-field" type="number" min="0.05" max="5" step="0.05" value="0.25"/>
-      </label>
-      <label class="menu-field menu-field-full">
-        <span>Visibilidad</span>
-        <div class="menu-slider-row">
-          <input id="grid-visibility" type="range" min="0" max="100" step="1" value="55"/>
-          <strong id="grid-visibility-value">55%</strong>
-        </div>
-      </label>
-    </div>
-  </div>
-  <div class="hdr-menu-block">
     <div class="menu-section-label">Movimiento</div>
     <div class="menu-inline-actions">
       <button id="btn-move-plan" class="btn ghost" type="button">
@@ -581,6 +561,9 @@
   <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
   <input type="file" id="file-plan-dwg" accept=".dwg,.dxf" class="hidden"/>
 
+<!-- ============ CALIBRATION HINT BANNER ============ -->
+<div id="cal-banner" class="cal-banner hidden" role="status" aria-live="polite"></div>
+
 <!-- ============ DOCK INFERIOR ============ -->
 <div id="dock" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 glass-mac anim-in delay-1">
   <div class="flex items-center gap-1 px-2 py-2" id="dock-items">
@@ -764,10 +747,10 @@
         </label>
       </section>
 
-      <!-- Grid size -->
+      <!-- Grid -->
       <section class="col-span-2">
-        <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Tama&#241;o del grid</div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Grid</div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
           <label class="block">
             <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Ancho grid (m)</span>
             <input id="grid-extent-x" type="number" min="10" max="300" step="5" value="60" class="input-field"/>
@@ -776,7 +759,22 @@
             <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Largo grid (m)</span>
             <input id="grid-extent-z" type="number" min="10" max="300" step="5" value="60" class="input-field"/>
           </label>
+          <label class="block">
+            <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Medida celda (m)</span>
+            <input id="grid-main-size" class="input-field" type="number" min="0.25" max="20" step="0.25" value="1"/>
+          </label>
+          <label class="block">
+            <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Subrejilla (m)</span>
+            <input id="grid-sub-size" class="input-field" type="number" min="0.05" max="5" step="0.05" value="0.25"/>
+          </label>
         </div>
+        <label class="block">
+          <span class="mono text-[9.5px] uppercase block mb-1" style="color:var(--muted)">Visibilidad grid</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input id="grid-visibility" type="range" min="0" max="100" step="1" value="55" style="flex:1"/>
+            <strong id="grid-visibility-value" style="font-size:12px;min-width:34px;text-align:right">55%</strong>
+          </div>
+        </label>
       </section>
 
       <!-- Acciones -->

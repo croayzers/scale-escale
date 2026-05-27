@@ -21,6 +21,7 @@ let boxSelecting = null;      // { startX, startY, additive }
 let rKeyDown = false;
 let bKeyDown = false;
 let shiftDown = false;
+const wasdKeys = { w: false, a: false, s: false, d: false };
 let placementIndicator = null;
 let copiedItemTemplate = null;
 let placementPreviewVisible = false;
@@ -66,6 +67,37 @@ function init() {
     updateCursorReadout();
   });
   syncPlacementCursor();
+
+  // ── WASD camera pan loop ────────────────────────────────────────────────────
+  (function tickWASD() {
+    requestAnimationFrame(tickWASD);
+    if (!wasdKeys.w && !wasdKeys.a && !wasdKeys.s && !wasdKeys.d) return;
+    const activeTag = document.activeElement?.tagName;
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(activeTag) || document.activeElement?.isContentEditable) return;
+    const controls = SceneManager.activeControls;
+    const cam = SceneManager.activeCam;
+    if (!controls || !cam) return;
+    const fwd = (wasdKeys.w ? 1 : 0) - (wasdKeys.s ? 1 : 0);
+    const str = (wasdKeys.d ? 1 : 0) - (wasdKeys.a ? 1 : 0);
+    let delta;
+    if (AppState.camera === 'top') {
+      const speed = 0.18 / Math.max(0.3, cam.zoom ?? 1);
+      delta = new THREE.Vector3(str * speed, 0, -fwd * speed);
+    } else {
+      const toTarget = new THREE.Vector3().subVectors(controls.target, cam.position);
+      toTarget.y = 0;
+      if (toTarget.lengthSq() < 0.0001) return;
+      const dist = cam.position.distanceTo(controls.target);
+      const speed = Math.max(0.05, dist * 0.025);
+      toTarget.normalize();
+      const right = new THREE.Vector3().crossVectors(toTarget, new THREE.Vector3(0, 1, 0)).normalize();
+      delta = new THREE.Vector3()
+        .addScaledVector(toTarget, fwd * speed)
+        .addScaledVector(right, str * speed);
+    }
+    controls.target.add(delta);
+    cam.position.add(delta);
+  })();
 }
 
 function setPointer(e) {
@@ -1594,6 +1626,14 @@ function onKeyDown(e) {
     return;
   }
 
+  // ── WASD: navegación de cámara ──
+  const kk = e.key?.toLowerCase();
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && (kk === 'w' || kk === 'a' || kk === 's' || kk === 'd')) {
+    wasdKeys[kk] = true;
+    e.preventDefault();
+    return;
+  }
+
   // ── Ctrl+A: seleccionar todos visibles y no bloqueados en capa activa ──
   if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'a') {
     e.preventDefault();
@@ -1653,6 +1693,8 @@ function onKeyUp(e) {
   if (e.key === 'Shift') shiftDown = false;
   if (e.key?.toLowerCase() === 'b') bKeyDown = false;
   if (e.key?.toLowerCase() === 'r') rKeyDown = false;
+  const kk = e.key?.toLowerCase();
+  if (kk === 'w' || kk === 'a' || kk === 's' || kk === 'd') wasdKeys[kk] = false;
 }
 
 function rotateSelectionStep() {

@@ -1173,6 +1173,43 @@ input[type=range]::-webkit-slider-thumb {
   50% { box-shadow: 0 0 0 4px rgba(var(--brand-primary-rgb), 0.22); }
 }
 
+/* ── Onboarding ring pulse (green) ── */
+@keyframes onboardRing {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.75), 0 0 0 0 rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35), 0 0 0 8px rgba(34, 197, 94, 0.1);
+  }
+}
+.onboard-pulse {
+  outline: 2px solid rgba(34, 197, 94, 0.9) !important;
+  outline-offset: 2px;
+  animation: onboardRing 1.3s ease-in-out infinite !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Guide panel onboarding glow ── */
+@keyframes guidePanelRing {
+  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 0 0 0 rgba(34, 197, 94, 0.45); }
+  50% { box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 0 0 7px rgba(34, 197, 94, 0.18); }
+}
+.guide-panel-pulse {
+  animation: guidePanelRing 1.5s ease-in-out infinite;
+}
+
+/* ── Active guide step card pulsing border ── */
+@keyframes stepCardRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.18); }
+}
+.plan-step.step-onboard-pulse {
+  outline: 1.5px solid rgba(34, 197, 94, 0.75) !important;
+  outline-offset: 1px;
+  animation: stepCardRing 1.6s ease-in-out infinite;
+}
+
 /* ============== CALIBRATION INDICATOR (preparado para Entrega 2) ============== */
 #calibration-banner {
   position: fixed;
@@ -1186,6 +1223,71 @@ input[type=range]::-webkit-slider-thumb {
   gap: 12px;
 }
 #calibration-banner.visible { display: inline-flex; animation: fadeIn 240ms both; }
+
+/* ── Calibration step hint banner ── */
+@keyframes calBannerIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.cal-banner {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: 580px;
+  width: calc(100% - 40px);
+  background: rgba(10, 18, 30, 0.93);
+  border: 1.5px solid rgba(34, 197, 94, 0.55);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 5px rgba(34,197,94,0.07);
+  animation: calBannerIn 0.28s ease-out;
+  color: #e2e8f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cal-banner.hidden { display: none; }
+.cal-banner-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px 14px 18px;
+}
+.cal-banner-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cal-banner-text {
+  flex: 1;
+  margin: 0;
+}
+.cal-banner-text strong { color: #fff; }
+.cal-arrow {
+  display: inline-block;
+  font-family: monospace;
+  background: rgba(34,197,94,0.12);
+  border: 1px solid rgba(34,197,94,0.35);
+  border-radius: 6px;
+  padding: 1px 7px;
+  color: #86efac;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.cal-banner-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 2px 0;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: 4px;
+  transition: color 140ms;
+}
+.cal-banner-close:hover { color: #cbd5e1; }
 
 #select-rect {
   stroke: var(--brand-secondary);
