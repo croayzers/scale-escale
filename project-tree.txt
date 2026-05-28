@@ -80,6 +80,8 @@ PROJECT STRUCTURE
 ├── elements.json
 ├── generate-tree-json.js
 ├── generate-tree.js
+├── header-mac.txt
+├── header-mac.yml
 ├── hooks/
 ├── index.html
 ├── lib/
@@ -90,6 +92,7 @@ PROJECT STRUCTURE
 │   ├── stripe.js
 │   └── supabase.js
 ├── Mejoras.yml
+├── Online.yml
 ├── qa/
 ├── README.md
 ├── server.py
@@ -168,6 +171,7 @@ PROJECT STRUCTURE
 │       ├── AICopilot.js
 │       ├── CatalogModal.js
 │       ├── CollabInviteModal.js
+│       ├── CollabIsland.js
 │       ├── CollabJoinModal.js
 │       ├── CollabPresenceBar.js
 │       ├── Dock.js

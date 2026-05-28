@@ -155,6 +155,7 @@ export const CollabInviteModal = {
 
     try {
       const data = await CollabManager.startSession({ sessionName, displayName, guestRole, accessToken });
+      document.dispatchEvent(new CustomEvent('escale:collab-joined', { detail: data }));
       this.show(data.inviteToken, guestRole);
     } catch (err) {
       console.error('[CollabInviteModal]', err);

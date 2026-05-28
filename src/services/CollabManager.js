@@ -17,7 +17,8 @@ let _localName  = null;
 let _localColor = null;
 let _lastSnap   = null;       // deep copy of items after last broadcast
 let _debounce   = null;
-let _presenceCb = null;
+let _presenceCb  = null;
+let _camMoveCb   = null;
 
 // ── Supabase realtime client ──────────────────────────────────────────────────
 
@@ -112,6 +113,10 @@ async function connect(channelName) {
       for (const it of (payload.items || [])) AppState.items.push(it);
       AppState.items.forEach(it => SceneManager.rebuild(it));
       _lastSnap = snap();
+    })
+    .on('broadcast', { event: 'camera-move' }, ({ payload }) => {
+      if (payload.from === _localUserId) return;
+      _camMoveCb?.(payload);
     })
     .on('broadcast', { event: 'request_sync' }, ({ payload }) => {
       if (!_isHost || payload.from === _localUserId) return;
@@ -235,6 +240,12 @@ export const CollabManager = {
   },
 
   onPresenceChange(fn) { _presenceCb = fn; },
+  onCameraMove(fn)     { _camMoveCb  = fn; },
+
+  broadcastCameraMove(data) {
+    if (!_channel || _localRole === 'viewer') return;
+    _channel.send({ type: 'broadcast', event: 'camera-move', payload: { ...data, from: _localUserId } });
+  },
 
   end() {
     if (_debounce) { clearTimeout(_debounce); _debounce = null; }

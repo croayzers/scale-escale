@@ -31,7 +31,7 @@ import { AICopilot } from './ui/AICopilot.js';
 import { CollabManager }     from './services/CollabManager.js';
 import { CollabInviteModal } from './ui/CollabInviteModal.js';
 import { CollabJoinModal }   from './ui/CollabJoinModal.js';
-import { CollabPresenceBar } from './ui/CollabPresenceBar.js';
+import { CollabIsland }      from './ui/CollabIsland.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -91,7 +91,7 @@ async function bootstrap() {
   safeInit('AICopilot', () => AICopilot.init());
   safeInit('CollabJoinModal',   () => CollabJoinModal.init());
   safeInit('CollabInviteModal', () => CollabInviteModal.init());
-  safeInit('CollabPresenceBar', () => CollabPresenceBar.init());
+  safeInit('CollabIsland',      () => CollabIsland.init());
   await safeInit('CollabManager', () => CollabManager.init());
 
   // Exponer al window para acceso desde consola y botones inline
@@ -100,14 +100,21 @@ async function bootstrap() {
   window.EscaleAI = window.EscaleAI; // ya registrado por AppBridge.init()
 
   document.addEventListener('escale:collab-joined', e => {
-    CollabPresenceBar.show(e.detail?.sessionName);
+    CollabIsland.show();
     // Ensure app is in a usable state for the guest
     if (!AppState.workMode) AppState.workMode = 'base';
     if (welcomeModal) welcomeModal.style.display = 'none';
     const wm = document.getElementById('work-mode-modal');
     if (wm) wm.style.display = 'none';
   });
-  const _openCollab = () => CollabInviteModal.openOrStart();
+  const _openCollab = (e) => {
+    const btn = e?.currentTarget;
+    if (btn && !btn.classList.contains('collab-spinning')) {
+      btn.classList.add('collab-spinning');
+      setTimeout(() => btn.classList.remove('collab-spinning'), 10000);
+    }
+    CollabInviteModal.openOrStart();
+  };
   document.getElementById('btn-collab')?.addEventListener('click', _openCollab);
   document.getElementById('print-menu-collab-btn')?.addEventListener('click', _openCollab);
 
