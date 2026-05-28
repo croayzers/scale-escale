@@ -9,6 +9,9 @@ PROJECT STRUCTURE
 ├── .edge-cdp/
 ├── .env.example
 ├── .gitignore
+├── .vercel/
+│   ├── project.json
+│   └── README.txt
 ├── admin/
 │   ├── admin.css
 │   ├── admin.js

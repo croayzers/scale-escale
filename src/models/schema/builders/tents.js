@@ -2,7 +2,7 @@ import { markMain, makeTopFill, colorNumber, addLabel, addTopLabel } from './pri
 
 // ── Private geometry helpers ────────────────────────────────
 
-function computePostPositions(L, W, spacing) {
+export function computePostPositions(L, W, spacing) {
   const positions = [];
   const sides = [
     { from: [-L / 2, -W / 2], to: [ L / 2, -W / 2] },

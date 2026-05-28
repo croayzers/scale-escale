@@ -3,7 +3,7 @@
    ───────────────────────────────────────────────────────── */
 
 import { ModelFactory } from '../models/index.js';
-import { computePostPositions } from '../models/carpaHelpers.js';
+import { computePostPositions } from '../models/schema/builders/tents.js';
 import { SchemaRegistry } from '../schemas/SchemaRegistry.js';
 // Imports diferidos para romper ciclos:
 // AppState y UIManager se cargan en runtime, no en estático.
