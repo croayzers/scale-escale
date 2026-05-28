@@ -9,6 +9,9 @@ import { CatalogModal }      from '../ui/CatalogModal.js';
 import { ZoneManager }       from '../ui/ZoneManager.js';
 import { SelectionManager }  from './SelectionManager.js';
 import { GroupManager }      from '../core/GroupManager.js';
+import { CollabManager }     from '../services/CollabManager.js';
+
+function isViewer() { return CollabManager.localRole === 'viewer'; }
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -402,12 +405,14 @@ function onPointerDown(e) {
   }
 
   if (ZoneManager.isPlacementActive()) {
+    if (isViewer()) return;
     const point = applySnap(getDragPoint());
     if (point) ZoneManager.handleCanvasPointerDown(point);
     return;
   }
 
   if (CatalogModal.hasPendingPlacement()) {
+    if (isViewer()) return;
     syncPlacementPreview(e.clientX, e.clientY);
     placePendingItemAt(e.clientX, e.clientY);
     return;
@@ -430,6 +435,10 @@ function onPointerDown(e) {
   }
 
   if (item) {
+    if (isViewer()) {
+      AppState.select(item.id, shiftDown);
+      return;
+    }
     if (bKeyDown && !shiftDown) {
       AppState.select(item.id);
       AppState.toggleLock(item.id);
@@ -514,7 +523,7 @@ function onPointerMove(e) {
     return;
   }
 
-  if (dragging) {
+  if (dragging && !isViewer()) {
     const point = getDragPoint();
     if (!point) return;
     dragging.ids.forEach(id => {
