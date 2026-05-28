@@ -1,6 +1,7 @@
 import { AppState }     from '../core/AppState.js';
 import { SceneManager }  from '../scene/SceneManager.js';
 import { ServiceConfig } from './ServiceConfig.js';
+import { AuthManager }   from './AuthManager.js';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444', '#F97316'];
 
@@ -22,6 +23,9 @@ let _presenceCb = null;
 
 function makeClient() {
   if (_sbClient) return _sbClient;
+  // Reuse the existing Supabase client from AuthManager to avoid duplicate instances
+  const existing = AuthManager.getSupabaseClient?.();
+  if (existing) { _sbClient = existing; return _sbClient; }
   const svc = ServiceConfig.getService('supabase');
   if (!svc?.url || !svc?.anonKey || !window.supabase) return null;
   _sbClient = window.supabase.createClient(svc.url, svc.anonKey, {

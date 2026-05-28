@@ -384,5 +384,6 @@ export const AuthManager = {
   getSession,
   isAuthenticated,
   providerLabel,
-  findLocalAccount
+  findLocalAccount,
+  getSupabaseClient: () => supabaseClient
 };
