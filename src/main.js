@@ -255,16 +255,6 @@ async function bootstrap() {
     if (e.target.closest('.cal-banner-close')) hideCalBanner();
   });
 
-  // ── Dock periodic glow ──────────────────────────────────────────────────────
-  setInterval(() => {
-    const dock = document.getElementById('dock');
-    if (!dock) return;
-    dock.classList.remove('dock-glow');
-    void dock.offsetWidth;
-    dock.classList.add('dock-glow');
-    dock.addEventListener('animationend', () => dock.classList.remove('dock-glow'), { once: true });
-  }, 10000);
-
   const pulseGuideTarget = (...targets) => {
     targets.filter(Boolean).forEach(target => {
       target.classList.remove('guide-pulse');

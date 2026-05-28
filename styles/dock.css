@@ -469,13 +469,69 @@ body.has-items #empty-hint { display: none; }
   box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.4);
 }
 
-/* ── Dock periodic glow ── */
-@keyframes dockGlow {
-  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-  20%  { box-shadow: 0 0 0 3px rgba(34,197,94,0.55), 0 0 18px 4px rgba(34,197,94,0.22); }
-  60%  { box-shadow: 0 0 0 5px rgba(34,197,94,0.35), 0 0 28px 8px rgba(34,197,94,0.14); }
-  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+/* ── Dock rotating shine border ── */
+@property --dock-shine {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
-#dock.dock-glow {
-  animation: dockGlow 1.5s ease-in-out forwards;
+@keyframes dockShine {
+  to { --dock-shine: 360deg; }
+}
+
+#dock {
+  position: relative;
+  isolation: isolate;
+}
+#dock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--dock-shine),
+    rgba(48,48,54,0.9)  0deg,
+    rgba(48,48,54,0.9)  300deg,
+    rgba(160,160,170,0.6) 322deg,
+    rgba(255,255,255,0.95) 338deg,
+    rgba(255,255,255,0.95) 346deg,
+    rgba(160,160,170,0.6) 358deg,
+    rgba(48,48,54,0.9)  360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: dockShine 3s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@property --collab-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes collabSpin {
+  to { --collab-angle: 360deg; }
+}
+
+.hdr-chip.collab-spinning {
+  position: relative;
+}
+
+.hdr-chip.collab-spinning::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from var(--collab-angle), #ff0055, #00ffcc, #0055ff, #ff00ff, #ff0055);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: collabSpin 1.2s linear infinite;
+  pointer-events: none;
 }
