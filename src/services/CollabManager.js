@@ -123,11 +123,11 @@ async function connect(channelName) {
     })
     .on('broadcast', { event: 'collab-note' }, ({ payload }) => {
       if (payload.from === _localUserId) return;
-      _noteCb?.('collab-note', payload);
+      document.dispatchEvent(new CustomEvent('escale:collab-note', { detail: payload }));
     })
     .on('broadcast', { event: 'collab-note-dismiss' }, ({ payload }) => {
       if (payload.from === _localUserId) return;
-      _noteCb?.('collab-note-dismiss', payload);
+      document.dispatchEvent(new CustomEvent('escale:collab-note-dismiss', { detail: payload }));
     })
     .on('broadcast', { event: 'request_sync' }, ({ payload }) => {
       if (!_isHost || payload.from === _localUserId) return;
@@ -271,7 +271,8 @@ export const CollabManager = {
     if (!_channel) return;
     const full = { ...payload, from: _localUserId };
     _channel.send({ type: 'broadcast', event: type, payload: full });
-    _noteCb?.(type, full);
+    // Apply locally via DOM event (sender doesn't receive own broadcast)
+    document.dispatchEvent(new CustomEvent(`escale:${type}`, { detail: full }));
   },
 
   broadcastCameraMove(data) {

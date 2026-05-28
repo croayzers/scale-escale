@@ -10,6 +10,8 @@ const _noteGlows  = new Map();
 const _noteLabels = new Map();
 // active note payloads keyed by noteId
 const _notes      = new Map();
+// current noteId per itemId (max one note per item)
+const _itemNoteMap = new Map();
 
 let _presenceDebounce = null;
 let _lastSelectedId   = null;
@@ -99,7 +101,21 @@ function createNoteLabel(noteId, itemId, text, authorName, authorColor) {
   });
 }
 
+function applyNote(payload) {
+  const { noteId, itemId, text, authorName, authorColor } = payload;
+  if (!noteId || !itemId) return;
+  // Overwrite: dismiss existing note for this item first
+  const existing = _itemNoteMap.get(itemId);
+  if (existing && existing !== noteId) dismissNote(existing);
+  _notes.set(noteId, payload);
+  _itemNoteMap.set(itemId, noteId);
+  addNoteGlow(noteId, itemId);
+  createNoteLabel(noteId, itemId, text, authorName, authorColor);
+}
+
 function dismissNote(noteId) {
+  const note = _notes.get(noteId);
+  if (note) _itemNoteMap.delete(note.itemId);
   removeNoteGlow(noteId);
   removeNoteLabel(noteId);
   _notes.delete(noteId);
@@ -335,21 +351,14 @@ export const CollabInteractions = {
       updateLockBoxes(e.detail.participants || []);
     });
 
-    // Receive note events
-    CollabManager.onNoteEvent((type, payload) => {
-      if (type === 'collab-note') {
-        const { noteId, itemId, text, authorName, authorColor } = payload;
-        _notes.set(noteId, payload);
-        addNoteGlow(noteId, itemId);
-        createNoteLabel(noteId, itemId, text, authorName, authorColor);
-      } else if (type === 'collab-note-dismiss') {
-        dismissNote(payload.noteId);
-      }
-    });
+    // Receive note events via DOM (works for both sender and remote receiver)
+    document.addEventListener('escale:collab-note', e => applyNote(e.detail));
+    document.addEventListener('escale:collab-note-dismiss', e => dismissNote(e.detail?.noteId));
 
     // Cleanup on session end
     document.addEventListener('escale:collab-ended', () => {
       for (const noteId of [..._notes.keys()]) dismissNote(noteId);
+      _itemNoteMap.clear();
       for (const [, entry] of _lockBoxes) SceneManager.scene?.remove(entry.helper);
       _lockBoxes.clear();
       _lastSelectedId = null;
