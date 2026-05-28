@@ -45,7 +45,10 @@ export function getInventoryLabel(item) {
   if (item.type === 'mesaCurva') return `Curva R${item.dims.radioInt}m ${item.dims.anguloDeg}°`;
   if (item.type === 'mesaSerpentina') return `Serpentina R${item.dims.radioInt}m`;
   if (item.type === 'buffet') return `Buffet ${item.dims.length}m${item.subtype ? ` · ${item.subtype}` : ''}`;
-  if (item.type === 'barraLibre') return `Barra ${item.dims.length}m · ${item.cubiteras ?? 1} cub.`;
+  if (item.type === 'barraLibre') {
+    const paxStr = item.pax > 0 ? ` · ${item.pax} pax` : '';
+    return `Barra ${item.dims.length}m · ${item.cubiteras ?? 1} cub.${paxStr}`;
+  }
   if (item.type === 'sillaCatering') return `Silla ${item.subtype}`;
   if (item.type === 'sillaLineal') return `Lineal ${item.count}x ${item.subtype}`;
   if (item.type === 'carpa') return `Carpa ${item.dims.length}x${item.dims.width}m`;
@@ -62,7 +65,7 @@ export function buildInventoryLines(items) {
     const key = getInventoryLabel(item);
     const line = lines.get(key) || { label: key, type: item.type, count: 0, pax: 0 };
     line.count += 1;
-    line.pax += item.chairs || 0;
+    line.pax += (item.chairs || 0) + (item.type === 'barraLibre' ? (item.pax || 0) : 0);
     lines.set(key, line);
   });
 
@@ -86,5 +89,5 @@ export function getInventoryTotalItems(items) {
 export function getInventoryTotalPax(items) {
   return items
     .filter(isInventoryTracked)
-    .reduce((sum, item) => sum + (item.chairs || 0), 0);
+    .reduce((sum, item) => sum + (item.chairs || 0) + (item.type === 'barraLibre' ? (item.pax || 0) : 0), 0);
 }

@@ -817,8 +817,10 @@ export const ELEMENT_SCHEMAS = [
     metadata: { label: 'Barra libre', icon: 'wine', category: 'bars' },
     builder: { preset: 'barraLibre' },
     ui: { dynamic: true },
-    defaults: { dims: { length: 3.0, width: 0.8, height: 0.9 }, color: '#1a1a1c', labelText: '' },
-    params: []
+    defaults: { dims: { length: 3.0, width: 0.8, height: 0.9 }, color: '#1a1a1c', labelText: '', pax: 0 },
+    params: [
+      { key: 'pax', label: 'Pax barra', path: 'pax', type: 'number', default: 0, min: 0, max: 9999, step: 1, level: PARAM_LEVEL.BASIC, category: PARAM_CATEGORY.LAYOUT }
+    ]
   },
   // Ambient / nature
   {
