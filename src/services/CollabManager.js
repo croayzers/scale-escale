@@ -96,6 +96,8 @@ async function connect(channelName) {
   const client = makeClient();
   if (!client) { console.warn('[CollabManager] Supabase client unavailable — realtime disabled'); return false; }
 
+  console.log('[CollabManager] conectando canal', channelName, _isHost ? '(host)' : '(guest)');
+
   _channel = client.channel(channelName, {
     config: { broadcast: { self: false }, presence: { key: _localUserId } }
   });
@@ -107,6 +109,7 @@ async function connect(channelName) {
       _lastSnap = snap();
     })
     .on('broadcast', { event: 'full_sync' }, ({ payload }) => {
+      console.log('[CollabManager] full_sync recibido, items:', payload.items?.length);
       if (payload.from === _localUserId) return;
       AppState.items.length = 0;
       for (const it of (payload.items || [])) AppState.items.push(it);
@@ -114,7 +117,9 @@ async function connect(channelName) {
       _lastSnap = snap();
     })
     .on('broadcast', { event: 'request_sync' }, ({ payload }) => {
+      console.log('[CollabManager] request_sync recibido, isHost:', _isHost);
       if (!_isHost || payload.from === _localUserId) return;
+      console.log('[CollabManager] enviando full_sync con', snap().length, 'items');
       _channel.send({ type: 'broadcast', event: 'full_sync', payload: { from: _localUserId, items: snap() } });
     })
     .on('presence', { event: 'sync' }, () => {
@@ -131,8 +136,10 @@ async function connect(channelName) {
       _presenceCb?.(participants);
     })
     .on('presence', { event: 'join' }, () => {
+      console.log('[CollabManager] presence join, isHost:', _isHost);
       if (_isHost) {
         setTimeout(() => {
+          console.log('[CollabManager] enviando full_sync por join con', snap().length, 'items');
           _channel.send({ type: 'broadcast', event: 'full_sync', payload: { from: _localUserId, items: snap() } });
         }, 400);
       }
@@ -141,12 +148,13 @@ async function connect(channelName) {
   await new Promise(resolve => {
     const t = setTimeout(resolve, 6000);
     _channel.subscribe(async status => {
+      console.log('[CollabManager] canal status:', status);
       if (status === 'SUBSCRIBED') {
         clearTimeout(t);
         await _channel.track({ userId: _localUserId, displayName: _localName, color: _localColor, role: _localRole });
-        // Guest explicitly requests the full scene after connecting
         if (!_isHost) {
           setTimeout(() => {
+            console.log('[CollabManager] guest enviando request_sync');
             _channel.send({ type: 'broadcast', event: 'request_sync', payload: { from: _localUserId } });
           }, 800);
         }
