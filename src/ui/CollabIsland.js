@@ -255,8 +255,8 @@ export const CollabIsland = {
       renderIsland();
     });
 
-    document.addEventListener('escale:collab-ended', () => {
-      if (!CollabManager.isHost) {
+    document.addEventListener('escale:collab-ended', e => {
+      if (!e.detail?.wasHost) {
         showThanksAndRedirect();
       }
       this.hide();

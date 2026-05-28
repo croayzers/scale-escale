@@ -304,8 +304,9 @@ export const CollabManager = {
     try { _channel?.unsubscribe(); } catch {}
     _channel = null;
     document.removeEventListener('escale:scene-insights-changed', onSceneChange);
+    const wasHost = _isHost;
     _sessionId = null; _sessionName = null; _hostName = null; _inviteToken = null;
     _isHost = false; _lastSnap = null; _localCompany = null;
-    document.dispatchEvent(new CustomEvent('escale:collab-ended'));
+    document.dispatchEvent(new CustomEvent('escale:collab-ended', { detail: { wasHost } }));
   }
 };
