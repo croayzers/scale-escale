@@ -348,17 +348,40 @@ async function saveAsBase() {
   const naming = await promptForNaming('base');
   if (!naming) return;
 
-  const data = buildData('base', serializeItems(AppState.items, { markBase: true }), { name: naming.name });
+  const data  = buildData('base', serializeItems(AppState.items, { markBase: true }), { name: naming.name });
   const fname = buildFilename('base', naming.venue, naming.name);
-  await writeToFolderOrDownload(data, fname);
+  const savedName = await saveWithPicker(data, fname);
+  if (!savedName) return;
 
-  currentBaseMeta = { name: naming.name, filename: fname };
+  currentBaseMeta = { name: naming.name, filename: savedName };
   setCurrentTemplateMeta({ name: naming.name, source: 'saved' });
   emitTemplateMetaChange();
   if (dirHandle) await refreshFolderState();
 
   showPostSaveInfo('base');
   highlightTemplateButton();
+}
+
+async function saveWithPicker(data, suggestedName) {
+  if (dirHandle && window.showSaveFilePicker) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName,
+        startIn: dirHandle,
+        types: [{ description: 'Plantilla E-Scale', accept: { 'application/json': ['.json'] } }]
+      });
+      const ws = await fh.createWritable();
+      await ws.write(JSON.stringify(data, null, 2));
+      await ws.close();
+      showToast(`Guardado: ${fh.name}`);
+      return fh.name;
+    } catch (err) {
+      if (err.name === 'AbortError') return null;
+      console.warn('[TemplateManager] showSaveFilePicker falló, descargando:', err);
+    }
+  }
+  await writeToFolderOrDownload(data, suggestedName);
+  return suggestedName;
 }
 
 async function savePlanning() {
@@ -511,9 +534,10 @@ async function confirmPlanningSelection() {
 
   const data  = buildData('planning', items, { name });
   const fname = buildFilename('planning', venue, name);
-  await writeToFolderOrDownload(data, fname);
+  const savedName = await saveWithPicker(data, fname);
+  if (!savedName) return;
 
-  currentPlanningMeta = { name, filename: fname };
+  currentPlanningMeta = { name, filename: savedName };
   setCurrentTemplateMeta({ name, source: 'saved' });
   emitTemplateMetaChange();
   if (dirHandle) await refreshFolderState();
@@ -757,6 +781,11 @@ async function init() {
   document.getElementById('btn-load-template')?.addEventListener('click', load);
   document.getElementById('file-template')?.addEventListener('change', handleFileLoad);
   // welcome-plantilla se gestiona en main.js (flujo work-mode-modal → TemplateManager.load)
+
+  // Botón carpeta
+  document.querySelector('[data-template-action="pick-folder"]')?.addEventListener('click', async () => {
+    await pickFolder();
+  });
 
   // Pills — auto-pick folder if none selected yet
   document.getElementById('tpl-base-btn')?.addEventListener('click', async e => {

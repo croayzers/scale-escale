@@ -2824,6 +2824,45 @@ input[type=range]::-webkit-slider-thumb {
   flex-shrink: 0;
 }
 
+.tpl-folder-hint {
+  font-size: 10.5px;
+  color: var(--muted, #888);
+  line-height: 1.45;
+  padding: 2px 10px 8px;
+  margin: 0;
+}
+
+.tpl-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline, rgba(0,0,0,0.1));
+  border-radius: 8px;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text, #1a1a1c);
+  text-align: left;
+  transition: all 140ms;
+}
+
+.tpl-folder-btn:hover {
+  border-color: rgba(var(--brand-primary-rgb), 0.4);
+  background: rgba(var(--brand-primary-rgb), 0.06);
+  color: rgba(var(--brand-primary-rgb), 1);
+}
+
+.tpl-folder-btn #template-folder-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted, #888);
+  font-size: 10px;
+}
+
 /* Sección dentro del popover */
 .tpl-section { padding: 0 0 4px; }
 .tpl-section-label {
