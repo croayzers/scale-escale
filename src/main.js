@@ -52,6 +52,8 @@ async function safeInit(label, fn) {
 }
 
 async function bootstrap() {
+  const isCollabInvite = Boolean(new URLSearchParams(window.location.search).get('collab'));
+
   if (typeof THREE === 'undefined') {
     document.body.innerHTML = '<pre style="padding:24px;color:#b91c1c">Error: Three.js no se cargo.</pre>';
     return;
@@ -99,6 +101,11 @@ async function bootstrap() {
 
   document.addEventListener('escale:collab-joined', e => {
     CollabPresenceBar.show(e.detail?.sessionName);
+    // Ensure app is in a usable state for the guest
+    if (!AppState.workMode) AppState.workMode = 'base';
+    if (welcomeModal) welcomeModal.style.display = 'none';
+    const wm = document.getElementById('work-mode-modal');
+    if (wm) wm.style.display = 'none';
   });
   const _openCollab = () => CollabInviteModal.openOrStart();
   document.getElementById('btn-collab')?.addEventListener('click', _openCollab);
@@ -559,6 +566,7 @@ async function bootstrap() {
   };
 
   document.addEventListener('escale:onboarding-company-complete', () => {
+    if (isCollabInvite) return;
     welcomeUnlocked = true;
     if (welcomeModal) welcomeModal.style.display = 'flex';
   });

@@ -890,6 +890,9 @@ function init() {
     return;
   }
 
+  // Guest joining a collaboration session doesn't need the login/onboarding flow
+  if (new URLSearchParams(window.location.search).get('collab')) return;
+
   openAccessModal();
 }
 

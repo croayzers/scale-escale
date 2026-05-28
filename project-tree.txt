@@ -63,6 +63,7 @@ PROJECT STRUCTURE
 │       ├── logos.png
 │       ├── lugares.png
 │       └── suscripciones.png
+├── desktop.ini
 ├── docs/
 │   ├── examples/
 │   │   └── next-app/
