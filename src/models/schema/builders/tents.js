@@ -251,7 +251,9 @@ export function buildCarpaCuadrada(item, view) {
     new THREE.BufferGeometry().setFromPoints([cW, cN, cE, cS, cW]),
     new THREE.LineBasicMaterial({ color: 0x2a1810 })
   ));
-  group.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a1810, roughness: 0.6 })), { position: apex.clone() }));
+  const apexSphere = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a1810, roughness: 0.6 }));
+  apexSphere.position.copy(apex);
+  group.add(apexSphere);
 
   if (item.labelText) addLabel(group, item.labelText, ridgeH + 0.4);
   return group;
