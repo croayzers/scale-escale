@@ -181,7 +181,7 @@ function rebuildGrids() {
 
   const hasActiveZoneGrids = _appState?.items?.some(
     item => item.type === 'zone' && item.gridConfig && item.gridConfig.enabled !== false
-  );
+  ) || (placementPreviewItem?.type === 'zone' && placementPreviewItem?.gridConfig?.enabled !== false);
   if (hasActiveZoneGrids) return;
 
   const sX = Math.max(20, _appState?.grid?.extentX ?? _appState?.grid?.extent ?? 60);
@@ -1379,6 +1379,7 @@ function setPlacementPreview(item) {
   placementPreview.rotation.y = item.rotY || 0;
   placementPreview.userData = { ...(placementPreview.userData || {}), isPlacementPreview: true };
   scene.add(placementPreview);
+  if (item.type === 'zone') rebuildGrids();
 }
 
 function updatePlacementPreview(x, z, y = null) {
@@ -1397,8 +1398,10 @@ function clearPlacementPreview() {
   if (!placementPreview) return;
   scene.remove(placementPreview);
   disposeGroup(placementPreview);
+  const wasZone = placementPreviewItem?.type === 'zone';
   placementPreview = null;
   placementPreviewItem = null;
+  if (wasZone) rebuildGrids();
 }
 
 /* ─── API exportada ─── */
