@@ -30,10 +30,7 @@ PROJECT STRUCTURE
 │   ├── collab/
 │   │   ├── create.js
 │   │   └── join.js
-│   ├── email/
-│   │   ├── send-export.js
-│   │   ├── send-feedback.js
-│   │   └── send-share.js
+│   ├── email.js
 │   ├── plans/
 │   │   └── search.js
 │   └── public-config.js
