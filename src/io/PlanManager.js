@@ -11,6 +11,12 @@
 import { AppState }     from '../core/AppState.js';
 import { SceneManager } from '../scene/SceneManager.js';
 
+const PLAN_SEARCH_ALLOWED = 'rafa27x26@gmail.com';
+
+function canSearchPlans() {
+  return (AppState.company.authEmail || '').toLowerCase() === PLAN_SEARCH_ALLOWED;
+}
+
 function init() {
   // ── Botón cargar plano → desplegable ──────────────────────────────────────
   document.getElementById('btn-upload-plan')?.addEventListener('click', e => {
@@ -109,6 +115,8 @@ function togglePlanDropdown() {
     const rect = btn.getBoundingClientRect();
     dropdown.style.top  = `${rect.bottom + 6}px`;
     dropdown.style.left = `${rect.left}px`;
+    // Mostrar u ocultar opción de búsqueda según usuario
+    document.getElementById('plan-drop-search')?.classList.toggle('hidden', !canSearchPlans());
     dropdown.classList.remove('hidden');
   } else {
     dropdown.classList.add('hidden');
@@ -132,6 +140,7 @@ function showDwgInfo() {
 let _searchTimer = null;
 
 function openSearchModal() {
+  if (!canSearchPlans()) return;
   const modal = document.getElementById('plan-search-modal');
   if (!modal) return;
   modal.classList.add('visible');
@@ -314,6 +323,15 @@ async function loadPlanFromUrl(url, label) {
 function applyImageToPlan(imgSrc, formatLabel) {
   const img = new Image();
   img.onload = () => {
+    // Preservar la proporción real de la imagen para que la calibración funcione en ambos ejes
+    if (img.naturalWidth && img.naturalHeight) {
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      AppState.plan.lengthM = Math.max(1, AppState.plan.widthM / imgRatio);
+      const lenInput = document.getElementById('plan-length');
+      if (lenInput) lenInput.value = AppState.plan.lengthM.toFixed(2);
+      SceneManager.updatePlanSize();
+    }
+
     const texture = new THREE.Texture(img);
     texture.needsUpdate = true;
     texture.colorSpace = THREE.sRGBEncoding;
