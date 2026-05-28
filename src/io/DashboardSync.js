@@ -86,8 +86,14 @@ async function requestJson(method, path, payload, { silent = false } = {}) {
 }
 
 async function flushPending() {
-  // Operación no crítica: falla silenciosamente si el server local no está activo
-  return await requestJson('POST', '/api/dashboard/flush', {}, { silent: true });
+  // Solo para el server local (puerto 8787) — nunca llama al origen de producción
+  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+  try {
+    await fetch(`${protocol}//localhost:8787/api/dashboard/flush`, {
+      method: 'POST', headers: JSON_HEADERS, body: '{}',
+      signal: AbortSignal.timeout(2000)
+    });
+  } catch { /* servidor local no disponible */ }
 }
 
 function lineCategoryMap(groups) {
