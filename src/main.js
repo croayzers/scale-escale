@@ -165,8 +165,8 @@ async function bootstrap() {
   const refreshHeaderStats = () => {
     const pax = AppState.items.reduce((sum, item) => sum + (item.chairs || 0), 0);
     const area = AppState.items
-      .filter(item => item.type === 'carpa' || item.type === 'room')
-      .reduce((sum, item) => sum + (item.dims.length || 0) * (item.dims.width || 0), 0);
+      .filter(item => item.type === 'zone')
+      .reduce((sum, item) => sum + (item.dims?.length || 0) * (item.dims?.width || 0), 0);
 
     document.getElementById('hdr-pax').textContent = String(pax);
     document.getElementById('hdr-area').textContent = area.toFixed(0);
