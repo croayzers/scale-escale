@@ -648,15 +648,18 @@ async function handleAccessChoice(kind) {
   }
 
   if (mode === 'login' && kind === 'email') {
-    const storedAcc = AuthManager.findLocalAccount?.(email) || null;
-    if (!storedAcc) {
-      alert('Usuario o contraseña incorrectos.');
-      return;
-    }
-    if (storedAcc.password && !password) {
+    if (!password) {
       alert('Usuario o contraseña incorrectos.');
       document.getElementById('access-password')?.focus();
       return;
+    }
+    // Sin Supabase: verificar que existe cuenta local
+    if (!AuthManager.getSupabaseClient?.()) {
+      const storedAcc = AuthManager.findLocalAccount?.(email) || null;
+      if (!storedAcc) {
+        alert('Usuario o contraseña incorrectos.');
+        return;
+      }
     }
   }
 
@@ -675,6 +678,10 @@ async function handleAccessChoice(kind) {
         createAccount: mode === 'register'
       });
     if (result?.redirecting) return;
+    if (result?.confirmationRequired) {
+      alert('Cuenta creada. Revisa tu correo para confirmar la cuenta antes de iniciar sesión.');
+      return;
+    }
   } catch (error) {
     alert(error.message || 'No se pudo iniciar sesion.');
     return;

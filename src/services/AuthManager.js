@@ -292,41 +292,69 @@ async function mockSignIn(provider, email, options = {}) {
 
   if (!normalizedEmail) throw new Error('Necesitas indicar un correo.');
 
+  // ─── Supabase email auth ──────────────────────────────────
+  if (normalizedProvider === 'email') {
+    const client = getSupabaseClient();
+    if (client) {
+      if (createAccount) {
+        const { data, error } = await client.auth.signUp({
+          email: normalizedEmail,
+          password,
+          options: { data: { fullName } }
+        });
+        if (error) {
+          const msg = error.message?.toLowerCase() || '';
+          if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
+            throw new Error('Ya existe una cuenta con ese correo. Inicia sesion para continuar.');
+          }
+          throw new Error(error.message);
+        }
+        if (!data.session) {
+          // Supabase requiere confirmación de correo
+          return { data, error: null, confirmationRequired: true };
+        }
+        const session = normalizeSupabaseSession(data.session);
+        saveLocalSession(session);
+        hydrateAuthState(session);
+        return { data: { session }, error: null };
+      } else {
+        const { data, error } = await client.auth.signInWithPassword({
+          email: normalizedEmail,
+          password
+        });
+        if (error) throw new Error('Usuario o contraseña incorrectos.');
+        const session = normalizeSupabaseSession(data.session);
+        saveLocalSession(session);
+        hydrateAuthState(session);
+        return { data: { session }, error: null };
+      }
+    }
+  }
+
+  // ─── Fallback local (sin Supabase) ───────────────────────
   const storedAccount = findLocalAccount(normalizedEmail);
 
   if (normalizedProvider === 'email') {
     if (createAccount) {
       if (!password) {
-        throw new Error('Escribe una contraseña para crear la cuenta local.');
+        throw new Error('Escribe una contraseña para crear la cuenta.');
       }
       if (storedAccount?.password && storedAccount.password !== password) {
         throw new Error('Ya existe una cuenta local con ese correo. Inicia sesion para continuar.');
       }
-      upsertLocalAccount({
-        email: normalizedEmail,
-        provider: normalizedProvider,
-        fullName,
-        password
-      });
+      upsertLocalAccount({ email: normalizedEmail, provider: normalizedProvider, fullName, password });
     } else {
       if (!storedAccount) {
         throw new Error('Usuario o contraseña incorrectos.');
       }
       if (storedAccount.password) {
-        if (!password) {
-          throw new Error('Usuario o contraseña incorrectos.');
-        }
-        if (storedAccount.password !== password) {
+        if (!password || storedAccount.password !== password) {
           throw new Error('Usuario o contraseña incorrectos.');
         }
       }
     }
   } else if (createAccount || storedAccount || fullName) {
-    upsertLocalAccount({
-      email: normalizedEmail,
-      provider: normalizedProvider,
-      fullName
-    });
+    upsertLocalAccount({ email: normalizedEmail, provider: normalizedProvider, fullName });
   }
 
   const account = findLocalAccount(normalizedEmail);
