@@ -310,14 +310,14 @@ async function mockSignIn(provider, email, options = {}) {
       });
     } else {
       if (!storedAccount) {
-        throw new Error('No encontramos una cuenta con ese correo. Crea una cuenta nueva para continuar.');
+        throw new Error('Usuario o contraseña incorrectos.');
       }
       if (storedAccount.password) {
         if (!password) {
-          throw new Error('Escribe tu contraseña para continuar.');
+          throw new Error('Usuario o contraseña incorrectos.');
         }
         if (storedAccount.password !== password) {
-          throw new Error('La contraseña no coincide.');
+          throw new Error('Usuario o contraseña incorrectos.');
         }
       }
     }

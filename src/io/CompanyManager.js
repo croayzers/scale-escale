@@ -650,11 +650,11 @@ async function handleAccessChoice(kind) {
   if (mode === 'login' && kind === 'email') {
     const storedAcc = AuthManager.findLocalAccount?.(email) || null;
     if (!storedAcc) {
-      alert('No encontramos una cuenta con ese correo. Crea una cuenta nueva para continuar.');
+      alert('Usuario o contraseña incorrectos.');
       return;
     }
     if (storedAcc.password && !password) {
-      alert('Escribe tu contraseña para continuar.');
+      alert('Usuario o contraseña incorrectos.');
       document.getElementById('access-password')?.focus();
       return;
     }
