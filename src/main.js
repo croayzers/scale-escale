@@ -37,6 +37,7 @@ import { SavedGroupLibrary }   from './core/SavedGroupLibrary.js';
 import { SavedGroupPanel }     from './ui/SavedGroupPanel.js';
 import { OrgContentManager }  from './services/OrgContentManager.js';
 import { MeasureManager }     from './ui/MeasureManager.js';
+import { PlanSaveModal }      from './ui/PlanSaveModal.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -94,6 +95,7 @@ async function bootstrap() {
   safeInit('SavedGroupPanel', () => SavedGroupPanel.init());
   safeInit('MessageManager', () => MessageManager.init());
   safeInit('FeedbackModal',  () => FeedbackModal.init());
+  safeInit('PlanSaveModal',  () => PlanSaveModal.init());
   AppBridge.init();
   safeInit('AICopilot', () => AICopilot.init());
   safeInit('CollabJoinModal',    () => CollabJoinModal.init());
@@ -323,6 +325,8 @@ async function bootstrap() {
     document.getElementById('guide-calibration-point-2').textContent = 'Pendiente';
     document.getElementById('guide-calibration-result').textContent = 'Sin calibrar';
     updatePlanGuide();
+    // Auto-lanzar calibración tras cargar un plano local
+    setTimeout(() => openCalibrationDemo(), 500);
   };
 
   document.addEventListener('escale:zoom-changed', event => {
@@ -343,6 +347,25 @@ async function bootstrap() {
     showCalBanner(CAL_BANNER_MSGS.success, 5000);
     onboardPulse.start('btn-zones-menu', 10000);
     updatePlanGuide();
+    // Abrir modal de guardado tras calibrar
+    setTimeout(() => PlanSaveModal.open(), 900);
+  });
+
+  // Flujo "Buscar plano": plano org cargado → abrir Zonas
+  document.addEventListener('escale:org-plan-loaded', () => {
+    setTimeout(() => {
+      HeaderActionMenus.openMenu('zones');
+    }, 400);
+  });
+
+  // Glow del botón inventario tras guardar plano
+  document.addEventListener('escale:open-inventory-glow', () => {
+    setInventoryOpen(true);
+    const btn = document.getElementById('dock-inventory-btn');
+    if (btn) {
+      btn.classList.add('inventory-glow');
+      setTimeout(() => btn.classList.remove('inventory-glow'), 5000);
+    }
   });
   document.addEventListener('escale:plan-calibration-progress', event => {
     const point1 = document.getElementById('guide-calibration-point-1');

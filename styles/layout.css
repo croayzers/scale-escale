@@ -133,6 +133,45 @@
 body.cursor-measure,
 body.cursor-measure * { cursor: crosshair !important; }
 
+/* ============== INVENTORY GLOW (post-save plan) ============== */
+@property --inv-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes inventoryGlowSpin {
+  to { --inv-angle: 360deg; }
+}
+#dock-inventory-btn.inventory-glow {
+  position: relative;
+}
+#dock-inventory-btn.inventory-glow::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from var(--inv-angle), #22c55e, #3b82f6, #a855f7, #f59e0b, #22c55e);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: inventoryGlowSpin 1.2s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============== PLAN SAVE MODAL FIELD ERROR ============== */
+.psm-field-error {
+  outline: 2px solid #e53e3e !important;
+  outline-offset: 1px;
+  animation: psmShake 0.35s ease;
+}
+@keyframes psmShake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-5px); }
+  75%      { transform: translateX(5px); }
+}
+
 /* ============== DEMO ZONAS ============== */
 @keyframes zdDraw { to { stroke-dashoffset: 0; } }
 @keyframes zdFill { from { opacity: 0; } to { opacity: 0.12; } }

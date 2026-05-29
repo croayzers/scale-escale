@@ -1060,6 +1060,65 @@
   </div>
 </div>
 
+<!-- ============ MODAL GUARDAR PLANO ============ -->
+<div id="plan-save-modal" class="modal-bg" role="dialog" aria-modal="true">
+  <div class="glass p-8" style="border-radius:16px;max-width:480px;width:calc(100% - 48px)">
+    <div class="mono text-[10px] tracking-widest uppercase mb-2" style="color:var(--muted)">Plano calibrado · Guardar</div>
+    <h3 class="display-font text-2xl mb-2 leading-tight">Guardar plano configurado</h3>
+    <p class="text-sm mb-6" style="color:var(--muted)">El plano calibrado quedará disponible para ti y compartido con tu empresa.</p>
+
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px">
+      <!-- Organización (solo lectura) -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Organización</span>
+        <input id="psm-org" type="text" readonly class="input-field" style="opacity:0.6;cursor:default;background:rgba(0,0,0,0.04)"/>
+      </label>
+
+      <!-- Nombre / Procedencia -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre / Procedencia <span style="color:#e53e3e">*</span></span>
+        <input id="psm-nombre" type="text" class="input-field" placeholder="Ej: Finca La Alameda, Castillo de Peralada…"/>
+      </label>
+
+      <!-- Ciudad -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Ciudad</span>
+        <input id="psm-ciudad" type="text" class="input-field" placeholder="Buscar ciudad europea…" list="psm-cities-list" autocomplete="off"/>
+        <datalist id="psm-cities-list"></datalist>
+      </label>
+
+      <!-- Tipo de espacio -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Tipo de espacio</span>
+        <select id="psm-tipo" class="input-field">
+          <option value="">Seleccionar tipo…</option>
+          <option value="Casa">Casa</option>
+          <option value="Casa de colonias">Casa de colonias</option>
+          <option value="Casa Rural">Casa Rural</option>
+          <option value="Castillo">Castillo</option>
+          <option value="Convento">Convento</option>
+          <option value="Cortijo">Cortijo</option>
+          <option value="Fortaleza">Fortaleza</option>
+          <option value="Iglesia">Iglesia</option>
+          <option value="Jardín">Jardín</option>
+          <option value="Masía">Masía</option>
+          <option value="Monumento">Monumento</option>
+          <option value="Palacio">Palacio</option>
+          <option value="Yacimiento Arqueológico">Yacimiento Arqueológico</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
+      <button id="psm-skip" class="btn ghost">Omitir</button>
+      <button id="psm-save" class="btn" style="background:#22c55e;color:#fff;border:1.5px solid #16a34a;font-weight:600;gap:6px">
+        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+        Guardar y continuar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal calibraciÃ³n -->
 <div id="modal" class="modal-bg">
   <div class="glass p-8 max-w-md w-full mx-6" style="border-radius:14px">

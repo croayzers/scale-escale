@@ -29,10 +29,8 @@ function init() {
     closePlanDropdown();
     openSearchModal();
   });
-  document.getElementById('plan-drop-org')?.addEventListener('click', () => {
-    closePlanDropdown();
-    sharePlanWithOrg();
-  });
+  // 'Compartir con empresa' reemplazado por el flujo automático post-calibración
+  // El botón #plan-drop-org permanece oculto (hidden) en el HTML
   document.addEventListener('click', e => {
     if (!e.target.closest('#upload-plan-dropdown') && !e.target.closest('#btn-upload-plan')) {
       closePlanDropdown();
@@ -183,9 +181,10 @@ function renderOrgPlanResults(plans) {
 
     const info = document.createElement('div');
     info.className = 'plan-search-card-info';
+    const meta = [plan.tipo, plan.ciudad].filter(Boolean).join(' · ');
     info.innerHTML = `
       <div class="plan-search-card-name">${escHtml(plan.name)}</div>
-      ${plan.venue ? `<div class="plan-search-card-zone">${escHtml(plan.venue)}</div>` : ''}
+      ${meta ? `<div class="plan-search-card-zone">${escHtml(meta)}</div>` : plan.venue ? `<div class="plan-search-card-zone">${escHtml(plan.venue)}</div>` : ''}
       ${plan.created_by_display_name ? `<div class="plan-search-card-city" style="opacity:.55">${escHtml(plan.created_by_display_name)}</div>` : ''}
     `;
 
@@ -212,6 +211,8 @@ async function loadOrgPlan(id, name) {
   if (plan.opacity !== undefined) AppState.plan.opacity = plan.opacity;
   SceneManager.updatePlanSize?.();
   applyImageToPlan(plan.image_data_url, name);
+  // Notificar para abrir Zonas automáticamente
+  document.dispatchEvent(new CustomEvent('escale:org-plan-loaded', { detail: { name } }));
 }
 
 async function sharePlanWithOrg() {

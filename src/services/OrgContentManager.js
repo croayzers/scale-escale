@@ -29,7 +29,7 @@ function _toast(msg, kind = 'info') {
  * Guarda el plano actual en la nube.
  * Devuelve { skipped: true } si ya existe uno con el mismo nombre.
  */
-export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity }) {
+export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity, ciudad = null, tipo = null }) {
   if (!canSync()) return null;
   const trimName = name.trim();
 
@@ -50,12 +50,14 @@ export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opaci
       created_by_display_name:  _name(),
       name:                     trimName,
       venue:                    AppState.company?.venue || null,
+      ciudad,
+      tipo,
       width_m:                  widthM,
       length_m:                 lengthM,
       opacity:                  opacity,
       image_data_url:           imageDataUrl,
     })
-    .select('id, name, width_m, length_m, opacity, created_by_display_name, created_at')
+    .select('id, name, ciudad, tipo, width_m, length_m, opacity, created_by_display_name, created_at')
     .single();
 
   if (error) throw new Error(error.message);
@@ -67,7 +69,7 @@ export async function listFloorPlans() {
   if (!canSync()) return [];
   const { data, error } = await _db()
     .from(T_PLANS)
-    .select('id, name, venue, width_m, length_m, opacity, created_by_display_name, created_at')
+    .select('id, name, venue, ciudad, tipo, width_m, length_m, opacity, created_by_display_name, created_at')
     .eq('organization_id', _orgId())
     .order('created_at', { ascending: false });
   return error ? [] : (data ?? []);

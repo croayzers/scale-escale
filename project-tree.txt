@@ -182,6 +182,7 @@ PROJECT STRUCTURE
 │       ├── HeaderActionMenus.js
 │       ├── InventoryPanel.js
 │       ├── MeasureManager.js
+│       ├── PlanSaveModal.js
 │       ├── PlansModal.js
 │       ├── ProButtonManager.js
 │       ├── PropertyRenderer.js
