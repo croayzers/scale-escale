@@ -571,6 +571,19 @@ async function composePrintCanvas(imageDataUrl, view) {
   ctx.fillRect(imageArea.x - 1, imageArea.y - 1, imageArea.w + 2, imageArea.h + 2);
   ctx.drawImage(image, drawX, drawY, drawW, drawH);
 
+  if (SubscriptionManager.currentPlanCode() === 'free_lite') {
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.translate(out.width / 2, out.height / 2);
+    ctx.rotate(-Math.PI / 8);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 110px Inter Tight, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Escale3D.com', 0, 0);
+    ctx.restore();
+  }
+
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, out.height - footerH, out.width, footerH);
   ctx.fillStyle = '#64748b';
@@ -839,6 +852,25 @@ async function buildPdfBlob(imageDataUrl, modeLabel) {
   pdf.setLineWidth(0.2);
   pdf.rect(drawX - 1, drawY - 1, drawWidth + 2, drawHeight + 2);
   pdf.addImage(imageDataUrl, 'PNG', drawX, drawY, drawWidth, drawHeight, undefined, 'NONE');
+
+  if (SubscriptionManager.currentPlanCode() === 'free_lite') {
+    const PX = 4;
+    const wmCanvas = document.createElement('canvas');
+    wmCanvas.width  = Math.round(pageWidth  * PX);
+    wmCanvas.height = Math.round(pageHeight * PX);
+    const wmCtx = wmCanvas.getContext('2d');
+    wmCtx.save();
+    wmCtx.globalAlpha = 0.15;
+    wmCtx.translate(wmCanvas.width / 2, wmCanvas.height / 2);
+    wmCtx.rotate(-Math.PI / 8);
+    wmCtx.fillStyle = '#0f172a';
+    wmCtx.font = `bold ${Math.round(wmCanvas.width / 9)}px Inter Tight, Arial, sans-serif`;
+    wmCtx.textAlign = 'center';
+    wmCtx.textBaseline = 'middle';
+    wmCtx.fillText('Escale3D.com', 0, 0);
+    wmCtx.restore();
+    pdf.addImage(wmCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'NONE');
+  }
 
   pdf.setFontSize(7);
   setPdfColor(pdf, brandSecondary);
