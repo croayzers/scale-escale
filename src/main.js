@@ -316,6 +316,7 @@ async function bootstrap() {
   const originalSetPlanTexture = SceneManager.setPlanTexture.bind(SceneManager);
   SceneManager.setPlanTexture = texture => {
     originalSetPlanTexture(texture);
+    document.getElementById('grid-watermark')?.classList.add('wm-hidden');
     onboardPulse.stop('btn-upload-plan');
     onboardPulse.start('btn-calibrate', 15000);
     state.steps.planLoaded = true;
@@ -353,6 +354,7 @@ async function bootstrap() {
 
   // Flujo "Buscar plano": plano org cargado → abrir Zonas
   document.addEventListener('escale:org-plan-loaded', () => {
+    document.getElementById('grid-watermark')?.classList.add('wm-hidden');
     setTimeout(() => {
       HeaderActionMenus.openMenu('zones');
     }, 400);

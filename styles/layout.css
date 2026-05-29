@@ -172,6 +172,40 @@ body.cursor-measure * { cursor: crosshair !important; }
   75%      { transform: translateX(5px); }
 }
 
+/* ============== GRID WATERMARK ============== */
+#grid-watermark {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(36px, 5.5vw, 76px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: rgba(26, 26, 28, 0.075);
+  filter: blur(1.5px);
+  user-select: none;
+  animation: wmFadeIn 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 1.8s both,
+             wmPulse 5s ease-in-out 3.2s infinite;
+  transition: opacity 900ms ease, filter 900ms ease;
+}
+#grid-watermark.wm-hidden {
+  opacity: 0 !important;
+  filter: blur(6px) !important;
+  animation: none;
+}
+@keyframes wmFadeIn {
+  from { opacity: 0; filter: blur(8px); }
+  to   { opacity: 1; filter: blur(1.5px); }
+}
+@keyframes wmPulse {
+  0%, 100% { opacity: 0.7;  filter: blur(1.5px); }
+  50%       { opacity: 1;   filter: blur(0.4px); }
+}
+
 /* ============== DEMO ZONAS ============== */
 @keyframes zdDraw { to { stroke-dashoffset: 0; } }
 @keyframes zdFill { from { opacity: 0; } to { opacity: 0.12; } }
