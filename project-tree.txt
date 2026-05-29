@@ -34,6 +34,9 @@ PROJECT STRUCTURE
 │   │   ├── create.js
 │   │   └── join.js
 │   ├── email.js
+│   ├── org/
+│   │   ├── invite.js
+│   │   └── members.js
 │   ├── plans/
 │   │   └── search.js
 │   └── public-config.js
@@ -165,6 +168,7 @@ PROJECT STRUCTURE
 │   │   ├── CollabInteractions.js
 │   │   ├── CollabManager.js
 │   │   ├── MessageManager.js
+│   │   ├── OrgContentManager.js
 │   │   ├── ServiceConfig.js
 │   │   ├── SubscriptionManager.js
 │   │   └── SupportManager.js
@@ -195,6 +199,9 @@ PROJECT STRUCTURE
 ├── supabase/
 │   ├── migrations/
 │   │   ├── 20260528_collab_sessions.sql
+│   │   ├── 20260529_org_invitations.sql
+│   │   ├── 20260529_org_shared_content.sql
+│   │   ├── 20260529_saved_groups.sql
 │   │   └── add_owner_user_id.sql
 │   └── schema.sql
 ├── Supabase tablas/

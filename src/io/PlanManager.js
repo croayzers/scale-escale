@@ -8,14 +8,12 @@
      · DWG  (binario):      intenta extraer thumbnail BMP embebido
    ───────────────────────────────────────────────────────── */
 
-import { AppState }     from '../core/AppState.js';
-import { SceneManager } from '../scene/SceneManager.js';
+import { AppState }          from '../core/AppState.js';
+import { SceneManager }      from '../scene/SceneManager.js';
+import { OrgContentManager } from '../services/OrgContentManager.js';
 
-const PLAN_SEARCH_ALLOWED = 'rafa27x26@gmail.com';
-
-function canSearchPlans() {
-  return (AppState.company.authEmail || '').toLowerCase() === PLAN_SEARCH_ALLOWED;
-}
+function canSearchPlans() { return true; }
+function canSharePlan()   { return OrgContentManager.canSync() && Boolean(AppState.plan?.texture); }
 
 function init() {
   // ── Botón cargar plano → desplegable ──────────────────────────────────────
@@ -30,6 +28,10 @@ function init() {
   document.getElementById('plan-drop-search')?.addEventListener('click', () => {
     closePlanDropdown();
     openSearchModal();
+  });
+  document.getElementById('plan-drop-org')?.addEventListener('click', () => {
+    closePlanDropdown();
+    sharePlanWithOrg();
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('#upload-plan-dropdown') && !e.target.closest('#btn-upload-plan')) {
@@ -115,8 +117,8 @@ function togglePlanDropdown() {
     const rect = btn.getBoundingClientRect();
     dropdown.style.top  = `${rect.bottom + 6}px`;
     dropdown.style.left = `${rect.left}px`;
-    // Mostrar u ocultar opción de búsqueda según usuario
     document.getElementById('plan-drop-search')?.classList.toggle('hidden', !canSearchPlans());
+    document.getElementById('plan-drop-org')?.classList.toggle('hidden', !canSharePlan());
     dropdown.classList.remove('hidden');
   } else {
     dropdown.classList.add('hidden');
@@ -144,9 +146,109 @@ function openSearchModal() {
   const modal = document.getElementById('plan-search-modal');
   if (!modal) return;
   modal.classList.add('visible');
-  showSearchState('empty');
   loadSearchFilters();
+  // Mostrar planos de empresa por defecto antes de cualquier búsqueda
+  loadOrgPlansIntoModal();
   setTimeout(() => document.getElementById('plan-search-input')?.focus(), 80);
+}
+
+async function loadOrgPlansIntoModal() {
+  if (!OrgContentManager.canSync()) { showSearchState('empty'); return; }
+  showSearchState('loading');
+  const plans = await OrgContentManager.listFloorPlans();
+  if (!plans.length) { showSearchState('empty'); return; }
+  renderOrgPlanResults(plans);
+}
+
+function renderOrgPlanResults(plans) {
+  const grid = document.getElementById('plan-search-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  // Cabecera de empresa
+  const header = document.createElement('div');
+  header.style.cssText = 'grid-column:1/-1;font-size:10px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;opacity:.5;padding:4px 2px 8px';
+  header.textContent = 'Planos de la empresa';
+  grid.appendChild(header);
+
+  plans.forEach(plan => {
+    const card = document.createElement('button');
+    card.className = 'plan-search-card';
+    card.type = 'button';
+    card.title = plan.name;
+
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'plan-search-thumb';
+    thumbDiv.innerHTML = '<i data-lucide="building-2" class="w-8 h-8 opacity-30"></i>';
+
+    const info = document.createElement('div');
+    info.className = 'plan-search-card-info';
+    info.innerHTML = `
+      <div class="plan-search-card-name">${escHtml(plan.name)}</div>
+      ${plan.venue ? `<div class="plan-search-card-zone">${escHtml(plan.venue)}</div>` : ''}
+      ${plan.created_by_display_name ? `<div class="plan-search-card-city" style="opacity:.55">${escHtml(plan.created_by_display_name)}</div>` : ''}
+    `;
+
+    card.appendChild(thumbDiv);
+    card.appendChild(info);
+    card.addEventListener('click', () => loadOrgPlan(plan.id, plan.name));
+    grid.appendChild(card);
+  });
+
+  showSearchState('grid');
+  if (window.lucide) lucide.createIcons({ nodes: [grid] });
+}
+
+async function loadOrgPlan(id, name) {
+  closeSearchModal();
+  const plan = await OrgContentManager.loadFloorPlan(id);
+  if (!plan?.image_data_url) {
+    alert('No se pudo cargar el plano de la empresa.');
+    return;
+  }
+  // Restaurar dimensiones calibradas
+  if (plan.width_m)  AppState.plan.widthM  = plan.width_m;
+  if (plan.length_m) AppState.plan.lengthM = plan.length_m;
+  if (plan.opacity !== undefined) AppState.plan.opacity = plan.opacity;
+  SceneManager.updatePlanSize?.();
+  applyImageToPlan(plan.image_data_url, name);
+}
+
+async function sharePlanWithOrg() {
+  if (!canSharePlan()) return;
+  const name = prompt('Nombre del plano para la empresa:', AppState.company?.venue || '');
+  if (!name?.trim()) return;
+
+  const imageDataUrl = getPlanImageDataUrl?.() || null;
+  try {
+    const result = await OrgContentManager.saveFloorPlan({
+      name: name.trim(),
+      imageDataUrl,
+      widthM:  AppState.plan.widthM,
+      lengthM: AppState.plan.lengthM,
+      opacity: AppState.plan.opacity,
+    });
+    if (result?.skipped) {
+      document.dispatchEvent(new CustomEvent('escale:toast', { detail: { msg: `Ya existe un plano llamado "${name.trim()}" en tu empresa`, kind: 'info' } }));
+    } else {
+      document.dispatchEvent(new CustomEvent('escale:toast', { detail: { msg: `Plano "${name.trim()}" compartido con la empresa`, kind: 'success' } }));
+    }
+  } catch (err) {
+    console.error('[PlanManager] Error compartiendo plano:', err);
+    document.dispatchEvent(new CustomEvent('escale:toast', { detail: { msg: 'Error al compartir el plano', kind: 'warning' } }));
+  }
+}
+
+function getPlanImageDataUrl() {
+  const img = AppState.plan.texture?.image;
+  if (!img) return null;
+  try {
+    const c = document.createElement('canvas');
+    c.width  = img.naturalWidth  || img.width  || 1200;
+    c.height = img.naturalHeight || img.height || 800;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return c.toDataURL('image/jpeg', 0.82);
+  } catch { return null; }
 }
 
 function closeSearchModal() {

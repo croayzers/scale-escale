@@ -779,6 +779,7 @@ function init() {
   document.getElementById('btn-account')?.addEventListener('click', openAccessModal);
   document.getElementById('company-close')?.addEventListener('click', () => closeModal());
   document.getElementById('company-cancel')?.addEventListener('click', () => closeModal());
+  _initTeamTab();
 
   document.getElementById('access-tab-login')?.addEventListener('click', () => setAccessMode('login'));
   document.getElementById('access-tab-register')?.addEventListener('click', () => setAccessMode('register'));
@@ -933,6 +934,181 @@ function requireReady(callback) {
     callback();
   }
   document.addEventListener('escale:company-modal-closed', onClose, { once: true });
+}
+
+/* ════════════════════════════════════════════════════════
+   TAB EQUIPO — Gestión de miembros e invitaciones
+   ════════════════════════════════════════════════════════ */
+
+function _esc(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function _initTeamTab() {
+  // Tab switching
+  document.querySelectorAll('.company-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.company-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('company-panel-datos')?.classList.toggle('hidden', tab !== 'datos');
+      document.getElementById('company-panel-equipo')?.classList.toggle('hidden', tab !== 'equipo');
+      if (tab === 'equipo') _loadTeamData();
+    });
+  });
+
+  document.getElementById('company-invite-btn')?.addEventListener('click', _sendInvitation);
+  document.getElementById('company-invite-email')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') _sendInvitation();
+  });
+}
+
+async function _getAuthHeader() {
+  const token = await AuthManager.getSession?.()?.access_token
+    || AuthManager.getSupabaseClient?.()?.auth?.getSession?.().then?.(r => r.data?.session?.access_token);
+  // Intentar obtener el token de la sesión de Supabase
+  try {
+    const { data } = await AuthManager.getSupabaseClient()?.auth.getSession() ?? {};
+    return data?.session?.access_token ? `Bearer ${data.session.access_token}` : null;
+  } catch { return null; }
+}
+
+async function _loadTeamData() {
+  const authHeader = await _getAuthHeader();
+  if (!authHeader) {
+    document.getElementById('company-members-list').innerHTML =
+      '<div class="company-member-loading">Accede con tu cuenta para ver el equipo</div>';
+    return;
+  }
+
+  try {
+    const [membersRes, invitesRes] = await Promise.all([
+      fetch('/api/org/members', { headers: { Authorization: authHeader } }),
+      fetch('/api/org/invite', { headers: { Authorization: authHeader } })
+    ]);
+
+    if (membersRes.ok) {
+      const { members, currentUserId } = await membersRes.json();
+      _renderMembers(members || [], currentUserId);
+    }
+    if (invitesRes.ok) {
+      const { invitations } = await invitesRes.json();
+      _renderInvitations(invitations || [], authHeader);
+    }
+  } catch (err) {
+    console.warn('[CompanyManager] Error cargando equipo:', err);
+  }
+}
+
+function _renderMembers(members, currentUserId) {
+  const list = document.getElementById('company-members-list');
+  if (!list) return;
+  if (!members.length) {
+    list.innerHTML = '<div class="company-member-loading">Solo tú en el equipo de momento</div>';
+    return;
+  }
+  const roleLabel = { owner: 'Propietario', admin: 'Admin', editor: 'Editor', viewer: 'Visualizador' };
+  list.innerHTML = members.map(m => {
+    const profile = m.user_profiles || {};
+    const name  = profile.display_name || profile.email || 'Miembro';
+    const email = profile.email || '';
+    const initials = name.slice(0, 2).toUpperCase();
+    const isMe = m.user_id === currentUserId;
+    const canRemove = !isMe && ['owner', 'admin'].includes(AppState.company?.organizationRole);
+    return `<div class="company-member-row">
+      <div class="company-member-avatar">${_esc(initials)}</div>
+      <div class="company-member-info">
+        <div class="company-member-name">${_esc(name)}${isMe ? ' <span style="opacity:.45;font-size:10px">(tú)</span>' : ''}</div>
+        ${email ? `<div class="company-member-email">${_esc(email)}</div>` : ''}
+      </div>
+      <span class="company-member-role">${_esc(roleLabel[m.role] || m.role)}</span>
+      ${canRemove ? `<button class="btn ghost" style="padding:4px 8px;font-size:10px;min-height:0" onclick="window._removeOrgMember('${m.user_id}')">
+        <i data-lucide="x" class="w-3 h-3"></i>
+      </button>` : ''}
+    </div>`;
+  }).join('');
+  if (window.lucide) lucide.createIcons({ nodes: [list] });
+}
+
+function _renderInvitations(invitations, authHeader) {
+  const section = document.getElementById('company-invitations-section');
+  const list    = document.getElementById('company-invitations-list');
+  if (!section || !list) return;
+  if (!invitations.length) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = invitations.map(inv => {
+    const date = new Date(inv.created_at).toLocaleDateString('es');
+    const roleLabel = { admin: 'Admin', editor: 'Editor', viewer: 'Visualizador' }[inv.invited_role] || 'Editor';
+    return `<div class="company-member-row">
+      <div class="company-member-info">
+        <div class="company-member-name">${_esc(inv.invited_email)}</div>
+        <div class="company-member-email">Enviada el ${date} · ${_esc(roleLabel)}</div>
+      </div>
+      <button class="btn ghost" style="padding:4px 8px;font-size:10px;min-height:0" onclick="window._cancelOrgInvite('${inv.id}')">
+        <i data-lucide="x" class="w-3 h-3"></i>
+      </button>
+    </div>`;
+  }).join('');
+  if (window.lucide) lucide.createIcons({ nodes: [list] });
+
+  // Exponer funciones globales para los botones inline
+  window._cancelOrgInvite = async (id) => {
+    const token = await _getAuthHeader();
+    if (!token) return;
+    await fetch('/api/org/invite', { method: 'DELETE', headers: { Authorization: token, 'Content-Type': 'application/json' }, body: JSON.stringify({ invitationId: id }) });
+    _loadTeamData();
+  };
+  window._removeOrgMember = async (userId) => {
+    if (!confirm('¿Eliminar a este miembro del equipo?')) return;
+    const token = await _getAuthHeader();
+    if (!token) return;
+    await fetch('/api/org/members', { method: 'DELETE', headers: { Authorization: token, 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
+    _loadTeamData();
+  };
+}
+
+async function _sendInvitation() {
+  const emailEl    = document.getElementById('company-invite-email');
+  const roleEl     = document.getElementById('company-invite-role');
+  const feedback   = document.getElementById('company-invite-feedback');
+  const email = emailEl?.value?.trim();
+  if (!email || !email.includes('@')) {
+    _showInviteFeedback('Introduce un email válido', 'error');
+    return;
+  }
+
+  const authHeader = await _getAuthHeader();
+  if (!authHeader) { _showInviteFeedback('Accede con tu cuenta primero', 'error'); return; }
+
+  _showInviteFeedback('Enviando…', 'info');
+  try {
+    const res = await fetch('/api/org/invite', {
+      method: 'POST',
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, invitedRole: roleEl?.value || 'editor' })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      _showInviteFeedback(`Invitación enviada a ${email}`, 'success');
+      if (emailEl) emailEl.value = '';
+      _loadTeamData();
+    } else if (data.reason === 'duplicate') {
+      _showInviteFeedback('Ya existe una invitación pendiente para ese email', 'info');
+    } else {
+      _showInviteFeedback('Error al enviar la invitación', 'error');
+    }
+  } catch {
+    _showInviteFeedback('Error de red', 'error');
+  }
+}
+
+function _showInviteFeedback(msg, kind) {
+  const el = document.getElementById('company-invite-feedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `company-field-help ${kind === 'error' ? 'company-color-error visible' : ''}`;
+  el.classList.remove('hidden');
+  if (kind !== 'error') setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
 export const CompanyManager = {

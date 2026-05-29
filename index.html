@@ -1003,16 +1003,26 @@
 <!-- Modal datos empresa (legacy, no usado) -->
 <div id="company-modal" class="modal-bg">
   <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
-    <div class="flex items-start justify-between mb-5">
+    <div class="flex items-start justify-between mb-4">
       <div>
         <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Empresa</div>
-        <h3 class="display-font text-3xl leading-tight">Datos de empresa</h3>
+        <h3 class="display-font text-3xl leading-tight">Mi empresa</h3>
       </div>
       <button id="company-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
 
-    <!-- Cuenta activa: eliminada -->
+    <!-- Tabs -->
+    <div class="company-tabs mb-5">
+      <button id="company-tab-datos" class="company-tab active" data-tab="datos">
+        <i data-lucide="building-2" class="w-3.5 h-3.5"></i> Datos
+      </button>
+      <button id="company-tab-equipo" class="company-tab" data-tab="equipo">
+        <i data-lucide="users" class="w-3.5 h-3.5"></i> Equipo
+      </button>
+    </div>
 
+    <!-- Panel: Datos (contenido original) -->
+    <div id="company-panel-datos">
     <!-- Banner contextual: aparece cuando el gate requireReady lo activa -->
     <div id="company-readiness-hint" class="company-readiness-hint hidden"></div>
 
@@ -1093,6 +1103,46 @@
       </button>
     </div>
     <div id="company-save-feedback" class="company-save-feedback hidden">✓ Datos de empresa guardados</div>
+    </div><!-- /company-panel-datos -->
+
+    <!-- Panel: Equipo -->
+    <div id="company-panel-equipo" class="hidden">
+      <!-- Invitar -->
+      <div class="mb-5">
+        <div class="mono text-[10px] uppercase tracking-widest mb-2" style="color:var(--muted)">Invitar compañero</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <label class="block flex-1">
+            <input id="company-invite-email" type="email" placeholder="correo@empresa.com" class="input-field"/>
+          </label>
+          <label class="block" style="width:110px">
+            <select id="company-invite-role" class="input-field" style="height:38px">
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+              <option value="viewer">Visualizador</option>
+            </select>
+          </label>
+          <button id="company-invite-btn" class="btn primary" style="white-space:nowrap;height:38px">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            Invitar
+          </button>
+        </div>
+        <div id="company-invite-feedback" class="company-field-help hidden"></div>
+      </div>
+
+      <!-- Miembros activos -->
+      <div class="mb-4">
+        <div class="mono text-[10px] uppercase tracking-widest mb-2" style="color:var(--muted)">Miembros activos</div>
+        <div id="company-members-list" style="display:flex;flex-direction:column;gap:4px">
+          <div class="company-member-loading">Cargando…</div>
+        </div>
+      </div>
+
+      <!-- Invitaciones pendientes -->
+      <div id="company-invitations-section" class="hidden">
+        <div class="mono text-[10px] uppercase tracking-widest mb-2" style="color:var(--muted)">Invitaciones pendientes</div>
+        <div id="company-invitations-list" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+    </div><!-- /company-panel-equipo -->
   </div>
 </div>
 
@@ -1482,6 +1532,10 @@
   <button id="plan-drop-search" class="plan-dropdown-item">
     <i data-lucide="search" class="w-3.5 h-3.5"></i>
     Buscar plano
+  </button>
+  <button id="plan-drop-org" class="plan-dropdown-item hidden">
+    <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
+    Compartir con la empresa
   </button>
 </div>
 

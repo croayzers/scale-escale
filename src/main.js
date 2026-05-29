@@ -35,6 +35,7 @@ import { CollabIsland }        from './ui/CollabIsland.js';
 import { CollabInteractions }  from './services/CollabInteractions.js';
 import { SavedGroupLibrary }   from './core/SavedGroupLibrary.js';
 import { SavedGroupPanel }     from './ui/SavedGroupPanel.js';
+import { OrgContentManager }  from './services/OrgContentManager.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);

@@ -5,10 +5,11 @@
    · Naming: LugarEvento_NombrePlantilla_Kind_Date.escale.json
    ───────────────────────────────────────────────────────── */
 
-import { AppState }          from '../core/AppState.js';
-import { SceneManager }      from '../scene/SceneManager.js';
-import { UIManager }         from '../ui/UIManager.js';
-import { PlanningRegistry }  from './PlanningRegistry.js';
+import { AppState }           from '../core/AppState.js';
+import { SceneManager }       from '../scene/SceneManager.js';
+import { UIManager }          from '../ui/UIManager.js';
+import { PlanningRegistry }   from './PlanningRegistry.js';
+import { OrgContentManager }  from '../services/OrgContentManager.js';
 
 const TEMPLATE_VERSION = '1.0';
 const FOLDER_HANDLE_DB = 'escale_template_folder';
@@ -358,6 +359,9 @@ async function saveAsBase() {
   emitTemplateMetaChange();
   if (dirHandle) await refreshFolderState();
 
+  // Sync en nube si hay organización
+  _syncTemplateToCloud('base', naming.name, data);
+
   showPostSaveInfo('base');
   highlightTemplateButton();
 }
@@ -542,8 +546,81 @@ async function confirmPlanningSelection() {
   emitTemplateMetaChange();
   if (dirHandle) await refreshFolderState();
 
+  // Sync en nube si hay organización
+  _syncTemplateToCloud('planning', name, data);
+
   showPostSaveInfo('planning');
   highlightTemplateButton();
+}
+
+/* ═══════════════════════════════════════════════════════
+   SYNC EN NUBE (OrgContentManager)
+   ═══════════════════════════════════════════════════════ */
+
+async function _syncTemplateToCloud(kind, name, data) {
+  if (!OrgContentManager.canSync()) return;
+  try {
+    const result = await OrgContentManager.saveTemplate({ name, kind, data });
+    if (result?.skipped) {
+      showToast(`Ya existe "${name}" en la biblioteca de empresa (omitido)`);
+    } else if (result) {
+      showToast(`"${name}" compartido con la empresa`);
+      // Refrescar panel para que aparezca inmediatamente
+      await _renderOrgTemplateSection(kind);
+    }
+  } catch (err) {
+    console.warn('[TemplateManager] No se pudo sincronizar en nube:', err.message);
+  }
+}
+
+async function _renderOrgTemplateSection(kind) {
+  const listEl = document.getElementById(`tpl-${kind}-list`);
+  if (!listEl) return;
+
+  const cloudItems = await OrgContentManager.listTemplates(kind);
+  if (!cloudItems.length) return;
+
+  // Eliminar sección previa si existe
+  listEl.querySelector('.tpl-org-section')?.remove();
+
+  const section = document.createElement('div');
+  section.className = 'tpl-org-section';
+  section.innerHTML = `<div class="tpl-org-header">
+    <i data-lucide="building-2" style="width:11px;height:11px;opacity:.5"></i>
+    <span>Empresa</span>
+  </div>`;
+
+  cloudItems.forEach(row => {
+    const date = row.created_at ? new Date(row.created_at).toLocaleDateString('es') : '';
+    const btn = document.createElement('button');
+    btn.className = 'tpl-item';
+    btn.type = 'button';
+    btn.innerHTML = `
+      <span class="tpl-item-name">${_esc(row.name)}</span>
+      <span class="tpl-item-meta">${_esc(row.created_by_display_name || '')} ${date}</span>
+    `;
+    btn.addEventListener('click', () => _applyCloudTemplate(row.id, row.name, row.kind));
+    section.appendChild(btn);
+  });
+
+  listEl.prepend(section);
+  if (window.lucide) lucide.createIcons({ nodes: [section] });
+}
+
+async function _applyCloudTemplate(id, name, kind) {
+  const row = await OrgContentManager.loadTemplate(id);
+  if (!row?.data) { showToast('⚠ No se pudo cargar la plantilla de empresa'); return; }
+  const data = row.data;
+  data.name = data.name || name;
+  if (kind === 'base') {
+    await promptAndApplyBase(data, { name, filename: null });
+  } else {
+    await promptAndApplyPlanning(data, { name, filename: null });
+  }
+}
+
+function _esc(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -749,7 +826,11 @@ function togglePillPanel(kind) {
   const isOpen = !panel?.classList.contains('hidden');
   oPanel?.classList.add('hidden'); oBtn?.classList.remove('open');
   panel?.classList.toggle('hidden', isOpen); btn?.classList.toggle('open', !isOpen);
-  if (!isOpen) { renderTemplateList(kind); requestAnimationFrame(() => document.getElementById(`tpl-${kind}-filter`)?.focus()); }
+  if (!isOpen) {
+    renderTemplateList(kind);
+    _renderOrgTemplateSection(kind); // cargar plantillas de empresa
+    requestAnimationFrame(() => document.getElementById(`tpl-${kind}-filter`)?.focus());
+  }
 }
 
 function closePillPanels() {

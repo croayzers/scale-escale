@@ -20,9 +20,9 @@ function open() {
   const panel = getPanel();
   if (!panel) return;
   panel.classList.remove('hidden');
-  refresh();
-  // Marcar botón del dock como activo
   document.getElementById('dock-savedgroups-btn')?.classList.add('active');
+  // Cargar datos frescos de la nube al abrir
+  SavedGroupLibrary.load().then(() => refresh());
 }
 
 function close() {
@@ -39,31 +39,28 @@ function refresh() {
     return;
   }
   grid.innerHTML = groups.map(renderGroupCard).join('');
-  // Lucide icons
   if (window.lucide) lucide.createIcons({ nodes: [grid] });
-  // Bind actions
   grid.querySelectorAll('[data-sg-action]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const action = btn.dataset.sgAction;
-      const id = btn.dataset.sgId;
-      handleCardAction(action, id);
+      handleCardAction(btn.dataset.sgAction, btn.dataset.sgId);
     });
   });
 }
 
 function renderGroupCard(def) {
+  const meta = def.createdByName
+    ? `${def.itemCount} elementos · <span style="opacity:.6">${escHtml(def.createdByName)}</span>`
+    : `${def.itemCount} elemento${def.itemCount !== 1 ? 's' : ''}`;
   return `
   <div class="sg-card" data-sg-id="${def.id}">
     <div class="sg-card-thumb">
       ${def.thumbnail || `<i data-lucide="bookmark" style="width:24px;height:24px;opacity:0.3"></i>`}
     </div>
     <div class="sg-card-name" title="${escHtml(def.name)}">${escHtml(def.name)}</div>
-    <div class="sg-card-meta">${def.itemCount} elemento${def.itemCount !== 1 ? 's' : ''}</div>
+    <div class="sg-card-meta">${meta}</div>
     <div class="sg-card-actions">
-      <button class="btn primary" data-sg-action="place" data-sg-id="${def.id}" title="Colocar en escena">
-        Colocar
-      </button>
+      <button class="btn primary" data-sg-action="place" data-sg-id="${def.id}" title="Colocar en escena">Colocar</button>
       <button class="btn ghost sg-card-more" data-sg-action="menu" data-sg-id="${def.id}" title="Más opciones">
         <i data-lucide="more-vertical" class="w-3.5 h-3.5"></i>
       </button>
