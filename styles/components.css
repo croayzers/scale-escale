@@ -1134,10 +1134,38 @@ input[type=range]::-webkit-slider-thumb {
 }
 .plan-step[data-state="done"] {
   opacity: 1;
+  /* Plegar el paso completado a una fila compacta */
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(10,10,11,0.03);
+  border-color: transparent;
 }
 .plan-step[data-state="done"] .plan-step-index {
-  background: var(--brand-primary);
+  background: #16a34a;
   color: white;
+  /* Mostrar tick en lugar del número */
+  font-size: 0;
+  position: relative;
+}
+.plan-step[data-state="done"] .plan-step-index::after {
+  content: '✓';
+  font-size: 13px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plan-step[data-state="done"] .plan-step-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+/* Ocultar el cuerpo completo excepto el título cuando está done */
+.plan-step[data-state="done"] .plan-step-body > *:not(.plan-step-title) {
+  display: none;
 }
 .plan-step-index {
   width: 26px;
