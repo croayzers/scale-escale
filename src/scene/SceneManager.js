@@ -21,6 +21,9 @@ const meshes = new Map();
 let dragPlane;
 let gridWaveGroup = null;
 let gridWaveStart = null;
+let gridFadeStart = null;
+let gridOpacityScale = 0;
+const GRID_FADE_MS = 2400;
 let directionalLight, ambientLight, fillLight;
 let cotasGroup;
 let placementPreview = null;
@@ -156,6 +159,7 @@ function init() {
 
   window.addEventListener('resize', onResize);
   animate();
+  gridFadeStart = performance.now();
   buildGridWave();
 }
 
@@ -227,11 +231,11 @@ function rebuildGrids() {
   const divXMain = Math.min(800, Math.max(1, Math.round(sX / mainSize)));
   const divZMain = Math.min(800, Math.max(1, Math.round(sZ / mainSize)));
 
-  const fineMat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: visibility * 0.28 });
+  const fineMat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: visibility * 0.28 * gridOpacityScale });
   gridHelper = new THREE.LineSegments(buildRectGridGeo(sX, sZ, divXFine, divZFine), fineMat);
   scene.add(gridHelper);
 
-  const mainMat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: visibility * 0.62 });
+  const mainMat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: visibility * 0.62 * gridOpacityScale });
   gridMain = new THREE.LineSegments(buildRectGridGeo(sX, sZ, divXMain, divZMain), mainMat);
   scene.add(gridMain);
   applyGridOffsets();
@@ -782,6 +786,15 @@ function animate() {
   requestAnimationFrame(animate);
   activeControls.update();
   _uiManager?.updateTooltipPosition?.();
+
+  if (gridFadeStart !== null) {
+    const t = Math.min(1, (performance.now() - gridFadeStart) / GRID_FADE_MS);
+    gridOpacityScale = t * t * (3 - 2 * t); // smoothstep
+    const vis = Math.max(0, Math.min(100, _appState?.grid?.opacity ?? 55)) / 100;
+    if (gridHelper) gridHelper.material.opacity = gridOpacityScale * vis * 0.28;
+    if (gridMain)   gridMain.material.opacity   = gridOpacityScale * vis * 0.62;
+    if (t >= 1) { gridOpacityScale = 1; gridFadeStart = null; }
+  }
 
   if (gridWaveGroup && gridWaveStart !== null) {
     const elapsed = (performance.now() - gridWaveStart) / 1000;
