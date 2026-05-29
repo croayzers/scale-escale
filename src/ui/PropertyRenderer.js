@@ -258,6 +258,7 @@ function render({ item, panel, content, AppState }) {
   `;
 
   panel.style.display = 'block';
+  panel.classList.add('is-open');
   if (window.lucide) lucide.createIcons();
 
   bindFieldEvents(panel, item, visibleParams, AppState);

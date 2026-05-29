@@ -362,6 +362,7 @@ function showDetail(item) {
     `;
 
     panel.style.display = 'block';
+    panel.classList.add('is-open');
     if (window.lucide) lucide.createIcons();
 
     const updateZone = patch => A.update(item.id, patch, { skipDetailRebuild: true });
@@ -1477,6 +1478,7 @@ function showDetail(item) {
       </div>
     `;
     panel.style.display = 'block';
+    panel.classList.add('is-open');
     if (window.lucide) lucide.createIcons();
     content.querySelector('#surf-length')?.addEventListener('input', e => {
       A.update(item.id, { dims: { ...(item.dims || {}), length: Math.max(0.5, parseFloat(e.target.value) || 4) } }, { skipDetailRebuild: true });
@@ -1531,6 +1533,7 @@ function showDetail(item) {
       </div>
     `;
     panel.style.display = 'block';
+    panel.classList.add('is-open');
     if (window.lucide) lucide.createIcons();
     const patchDims = (key, val) => A.update(item.id, { dims: { ...(item.dims || {}), [key]: Math.max(0.1, parseFloat(val) || 1) } }, { skipDetailRebuild: true });
     content.querySelector('#gen-diam')?.addEventListener('input',   e => patchDims('diameter', e.target.value));
@@ -1636,7 +1639,7 @@ function showMultiDetail(ids) {
 
 function hideDetail() {
   const p = document.getElementById('detail-panel');
-  if (p) p.style.display = 'none';
+  if (p) { p.style.display = 'none'; p.classList.remove('is-open'); }
   hideItemSettingsHandle();
 }
 
@@ -1651,7 +1654,17 @@ function refreshUndoBadge() {
 }
 
 export const UIManager = {
-  async init() { await bindDeps(); },
+  async init() {
+    await bindDeps();
+    const _detailPanel = document.getElementById('detail-panel');
+    if (_detailPanel) {
+      let _swipeStartY = 0;
+      _detailPanel.addEventListener('touchstart', e => { _swipeStartY = e.touches[0].clientY; }, { passive: true });
+      _detailPanel.addEventListener('touchend', e => {
+        if (e.changedTouches[0].clientY - _swipeStartY > 80) hideDetail();
+      }, { passive: true });
+    }
+  },
   refresh,
   showTooltip, hideTooltip, updateTooltipPosition,
   showDetail, showMultiDetail, hideDetail,

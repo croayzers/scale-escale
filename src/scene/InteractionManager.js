@@ -32,6 +32,9 @@ let placementPreviewVisible = false;
 let formatModeActive = false;
 let _ctxAdvancedOpen = false;
 
+const _activePointers = new Set();
+let _longPressTimer = null;
+
 function init() {
   const canvas = document.getElementById('scene-canvas');
   canvas.addEventListener('pointerdown', onPointerDown);
@@ -385,7 +388,18 @@ function updateCursorReadout() {
 }
 
 function onPointerDown(e) {
+  _activePointers.add(e.pointerId);
+  if (_activePointers.size >= 2) { dragging = null; mouseDown = false; return; }
   if (e.button !== 0) return;
+  if (e.pointerType === 'touch') {
+    _longPressTimer = setTimeout(() => {
+      _longPressTimer = null;
+      pendingClickItem = null;
+      setPointer(e);
+      const item = getIntersectedItem();
+      if (item) { AppState.select(item.id); showContextMenu(e.clientX, e.clientY, item); }
+    }, 500);
+  }
   setPointer(e);
   mouseDown = true;
   mouseDownPos = { x: e.clientX, y: e.clientY };
@@ -497,6 +511,12 @@ function onPointerDown(e) {
 }
 
 function onPointerMove(e) {
+  if (_activePointers.size >= 2) return;
+  if (_longPressTimer && mouseDownPos) {
+    if (Math.abs(e.clientX - mouseDownPos.x) > 8 || Math.abs(e.clientY - mouseDownPos.y) > 8) {
+      clearTimeout(_longPressTimer); _longPressTimer = null;
+    }
+  }
   setPointer(e);
   updateCursorReadout();
 
@@ -540,6 +560,9 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
+  _activePointers.delete(e.pointerId);
+  clearTimeout(_longPressTimer); _longPressTimer = null;
+  if (_activePointers.size >= 1) { dragging = null; mouseDown = false; return; }
   mouseDown = false;
   if (SceneManager.isPlanMoving()) {
     SceneManager.endPlanMove();
@@ -584,6 +607,7 @@ function onPointerUp(e) {
 
 function onContextMenu(e) {
   e.preventDefault();
+  clearTimeout(_longPressTimer); _longPressTimer = null;
   if (ZoneManager.isPlacementActive()) {
     ZoneManager.cancelPlacement();
     syncPlacementCursor();

@@ -3433,4 +3433,70 @@ body.format-mode-active #btn-format-tool {
 .msg-variant-alerta .msg-btn-accept { background: #e53e3e; border-color: #e53e3e; }
 .msg-variant-oferta .msg-btn-accept { background: #667eea; border-color: #667eea; }
 .msg-variant-info   .msg-btn-accept { background: #38a169; border-color: #38a169; }
+
+/* ─── Móvil ≤768px ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Header: scrollable sin barra, tap targets mayores */
+  #header-mac {
+    left: 6px; right: 6px; top: 8px;
+    max-width: none;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  #header-mac::-webkit-scrollbar { display: none; }
+  .hdr-chip, .hdr-icon, .hdr-seg { min-width: 40px; min-height: 38px; }
+
+  /* Detail panel: bottom sheet */
+  #detail-panel {
+    position: fixed !important;
+    right: 0 !important; left: 0 !important;
+    bottom: 0 !important; top: auto !important;
+    width: 100% !important; max-width: 100% !important;
+    max-height: 65vh;
+    border-radius: 16px 16px 0 0;
+    display: block !important;
+    transform: translateY(110%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    padding-top: 20px;
+    box-shadow: 0 -4px 32px rgba(0,0,0,.5);
+  }
+  #detail-panel::before {
+    content: '';
+    position: absolute; top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,.25);
+    border-radius: 2px;
+  }
+  #detail-panel.is-open { transform: translateY(0); }
+
+  /* Inventory: bottom sheet */
+  #inventory-panel {
+    left: 0 !important; right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important; max-width: none !important;
+    max-height: 65vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Catálogo: full-width sobre el dock */
+  #catalog-modal {
+    left: 6px !important; right: 6px !important;
+    bottom: 76px !important;
+    width: auto !important; max-width: none !important;
+    max-height: 70vh;
+    border-radius: 16px !important;
+  }
+  .catalog-grid { gap: 10px; }
+  .cat-card { min-width: 80px; padding: 10px 6px; }
+
+  /* Menú contextual: targets más grandes */
+  .ctx-item { padding: 10px 14px !important; font-size: 13px !important; }
+
+  /* Popovers del header: full-width */
+  .hdr-popover {
+    left: 6px !important; right: 6px !important;
+    width: auto !important; max-width: none !important;
+  }
+}
 .msg-variant-stats  .msg-btn-accept { background: #d69e2e; border-color: #d69e2e; }

@@ -538,3 +538,11 @@ body.has-items #empty-hint { display: none; }
   animation: collabSpin 1.2s linear infinite;
   pointer-events: none;
 }
+
+/* ─── Dock móvil ≤768px ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #dock { bottom: 10px; left: 6px; right: 6px; width: auto; }
+  .dock-items { gap: 4px; padding: 4px 6px; }
+  .dock-items button { min-width: 48px; height: 50px; }
+  .dock-sep { height: 32px; }
+}
