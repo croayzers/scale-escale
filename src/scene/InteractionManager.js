@@ -746,6 +746,10 @@ function onPointerCancel(e) {
 function onContextMenu(e) {
   e.preventDefault();
   clearTimeout(_longPressTimer); _longPressTimer = null;
+  if (MeasureManager.isActive()) {
+    MeasureManager.cancel();
+    return;
+  }
   if (ZoneManager.isPlacementActive()) {
     ZoneManager.cancelPlacement();
     syncPlacementCursor();
