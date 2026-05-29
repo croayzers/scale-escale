@@ -128,3 +128,20 @@
 .cal-demo-run .cd-br1     { animation: calAppear 0.15s ease 1.6s both; }
 .cal-demo-run .cd-br2     { animation: calAppear 0.15s ease 1.65s both; }
 .cal-demo-run .cd-lbl     { animation: calAppear 0.25s ease 1.7s both; }
+
+/* ============== DEMO ZONAS ============== */
+@keyframes zdDraw { to { stroke-dashoffset: 0; } }
+@keyframes zdFill { from { opacity: 0; } to { opacity: 0.12; } }
+
+.zones-demo-run .zd-cursor1  { animation: calAppear 0.2s ease 0.05s both; }
+.zones-demo-run .zd-p1-ring  { animation: calRing   0.5s ease 0.25s both; }
+.zones-demo-run .zd-p1-dot   { animation: calPop    0.25s cubic-bezier(0.2,0.8,0.2,1) 0.2s both; }
+
+.zones-demo-run .zd-cursor2  { animation: calAppear 0.2s ease 0.8s both; }
+.zones-demo-run .zd-p2-ring  { animation: calRing   0.5s ease 1.0s both; }
+.zones-demo-run .zd-p2-dot   { animation: calPop    0.25s cubic-bezier(0.2,0.8,0.2,1) 0.95s both; }
+
+.zones-demo-run .zd-zone-path { animation: zdDraw   0.65s ease 1.1s both; }
+.zones-demo-run .zd-zone-fill { animation: zdFill   0.35s ease 1.7s both; }
+.zones-demo-run .zd-lbl-bg   { animation: calAppear 0.25s ease 1.85s both; }
+.zones-demo-run .zd-lbl-txt  { animation: calAppear 0.25s ease 1.9s both; }

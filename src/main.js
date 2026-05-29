@@ -425,6 +425,34 @@ async function bootstrap() {
     updatePlanGuide();
   });
 
+  function openZonesDemo() {
+    if (!AppState.showDemos) {
+      HeaderActionMenus.openMenu('zones');
+      return;
+    }
+    const overlay = document.getElementById('zones-demo');
+    if (!overlay) return;
+    overlay.classList.add('visible');
+    const stage = document.getElementById('zones-demo-stage');
+    if (stage) {
+      stage.classList.remove('zones-demo-run');
+      void stage.offsetWidth;
+      stage.classList.add('zones-demo-run');
+    }
+  }
+
+  function closeZonesDemo() {
+    document.getElementById('zones-demo')?.classList.remove('visible');
+  }
+
+  document.getElementById('zones-demo-cancel')?.addEventListener('click', closeZonesDemo);
+
+  document.getElementById('zones-demo-start')?.addEventListener('click', () => {
+    closeZonesDemo();
+    HeaderActionMenus.openMenu('zones');
+    pulseGuideTarget(document.getElementById('btn-zones-menu'));
+  });
+
   zoomRange?.addEventListener('input', () => {
     SceneManager.setZoomPercent(parseInt(zoomRange.value, 10));
   });
@@ -497,6 +525,14 @@ async function bootstrap() {
     });
   }
 
+  const demosToggle = document.getElementById('demos-toggle');
+  if (demosToggle) {
+    demosToggle.checked = AppState.showDemos;
+    demosToggle.addEventListener('change', () => {
+      AppState.showDemos = demosToggle.checked;
+    });
+  }
+
   btnMovePlan?.addEventListener('click', () => {
     if (!AppState.plan.mesh) {
       alert('Carga un plano primero.');
@@ -555,8 +591,7 @@ async function bootstrap() {
   });
   document.getElementById('guide-zones-btn')?.addEventListener('click', e => {
     e.stopPropagation();
-    HeaderActionMenus.openMenu('zones');
-    pulseGuideTarget(document.getElementById('btn-zones-menu'));
+    openZonesDemo();
   });
   document.getElementById('guide-grid-btn')?.addEventListener('click', e => {
     e.stopPropagation();

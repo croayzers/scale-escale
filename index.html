@@ -830,6 +830,15 @@
         </div>
       </section>
 
+      <!-- Demos / Ayudas -->
+      <section class="col-span-2">
+        <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Demos / Ayudas</div>
+        <label class="flex items-center justify-between mb-3 cursor-pointer">
+          <span class="text-[13px]">Mostrar demos al abrir herramientas</span>
+          <input id="demos-toggle" type="checkbox" checked/>
+        </label>
+      </section>
+
       <!-- Soporte -->
       <section class="col-span-2">
         <div class="mono text-[10px] tracking-widest uppercase mb-3" style="color:var(--muted)">Soporte</div>
@@ -981,6 +990,70 @@
       <button id="cal-demo-start" class="btn primary">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M12 2l10 10-10 10"/></svg>
         ¡A medir!
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal demos -->
+<!-- ============ DEMO ZONAS ============ -->
+<div id="zones-demo" class="modal-bg" role="dialog" aria-modal="true">
+  <div class="glass p-8" style="border-radius:16px;max-width:420px;width:calc(100% - 48px)">
+    <div class="mono text-[10px] tracking-widest uppercase mb-2" style="color:var(--muted)">Paso 2 · Zonas</div>
+    <h3 class="display-font text-2xl mb-2 leading-tight">Añadir zonas al plano</h3>
+    <p class="text-sm mb-5" style="color:var(--muted)">Localiza donde transcurre el evento y dibuja un área rectangular sobre el plano.</p>
+
+    <div id="zones-demo-stage" style="background:rgba(10,10,11,0.04);border-radius:10px;padding:16px 20px;margin-bottom:20px;overflow:hidden">
+      <svg id="zones-demo-svg" viewBox="0 0 280 130" width="100%" height="auto" style="display:block">
+        <!-- Plano fondo -->
+        <rect x="18" y="12" width="244" height="106" rx="5" fill="rgba(10,10,11,0.04)" stroke="#1a1a1c" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.25"/>
+        <!-- Cursor P1 (esquina sup-izq) -->
+        <g class="zd-cursor1" opacity="0">
+          <line x1="62" y1="33" x2="62" y2="49" stroke="#1a1a1c" stroke-width="1.5"/>
+          <line x1="54" y1="41" x2="70" y2="41" stroke="#1a1a1c" stroke-width="1.5"/>
+        </g>
+        <circle class="zd-p1-ring" cx="62" cy="41" r="10" fill="none" stroke="#e63946" stroke-width="1" opacity="0"/>
+        <circle class="zd-p1-dot"  cx="62" cy="41" r="4"  fill="#e63946" opacity="0"/>
+        <!-- Cursor P2 (esquina inf-der) -->
+        <g class="zd-cursor2" opacity="0">
+          <line x1="196" y1="80" x2="196" y2="96" stroke="#1a1a1c" stroke-width="1.5"/>
+          <line x1="188" y1="88" x2="204" y2="88" stroke="#1a1a1c" stroke-width="1.5"/>
+        </g>
+        <circle class="zd-p2-ring" cx="196" cy="88" r="10" fill="none" stroke="#e63946" stroke-width="1" opacity="0"/>
+        <circle class="zd-p2-dot"  cx="196" cy="88" r="4"  fill="#e63946" opacity="0"/>
+        <!-- Zona dibujada (path para dashoffset) -->
+        <path class="zd-zone-path" d="M62,41 L196,41 L196,88 L62,88 Z"
+              fill="none" stroke="#e63946" stroke-width="1.8"
+              stroke-dasharray="362,362" stroke-dashoffset="362"/>
+        <!-- Relleno semitransparente -->
+        <rect class="zd-zone-fill" x="62" y="41" width="134" height="47" fill="#e63946" opacity="0"/>
+        <!-- Etiqueta -->
+        <rect class="zd-lbl-bg"  x="108" y="57" width="52" height="17" rx="3" fill="#e63946" opacity="0"/>
+        <text class="zd-lbl-txt" x="134"  y="70" text-anchor="middle"
+              font-family="JetBrains Mono,monospace" font-size="10" fill="white" opacity="0">Zona 1</text>
+      </svg>
+    </div>
+
+    <ol style="list-style:none;padding:0;margin-bottom:24px;display:flex;flex-direction:column;gap:8px">
+      <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">1</span>
+        Pulsa «Añadir zona» en el menú de Zonas
+      </li>
+      <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">2</span>
+        Haz clic en una esquina del área del evento
+      </li>
+      <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">3</span>
+        Haz clic en la esquina opuesta para cerrar la zona
+      </li>
+    </ol>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="zones-demo-cancel" class="btn ghost">Cerrar</button>
+      <button id="zones-demo-start" class="btn primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M12 2l10 10-10 10"/></svg>
+        Abrir Zonas
       </button>
     </div>
   </div>

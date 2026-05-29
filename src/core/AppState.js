@@ -79,6 +79,7 @@ export const AppState = {
   camera: 'top',
   showCotas: false,
   shadows: true,
+  showDemos: true,
   inventoryCollapsed: false,
   workMode: null,   // 'base' | 'planning' — elegido en el modal de inicio
 
