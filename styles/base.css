@@ -86,6 +86,7 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: 2;
+  touch-action: none;
 }
 
 .display-font {

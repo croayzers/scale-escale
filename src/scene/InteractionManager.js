@@ -40,6 +40,7 @@ function init() {
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerCancel);
   canvas.addEventListener('contextmenu', onContextMenu);
 
   document.addEventListener('keydown', onKeyDown);
@@ -603,6 +604,15 @@ function onPointerUp(e) {
       showContextMenu(e.clientX, e.clientY, item);
     }
   }
+}
+
+function onPointerCancel(e) {
+  _activePointers.delete(e.pointerId);
+  clearTimeout(_longPressTimer); _longPressTimer = null;
+  if (dragging) { dragging = null; SceneManager.setControlsEnabled(true); }
+  mouseDown = false;
+  pendingClickItem = null;
+  boxSelecting = null; hideBoxOverlay();
 }
 
 function onContextMenu(e) {

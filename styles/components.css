@@ -3434,15 +3434,89 @@ body.format-mode-active #btn-format-tool {
 .msg-variant-oferta .msg-btn-accept { background: #667eea; border-color: #667eea; }
 .msg-variant-info   .msg-btn-accept { background: #38a169; border-color: #38a169; }
 
+/* ─── Barra móvil (oculta en escritorio) ─────────────────────────────────────── */
+#mobile-header-bar { display: none; }
+
 /* ─── Móvil ≤768px ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Header: scrollable sin barra, tap targets mayores */
-  #header-mac {
-    left: 6px; right: 6px; top: 8px;
-    max-width: none;
-    overflow-x: auto; scrollbar-width: none;
+  /* Barra superior móvil */
+  #mobile-header-bar {
+    display: flex;
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 36;
+    height: 50px; padding: 0 10px;
+    align-items: center; justify-content: space-between;
+    background: rgba(10,10,14,.92);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,.08);
   }
-  #header-mac::-webkit-scrollbar { display: none; }
+  .mob-hdr-brand { display: flex; align-items: center; gap: 8px; }
+  .mob-hdr-logo { width: 24px; height: 24px; object-fit: contain; border-radius: 6px; }
+  .mob-hdr-name { font-size: 15px; font-weight: 700; letter-spacing: -.02em; color: #f5f3ee; }
+  .mob-hdr-right { display: flex; align-items: center; gap: 8px; }
+  .mob-cam-seg { gap: 2px; }
+  .mob-hdr-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+    color: #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .mob-hdr-btn:hover, .mob-hdr-btn:active { background: rgba(255,255,255,.16); }
+
+  /* Ocultar el header original */
+  #header-mac {
+    display: none !important;
+    top: 50px !important; left: 0 !important; right: 0 !important;
+    border-radius: 0 !important; height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Drawer del header cuando hamburger abierto */
+  body.mobile-menu-open #header-mac {
+    display: flex !important;
+    position: fixed;
+    top: 50px; left: 0; right: 0;
+    z-index: 35;
+    max-height: calc(100dvh - 50px);
+    overflow-y: auto;
+    padding: 10px 10px 20px;
+    background: rgba(10,10,14,.97);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  body.mobile-menu-open #header-inner {
+    flex-direction: column !important;
+    width: 100% !important; gap: 3px !important;
+    align-items: stretch !important;
+  }
+  body.mobile-menu-open .hdr-chip,
+  body.mobile-menu-open .hdr-icon {
+    width: 100% !important; justify-content: flex-start !important;
+    min-height: 48px !important; padding: 10px 14px !important;
+    font-size: 14px !important; border-radius: 12px !important; gap: 10px !important;
+  }
+  body.mobile-menu-open .hdr-sep { display: none !important; }
+  body.mobile-menu-open .hdr-segmented {
+    width: 100% !important; display: flex !important; gap: 3px !important;
+  }
+  body.mobile-menu-open .hdr-seg {
+    flex: 1 !important; justify-content: center !important;
+    min-height: 48px !important; border-radius: 12px !important;
+  }
+  body.mobile-menu-open .hdr-chip > div,
+  body.mobile-menu-open #header-brand { display: none !important; }
+
+  /* Popovers en modo móvil: anclados bajo la barra */
+  body.mobile-menu-open .hdr-popover {
+    top: 50px !important; left: 0 !important; right: 0 !important;
+    width: 100% !important; max-width: none !important;
+    border-radius: 0 0 16px 16px !important;
+  }
+
+  /* Ajustar canvas y dock para la barra móvil */
+  #scene-canvas { top: 50px !important; height: calc(100dvh - 50px) !important; }
+
+  /* Header: scrollable sin barra, tap targets mayores (legacy, ya no necesario pero por si acaso) */
   .hdr-chip, .hdr-icon, .hdr-seg { min-width: 40px; min-height: 38px; }
 
   /* Detail panel: bottom sheet */
@@ -3482,9 +3556,9 @@ body.format-mode-active #btn-format-tool {
   /* Catálogo: full-width sobre el dock */
   #catalog-modal {
     left: 6px !important; right: 6px !important;
-    bottom: 76px !important;
+    bottom: 82px !important;
     width: auto !important; max-width: none !important;
-    max-height: 70vh;
+    max-height: calc(100dvh - 160px);
     border-radius: 16px !important;
   }
   .catalog-grid { gap: 10px; }

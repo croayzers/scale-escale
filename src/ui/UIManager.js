@@ -1656,6 +1656,8 @@ function refreshUndoBadge() {
 export const UIManager = {
   async init() {
     await bindDeps();
+
+    // Detail panel: swipe-down para cerrar en móvil
     const _detailPanel = document.getElementById('detail-panel');
     if (_detailPanel) {
       let _swipeStartY = 0;
@@ -1664,6 +1666,43 @@ export const UIManager = {
         if (e.changedTouches[0].clientY - _swipeStartY > 80) hideDetail();
       }, { passive: true });
     }
+
+    // Hamburger móvil
+    const _mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    if (_mobileMenuBtn) {
+      _mobileMenuBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        document.body.classList.toggle('mobile-menu-open');
+      });
+      // Cierra al pulsar fuera del header o la barra móvil
+      document.addEventListener('pointerdown', e => {
+        if (!e.target.closest('#header-mac, #mobile-header-bar, .hdr-popover')) {
+          document.body.classList.remove('mobile-menu-open');
+        }
+      }, true);
+      // Cierra el drawer al pulsar cualquier botón dentro del header
+      document.getElementById('header-mac')?.addEventListener('click', e => {
+        if (e.target.closest('.hdr-chip, .hdr-icon, .hdr-seg')) {
+          document.body.classList.remove('mobile-menu-open');
+        }
+      });
+    }
+
+    // Botones de cámara duplicados en la barra móvil
+    const _syncMobCam = () => {
+      const topActive = document.getElementById('cam-top')?.classList.contains('active');
+      document.getElementById('mob-cam-top')?.classList.toggle('active', !!topActive);
+      document.getElementById('mob-cam-iso')?.classList.toggle('active', !topActive);
+    };
+    document.getElementById('mob-cam-iso')?.addEventListener('click', () => {
+      document.getElementById('cam-iso')?.click();
+      setTimeout(_syncMobCam, 50);
+    });
+    document.getElementById('mob-cam-top')?.addEventListener('click', () => {
+      document.getElementById('cam-top')?.click();
+      setTimeout(_syncMobCam, 50);
+    });
+    document.addEventListener('escale:camera-changed', _syncMobCam);
   },
   refresh,
   showTooltip, hideTooltip, updateTooltipPosition,

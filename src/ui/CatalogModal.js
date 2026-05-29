@@ -336,8 +336,10 @@ function open(categoryKey) {
 
   modal.classList.remove('hidden');
 
-  // Foco en búsqueda al abrir
-  setTimeout(() => document.getElementById('catalog-search')?.focus(), 60);
+  // Foco en búsqueda al abrir (solo en dispositivos no táctiles para no abrir el teclado virtual)
+  if (!window.matchMedia('(pointer: coarse)').matches) {
+    setTimeout(() => document.getElementById('catalog-search')?.focus(), 60);
+  }
 }
 
 function close() {
