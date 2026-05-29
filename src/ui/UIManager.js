@@ -256,6 +256,11 @@ function updateItemSettingsHandle(item, mesh) {
     hideItemSettingsHandle();
     return;
   }
+  // Ocultar durante cualquier modo de colocación (catalog, grupo, zona)
+  if (document.body.classList.contains('placement-pending')) {
+    hideItemSettingsHandle();
+    return;
+  }
 
   const handle = ensureItemSettingsHandle();
   const bounds = new THREE.Box3().setFromObject(mesh);

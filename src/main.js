@@ -378,6 +378,9 @@ async function bootstrap() {
   camIso?.addEventListener('click', setIsoCamera);
   camTop?.addEventListener('click', setTopCamera);
   document.getElementById('btn-upload-plan')?.addEventListener('click', setTopCamera);
+
+  // Arrancar en vista 2D (top)
+  setTopCamera();
   document.getElementById('btn-calibrate')?.addEventListener('click', () => {
     onboardPulse.stop('btn-calibrate');
     openCalibrationDemo();

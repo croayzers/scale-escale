@@ -23,6 +23,8 @@ let directionalLight, ambientLight, fillLight;
 let cotasGroup;
 let placementPreview = null;
 let placementPreviewItem = null;
+let multiPlacementPreviews = []; // array de { group, relX, relZ } para preview de grupo
+let hoveredItemId = null;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -860,6 +862,38 @@ function rotateItem(id, rotY) {
   if (_appState?.showCotas) drawCotas();
 }
 
+function setHoveredItem(id) {
+  const newId = id ?? null;
+  if (newId === hoveredItemId) return;
+  const oldId = hoveredItemId;
+  hoveredItemId = newId;
+  if (oldId !== null) _applyItemHover(oldId, false);
+  if (newId !== null) _applyItemHover(newId, true);
+}
+
+function _applyItemHover(itemId, on) {
+  const group = meshes.get(itemId);
+  if (!group) return;
+  const isSelected = _appState?.selectedIds?.has(itemId);
+  if (on && isSelected) return; // selección tiene prioridad visual
+
+  group.traverse(child => {
+    // Strokes en vista top
+    if (child.isLine && child.userData?.isTopStroke && child.material) {
+      child.material.color.setHex(on ? 0xffffff : 0x111111);
+      child.material.opacity = on ? 0.9 : 0.48;
+      child.material.needsUpdate = true;
+    }
+    // Emissive sutil en vista ISO
+    if (child.isMesh && child.material && 'emissive' in child.material
+        && child.userData?.baseColor !== undefined && !isSelected) {
+      child.material.emissive = new THREE.Color(on ? 0xffffff : 0x000000);
+      child.material.emissiveIntensity = on ? 0.10 : 0;
+      child.material.needsUpdate = true;
+    }
+  });
+}
+
 function highlightSelection() {
   if (!_appState) return;
   const selectedSet = _appState.selectedIds || new Set();
@@ -874,9 +908,18 @@ function highlightSelection() {
     const it = _appState.items.find(x => x.id === id);
     const isSelected   = selectedSet.has(id);
     const isMarked     = markedSameStyle.has(id);
+    const isHovered    = id === hoveredItemId && !isSelected;
     const isLocked     = Boolean(it?.locked);
     const layerLocked  = lm ? !lm.isItemEditable(it) && !isLocked : false;
     const isCarpa      = it && isCarpaType(it.type);
+
+    // Sincronizar strokes de hover (top view)
+    g.traverse(child => {
+      if (!child.isLine || !child.userData?.isTopStroke || !child.material) return;
+      child.material.color.setHex(isHovered ? 0xffffff : 0x111111);
+      child.material.opacity = isHovered ? 0.9 : 0.48;
+      child.material.needsUpdate = true;
+    });
 
     g.traverse(child => {
       if (!child.isMesh || child.userData.baseColor === undefined) return;
@@ -897,7 +940,7 @@ function highlightSelection() {
           return;
         }
 
-        // ── Emissive highlight (blue select, yellow mark) ──
+        // ── Emissive highlight (blue select, yellow mark, white hover) ──
         if ('emissive' in material && material.emissive) {
           let emColor = 0x000000;
           let emIntensity = 0;
@@ -907,6 +950,9 @@ function highlightSelection() {
           } else if (isMarked) {
             emColor = 0xd4ff3a; // yellow-lime
             emIntensity = 0.18;
+          } else if (isHovered) {
+            emColor = 0xffffff; // white hover
+            emIntensity = 0.10;
           }
           material.emissive = new THREE.Color(emColor);
           material.emissiveIntensity = emIntensity;
@@ -1396,6 +1442,40 @@ function clearPlacementPreview() {
   if (wasZone) rebuildGrids();
 }
 
+function setMultiPlacementPreview(templates, cx, cz) {
+  clearMultiPlacementPreview();
+  templates.forEach(template => {
+    const item = {
+      ...template,
+      x: cx + (template._relX || 0),
+      z: cz + (template._relZ || 0),
+      y: template.y || 0,
+    };
+    const group = createModelForCurrentView(item) || new THREE.Group();
+    stylePlacementPreview(group);
+    group.position.set(item.x, item.y, item.z);
+    group.rotation.y = item.rotY || 0;
+    group.userData.isPlacementPreview = true;
+    scene.add(group);
+    multiPlacementPreviews.push({ group, relX: template._relX || 0, relZ: template._relZ || 0 });
+  });
+}
+
+function updateMultiPlacementPreview(x, z) {
+  multiPlacementPreviews.forEach(({ group, relX, relZ }) => {
+    group.position.x = x + relX;
+    group.position.z = z + relZ;
+  });
+}
+
+function clearMultiPlacementPreview() {
+  multiPlacementPreviews.forEach(({ group }) => {
+    scene.remove(group);
+    disposeGroup(group);
+  });
+  multiPlacementPreviews = [];
+}
+
 /* ─── API exportada ─── */
 
 /* ─── Canvas boundary (rectángulo de área de trabajo) ─── */
@@ -1476,6 +1556,10 @@ export const SceneManager = {
   setPlacementPreview,
   updatePlacementPreview,
   clearPlacementPreview,
+  setMultiPlacementPreview,
+  updateMultiPlacementPreview,
+  clearMultiPlacementPreview,
+  setHoveredItem,
   rebuildGrids,
   applyShadowState,
   setPlanTexture, updatePlanSize, updatePlanOpacity,

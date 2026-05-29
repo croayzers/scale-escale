@@ -30,7 +30,9 @@ let shiftDown = false;
 const wasdKeys = { w: false, a: false, s: false, d: false };
 let placementIndicator = null;
 let copiedItemTemplate = null;
+let copiedGroupTemplates = null; // multi-selección: array con posiciones relativas
 let placementPreviewVisible = false;
+let groupPlacementPreviewVisible = false;
 let formatModeActive = false;
 let _ctxAdvancedOpen = false;
 
@@ -56,13 +58,28 @@ function init() {
   });
   document.addEventListener('mousemove', e => {
     window._lastMousePos = { x: e.clientX, y: e.clientY };
+    setPointer(e);
     if (CatalogModal.hasPendingPlacement()) {
       updatePlacementIndicator(e.clientX, e.clientY);
       syncPlacementPreview(e.clientX, e.clientY);
     }
     if (SavedGroupPlacer.hasPendingGroupPlacement()) {
       updatePlacementIndicator(e.clientX, e.clientY);
+      syncGroupPlacementPreview(e.clientX, e.clientY);
     }
+    // Hover: detectar item bajo cursor cuando no hay drag ni placement activo
+    if (!dragging && !boxSelecting
+        && !CatalogModal.hasPendingPlacement()
+        && !SavedGroupPlacer.hasPendingGroupPlacement()
+        && !ZoneManager.isPlacementActive()) {
+      const hovered = getIntersectedItem();
+      SceneManager.setHoveredItem(hovered?.id ?? null);
+    } else {
+      SceneManager.setHoveredItem(null);
+    }
+  });
+  document.getElementById('scene-canvas')?.addEventListener('mouseleave', () => {
+    SceneManager.setHoveredItem(null);
   });
   document.addEventListener('pointerdown', onPlacementDocumentPointerDown, true);
   document.addEventListener('escale:catalog-placement-start', onPlacementStart);
@@ -280,7 +297,9 @@ function onPlacementStart(event) {
 
 function onPlacementEnd() {
   placementPreviewVisible = false;
+  groupPlacementPreviewVisible = false;
   SceneManager.clearPlacementPreview();
+  SceneManager.clearMultiPlacementPreview();
   syncPlacementCursor();
   hidePlacementIndicator();
   updateCursorReadout();
@@ -334,6 +353,20 @@ function syncPlacementPreview(clientX, clientY) {
   SceneManager.updatePlacementPreview(placement.x, placement.z, placement.y);
 }
 
+function syncGroupPlacementPreview(clientX, clientY) {
+  const placement = resolvePlacementPoint(clientX, clientY);
+  if (!placement) return;
+  const def = SavedGroupPlacer.getPendingGroupPlacement();
+  if (!def?.itemTemplates?.length) return;
+
+  if (!groupPlacementPreviewVisible) {
+    SceneManager.setMultiPlacementPreview(def.itemTemplates, placement.x, placement.z);
+    groupPlacementPreviewVisible = true;
+    return;
+  }
+  SceneManager.updateMultiPlacementPreview(placement.x, placement.z);
+}
+
 function isUiClickTarget(target) {
   return Boolean(target?.closest?.(
     '#catalog-modal, #dock, #header-mac, #inventory-panel, #context-menu, ' +
@@ -356,6 +389,28 @@ function placePendingItemAt(clientX, clientY) {
 }
 
 function copySelectedItem() {
+  // Multi-selección: copiar conjunto con posiciones relativas al centroide
+  if (AppState.selectedIds.size > 1) {
+    const items = [...AppState.selectedIds]
+      .map(id => AppState.items.find(i => i.id === id))
+      .filter(Boolean);
+    const cx = items.reduce((s, i) => s + i.x, 0) / items.length;
+    const cz = items.reduce((s, i) => s + i.z, 0) / items.length;
+    copiedGroupTemplates = items.map(item => {
+      const clone = JSON.parse(JSON.stringify(item));
+      delete clone.id;
+      delete clone._mesh;
+      delete clone._group;
+      clone.locked = false;
+      clone._relX = item.x - cx;
+      clone._relZ = item.z - cz;
+      return clone;
+    });
+    copiedItemTemplate = null;
+    return true;
+  }
+  // Un solo item
+  copiedGroupTemplates = null;
   if (AppState.selectedId === null) return false;
   const item = AppState.items.find(entry => entry.id === AppState.selectedId);
   if (!item) return false;
@@ -366,6 +421,16 @@ function copySelectedItem() {
 }
 
 function activateCopiedPlacement() {
+  // Multi-selección: usar SavedGroupPlacer para colocar el conjunto
+  if (copiedGroupTemplates) {
+    SavedGroupPlacer.activatePlacement({
+      id: 'clipboard',
+      name: `${copiedGroupTemplates.length} elementos copiados`,
+      itemTemplates: copiedGroupTemplates,
+    });
+    return true;
+  }
+  // Un solo item
   if (!copiedItemTemplate) return false;
   CatalogModal.setPendingItemTemplate(copiedItemTemplate, {
     source: 'clipboard',
@@ -1639,9 +1704,7 @@ function handleContextAction(action, value, id) {
     case 'bufftype': AppState.update(id, { subtype: value }); break;
     case 'duplicate': AppState.duplicate(id); break;
     case 'copy':
-      copiedItemTemplate = JSON.parse(JSON.stringify(item));
-      delete copiedItemTemplate.id;
-      copiedItemTemplate.locked = false;
+      copySelectedItem();
       break;
     case 'delete': AppState.remove(id); break;
 
