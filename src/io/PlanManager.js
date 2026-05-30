@@ -122,7 +122,8 @@ function togglePlanDropdown() {
     dropdown.style.top  = `${rect.bottom + 6}px`;
     dropdown.style.left = `${rect.left}px`;
     document.getElementById('plan-drop-search')?.classList.toggle('hidden', !canSearchPlans());
-    document.getElementById('plan-drop-org')?.classList.toggle('hidden', !canSharePlan());
+    // plan-drop-org oculto temporalmente
+    // document.getElementById('plan-drop-org')?.classList.toggle('hidden', !canSharePlan());
     dropdown.classList.remove('hidden');
   } else {
     dropdown.classList.add('hidden');
