@@ -19,8 +19,6 @@ let activeCam, activeControls;
 let groundPlane, planMesh, gridHelper, gridMain, axes;
 const meshes = new Map();
 let dragPlane;
-let gridWaveGroup = null;
-let gridWaveStart = null;
 let gridFadeStart = null;
 let gridOpacityScale = 0;
 const GRID_FADE_MS = 2400;
@@ -160,35 +158,8 @@ function init() {
   window.addEventListener('resize', onResize);
   animate();
   gridFadeStart = performance.now();
-  buildGridWave();
 }
 
-function buildGridWave() {
-  if (gridWaveGroup) return;
-  gridWaveGroup = new THREE.Group();
-
-  const RINGS = 10;
-  const segments = 80;
-  const basePts = [];
-  for (let i = 0; i <= segments; i++) {
-    const a = (i / segments) * Math.PI * 2;
-    basePts.push(Math.cos(a), 0, Math.sin(a));
-  }
-
-  for (let i = 0; i < RINGS; i++) {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute([...basePts], 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: 0 });
-    const ring = new THREE.Line(geo, mat);
-    ring.userData.waveDelay = i * 0.20;
-    ring.scale.setScalar(0.001);
-    ring.position.y = 0.015;
-    gridWaveGroup.add(ring);
-  }
-
-  scene.add(gridWaveGroup);
-  gridWaveStart = performance.now();
-}
 
 function buildRectGridGeo(sX, sZ, divX, divZ) {
   const verts = [];
@@ -796,32 +767,6 @@ function animate() {
     if (t >= 1) { gridOpacityScale = 1; gridFadeStart = null; }
   }
 
-  if (gridWaveGroup && gridWaveStart !== null) {
-    const elapsed = (performance.now() - gridWaveStart) / 1000;
-    const SPEED = 15;    // units/s
-    const MAX_R = 42;
-    const MAX_Y = 2.0;
-    let allGone = true;
-
-    gridWaveGroup.children.forEach(ring => {
-      const t = Math.max(0, elapsed - ring.userData.waveDelay);
-      const radius = t * SPEED;
-      if (radius < MAX_R) allGone = false;
-      const r = Math.min(MAX_R, radius);
-      ring.scale.setScalar(Math.max(0.001, r));
-      const norm = r / MAX_R;
-      const waveY = MAX_Y * Math.sin(Math.PI * norm) * Math.exp(-3.8 * norm);
-      ring.position.y = 0.015 + Math.max(0, waveY);
-      ring.material.opacity = Math.max(0, 0.52 * (1 - norm) * Math.min(1, t * 7));
-    });
-
-    if (allGone) {
-      scene.remove(gridWaveGroup);
-      gridWaveGroup.children.forEach(r => { r.geometry.dispose(); r.material.dispose(); });
-      gridWaveGroup = null;
-      gridWaveStart = null;
-    }
-  }
 
   renderer.render(scene, activeCam);
 }
