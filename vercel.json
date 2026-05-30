@@ -11,8 +11,7 @@
     "api/billing/portal.js":       { "memory": 256, "maxDuration": 10 },
     "api/billing/webhook.js":      { "memory": 256, "maxDuration": 10 },
     "api/email.js":                { "memory": 256, "maxDuration": 10 },
-    "api/plans/search.js":         { "memory": 256, "maxDuration": 10 },
-    "api/plans/community.js":     { "memory": 256, "maxDuration": 15 },
+    "api/plans/[action].js":       { "memory": 256, "maxDuration": 15 },
     "api/collab/[action].js":      { "memory": 256, "maxDuration": 15 },
     "api/org/[action].js":         { "memory": 256, "maxDuration": 10 },
     "api/public-config.js":        { "memory": 256, "maxDuration": 10 }

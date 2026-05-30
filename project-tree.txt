@@ -36,8 +36,7 @@ PROJECT STRUCTURE
 │   ├── org/
 │   │   └── [action].js
 │   ├── plans/
-│   │   ├── community.js
-│   │   └── search.js
+│   │   └── [action].js
 │   └── public-config.js
 ├── brand/
 │   ├── brand.json
