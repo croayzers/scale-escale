@@ -767,12 +767,7 @@ async function buildPdfBlob(imageDataUrl, modeLabel) {
   const brandPrimary = parseColor(company.colorPrimary, [37, 99, 235]);
   const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(20);
-  setPdfColor(pdf, brandPrimary);
-  pdf.text('E-scale', margin, margin + 6);
-
-  let headX = margin + pdf.getTextWidth('E-scale') + 5;
+  let headX = margin;
   if (company.logo) {
     try {
       const logoImage = await loadImage(company.logo);
@@ -788,8 +783,8 @@ async function buildPdfBlob(imageDataUrl, modeLabel) {
 
   const displayName = getCompanyDisplayName(company);
   if (displayName) {
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(13);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
     setPdfColor(pdf, brandPrimary);
     pdf.text(displayName, headX, margin + 6);
   }
@@ -946,8 +941,7 @@ async function buildPdfBlob(imageDataUrl, modeLabel) {
 
   pdf.setFontSize(7);
   setPdfColor(pdf, brandSecondary);
-  const footerBits = ['E-scale'];
-  if (company.name) footerBits.push(company.name);
+  const footerBits = ['Powered by E-scale.com'];
   if (company.venue) footerBits.push(company.venue);
   if (company.email) footerBits.push(company.email);
   pdf.text(footerBits.join(' · '), margin, pageHeight - 5);
@@ -1091,10 +1085,13 @@ async function buildAndPreviewDual(planoDataUrl, isoDataUrl) {
 async function buildPdfBlobDual(planoDataUrl, isoDataUrl, modeLabel) {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const total = 3;
 
-  await _addPdfPage(pdf, planoDataUrl, 'Plano', 'Vista cenital', modeLabel, false);
+  await _addPdfPage(pdf, planoDataUrl, 'Plano', 'Vista cenital', modeLabel, 1, total);
   pdf.addPage();
-  await _addPdfPage(pdf, isoDataUrl, '3D', 'Vista isometrica', modeLabel, true);
+  await _addPdfPage(pdf, isoDataUrl, '3D', 'Vista isometrica', modeLabel, 2, total);
+  pdf.addPage();
+  _addInventoryPage(pdf, modeLabel, 3, total);
 
   const company = AppState.company || {};
   const safeName = (company.name || 'escale')
@@ -1106,7 +1103,7 @@ async function buildPdfBlobDual(planoDataUrl, isoDataUrl, modeLabel) {
   return { blob, filename };
 }
 
-async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel, isSecondPage) {
+async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel, pageNum, totalPages) {
   const pageWidth = 297;
   const pageHeight = 210;
   const margin = 12;
@@ -1115,12 +1112,7 @@ async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel,
   const brandPrimary   = parseColor(company.colorPrimary,   [37, 99, 235]);
   const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(20);
-  setPdfColor(pdf, brandPrimary);
-  pdf.text('E-scale', margin, margin + 6);
-
-  let headX = margin + pdf.getTextWidth('E-scale') + 5;
+  let headX = margin;
   if (company.logo) {
     try {
       const logoImage = await loadImage(company.logo);
@@ -1134,8 +1126,8 @@ async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel,
 
   const displayName = getCompanyDisplayName(company);
   if (displayName) {
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(13);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
     setPdfColor(pdf, brandPrimary);
     pdf.text(displayName, headX, margin + 6);
   }
@@ -1201,12 +1193,115 @@ async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel,
 
   pdf.setFontSize(7);
   setPdfColor(pdf, brandSecondary);
-  const footerBits = ['E-scale'];
-  if (company.name)  footerBits.push(company.name);
+  const footerBits = ['Powered by E-scale.com'];
   if (company.venue) footerBits.push(company.venue);
   if (company.email) footerBits.push(company.email);
   pdf.text(footerBits.join(' · '), margin, pageHeight - 5);
-  pdf.text(`Pagina ${isSecondPage ? 2 : 1} / 2`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+  pdf.text(`Pagina ${pageNum} / ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+}
+
+function _addInventoryPage(pdf, modeLabel, pageNum, totalPages) {
+  const pageWidth  = 297;
+  const pageHeight = 210;
+  const margin     = 12;
+  const company    = AppState.company || {};
+  const eventName  = document.getElementById('inventory-event-name')?.value?.trim() || '';
+  const brandPrimary   = parseColor(company.colorPrimary,   [37, 99, 235]);
+  const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
+
+  // Header
+  let headX = margin;
+  // (logo se omite aquí para evitar async — ya cargado en páginas anteriores)
+  const displayName = getCompanyDisplayName(company);
+  if (displayName) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    setPdfColor(pdf, brandPrimary);
+    pdf.text(displayName, headX, margin + 6);
+  }
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.setTextColor(100);
+  pdf.text(`Planificador 3D · ${modeLabel}`, margin, margin + 11);
+
+  let infoY = margin + 15;
+  if (eventName) { pdf.text(`Evento: ${eventName}`, margin, infoY); infoY += 4; }
+  if (company.venue) { pdf.text(`Lugar: ${company.venue}`, margin, infoY); infoY += 4; }
+
+  const now = new Date();
+  const dateText = `${now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })} · ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  pdf.text(dateText, pageWidth - margin, margin + 6, { align: 'right' });
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  setPdfColor(pdf, brandSecondary);
+  pdf.text('Inventario', pageWidth - margin, margin + 13, { align: 'right' });
+
+  const separatorY = Math.max(margin + 18, infoY + 1);
+  setPdfColor(pdf, brandPrimary, 'draw');
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, separatorY, pageWidth - margin, separatorY);
+
+  // Inventario en dos columnas
+  const col1X = margin;
+  const col2X = margin + (pageWidth - margin * 2) / 2 + 4;
+  const cols  = [col1X, col2X];
+  let colIdx  = 0;
+  let invY    = separatorY + 8;
+  const bottomLimit = pageHeight - 16;
+
+  // PAX total
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(22);
+  setPdfColor(pdf, brandPrimary);
+  pdf.text(String(getInventoryTotalPax(AppState.items)), col1X, invY + 6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.setTextColor(100);
+  pdf.text('PAX TOTAL', col1X + 18, invY + 6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.text(`${getInventoryTotalItems(AppState.items)} elementos`, col1X + 18, invY + 10);
+  invY += 16;
+
+  groupInventoryLines(AppState.items).forEach(group => {
+    // Si no cabe la cabecera en la columna actual, saltar a la siguiente
+    if (invY + 10 > bottomLimit && colIdx === 0) {
+      colIdx = 1;
+      invY   = separatorY + 8;
+    }
+    const cx = cols[colIdx];
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.5);
+    setPdfColor(pdf, brandSecondary);
+    pdf.text(group.label.toUpperCase(), cx, invY);
+    setPdfColor(pdf, brandSecondary, 'draw');
+    pdf.setLineWidth(0.1);
+    pdf.line(cx, invY + 0.8, cx + (pageWidth - margin * 2) / 2 - 8, invY + 0.8);
+    invY += 4;
+
+    group.lines.forEach(line => {
+      if (invY > bottomLimit) return;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      setPdfColor(pdf, brandPrimary);
+      pdf.text(`${line.count}x`, cx, invY);
+      pdf.text(truncateLabel(pdf, line.label, 52), cx + 6, invY);
+      setPdfColor(pdf, brandSecondary);
+      pdf.text(line.pax > 0 ? `${line.pax}p` : '-', cx + (pageWidth - margin * 2) / 2 - 10, invY, { align: 'right' });
+      invY += 3.8;
+    });
+    invY += 2;
+  });
+
+  // Footer
+  pdf.setFontSize(7);
+  setPdfColor(pdf, brandSecondary);
+  const footerBits = ['Powered by E-scale.com'];
+  if (company.venue) footerBits.push(company.venue);
+  if (company.email) footerBits.push(company.email);
+  pdf.text(footerBits.join(' · '), margin, pageHeight - 5);
+  pdf.text(`Pagina ${pageNum} / ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
 }
 
 export const ExportManager = {
