@@ -230,7 +230,7 @@ body.cursor-measure * { cursor: crosshair !important; }
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: #07070a;
+  background: #f5f3ee;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,14 +242,14 @@ body.cursor-measure * { cursor: crosshair !important; }
   gap: 18px;
 }
 #splash-logo {
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+  filter: drop-shadow(0 0 8px rgba(0,0,0,0.15));
 }
 #splash-wordmark {
   font-family: 'Inter Tight', sans-serif;
   font-size: 21px;
   font-weight: 700;
   letter-spacing: 0.32em;
-  color: #ffffff;
+  color: #1a1a1c;
   margin-top: -4px;
 }
 #splash-sub {
@@ -257,13 +257,13 @@ body.cursor-measure * { cursor: crosshair !important; }
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.32);
+  color: rgba(26,26,28,0.4);
   margin-top: -10px;
 }
 #splash-bar-wrap {
   width: 180px;
   height: 1.5px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(26,26,28,0.12);
   border-radius: 1px;
   overflow: hidden;
   margin-top: 6px;
@@ -271,7 +271,7 @@ body.cursor-measure * { cursor: crosshair !important; }
 #splash-bar {
   height: 100%;
   width: 0%;
-  background: #ffffff;
+  background: #1a1a1c;
   border-radius: 1px;
 }
 #splash-canvas {

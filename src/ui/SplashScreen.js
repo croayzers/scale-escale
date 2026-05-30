@@ -34,8 +34,8 @@ export function Grid_onda(canvas, onComplete) {
 
   /* ── Escena Three.js ── */
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x07070a);
-  scene.fog = new THREE.FogExp2(0x07070a, 0.03);
+  scene.background = new THREE.Color(0xf5f3ee);
+  scene.fog = new THREE.FogExp2(0xf5f3ee, 0.03);
 
   const camera = new THREE.PerspectiveCamera(46, W / H, 0.1, 200);
   camera.position.set(0, 12, 17);
@@ -72,24 +72,24 @@ export function Grid_onda(canvas, onComplete) {
 
   /* ── Superficie sólida oscura y reflectante ── */
   const solidMat = new THREE.MeshStandardMaterial({
-    color: 0x0e0e12, roughness: 0.18, metalness: 0.92,
+    color: 0xedeae4, roughness: 0.35, metalness: 0.0,
   });
   scene.add(new THREE.Mesh(geo, solidMat));
 
-  /* ── Malla de alambre blanca translúcida (misma geometría) ── */
+  /* ── Malla de alambre gris oscuro (misma geometría) ── */
   const wireMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff, wireframe: true, transparent: true, opacity: 0.11,
+    color: 0x2a2a2e, wireframe: true, transparent: true, opacity: 0.18,
   });
   const wire = new THREE.Mesh(geo, wireMat);
   wire.position.y = 0.005;
   scene.add(wire);
 
   /* ── Luces monocromas ── */
-  scene.add(new THREE.AmbientLight(0xffffff, 0.18));
-  const key = new THREE.DirectionalLight(0xffffff, 2.0);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const key = new THREE.DirectionalLight(0xffffff, 1.2);
   key.position.set(5, 14, 8);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xdddddd, 0.55);
+  const fill = new THREE.DirectionalLight(0xcccccc, 0.4);
   fill.position.set(-7, 5, -10);
   scene.add(fill);
 
@@ -130,29 +130,29 @@ const _LOGO = `
      width="130" height="130" style="overflow:visible">
   <!-- Anillo exterior punteado -->
   <circle cx="50" cy="50" r="44" fill="none"
-          stroke="rgba(255,255,255,0.1)" stroke-width="0.6" stroke-dasharray="2.5 6"/>
+          stroke="rgba(26,26,28,0.12)" stroke-width="0.6" stroke-dasharray="2.5 6"/>
   <!-- Anillo interior -->
   <circle cx="50" cy="50" r="36" fill="none"
-          stroke="rgba(255,255,255,0.25)" stroke-width="0.9"/>
+          stroke="rgba(26,26,28,0.28)" stroke-width="0.9"/>
   <!-- E letterform -->
-  <g id="logo-e" stroke="white" stroke-width="4" stroke-linecap="round"
+  <g id="logo-e" stroke="#1a1a1c" stroke-width="4" stroke-linecap="round"
      stroke-linejoin="round" fill="none">
     <line x1="32" y1="28" x2="32" y2="72"/>
     <line x1="32" y1="28" x2="68" y2="28"/>
     <line x1="32" y1="50" x2="60" y2="50"/>
     <line x1="32" y1="72" x2="68" y2="72"/>
   </g>
-  <!-- Acento: punto brillante en esquina superior derecha -->
-  <circle cx="74" cy="27" r="3.2" fill="white" opacity="0.75"/>
+  <!-- Acento -->
+  <circle cx="74" cy="27" r="3.2" fill="#1a1a1c" opacity="0.7"/>
   <!-- Marcadores de esquina -->
-  <line x1="8"  y1="16" x2="19" y2="16" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="15" y1="9"  x2="15" y2="20" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="81" y1="16" x2="92" y2="16" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="85" y1="9"  x2="85" y2="20" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="8"  y1="84" x2="19" y2="84" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="15" y1="80" x2="15" y2="91" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="81" y1="84" x2="92" y2="84" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
-  <line x1="85" y1="80" x2="85" y2="91" stroke="rgba(255,255,255,0.3)" stroke-width="1.1"/>
+  <line x1="8"  y1="16" x2="19" y2="16" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="15" y1="9"  x2="15" y2="20" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="81" y1="16" x2="92" y2="16" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="85" y1="9"  x2="85" y2="20" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="8"  y1="84" x2="19" y2="84" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="15" y1="80" x2="15" y2="91" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="81" y1="84" x2="92" y2="84" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
+  <line x1="85" y1="80" x2="85" y2="91" stroke="rgba(26,26,28,0.3)" stroke-width="1.1"/>
 </svg>`;
 
 /* ════════════════════════════════════════════════════════
@@ -209,11 +209,11 @@ export function start(onDone) {
   // Flash del logo al completar carga
   const flashAt = PROGRESS_MS / 1000 + 0.05;
   tl.to('#splash-logo', {
-    filter: 'brightness(4.5) drop-shadow(0 0 32px white)',
+    filter: 'brightness(0.1) drop-shadow(0 0 24px rgba(0,0,0,0.6))',
     duration: 0.18, ease: 'power4.in',
   }, flashAt)
     .to('#splash-logo', {
-      filter: 'brightness(1) drop-shadow(0 0 10px rgba(255,255,255,0.35))',
+      filter: 'brightness(1) drop-shadow(0 0 8px rgba(0,0,0,0.15))',
       duration: 0.32, ease: 'power2.out',
     }, flashAt + 0.18);
 
