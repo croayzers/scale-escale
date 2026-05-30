@@ -356,8 +356,11 @@ async function bootstrap() {
     setTimeout(() => PlanSaveModal.open(), 900);
   });
 
-  // Flujo "Buscar plano": plano org cargado → abrir Zonas
+  // Flujo "Buscar plano": plano org cargado → calibración ya hecha → abrir Zonas
   document.addEventListener('escale:org-plan-loaded', () => {
+    // Marcar calibración como completada (el plano ya viene con dimensiones)
+    state.steps.calibrated = true;
+    updatePlanGuide();
     setTimeout(() => {
       HeaderActionMenus.openMenu('zones');
     }, 400);
