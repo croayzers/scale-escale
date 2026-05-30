@@ -208,7 +208,8 @@ export function start(onDone) {
   if (typeof THREE === 'undefined') { onDone?.(); return; }
 
   const canvas = _buildCanvas();
-  canvas.style.opacity = '1';
+  canvas.style.opacity = '0.9';
+  canvas.style.transition = 'opacity 0.9s ease';
 
   Grid_onda(canvas, () => {
     window.SceneManager?.startGridFade?.();
