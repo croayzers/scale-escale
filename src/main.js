@@ -476,7 +476,8 @@ async function bootstrap() {
 
   document.getElementById('zones-demo-cancel')?.addEventListener('click', closeZonesDemo);
 
-  document.getElementById('zones-demo-start')?.addEventListener('click', () => {
+  document.getElementById('zones-demo-start')?.addEventListener('click', e => {
+    e.stopPropagation();
     closeZonesDemo();
     HeaderActionMenus.openMenu('zones');
     pulseGuideTarget(document.getElementById('btn-zones-menu'));
