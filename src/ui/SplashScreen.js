@@ -28,18 +28,25 @@ function _rippleY(x, z, t) {
    GRID_ONDA — rejilla 3D con ripple físico
    Exportada para usarse externamente si se desea.
    ════════════════════════════════════════════════════════ */
-export function Grid_onda(canvas, onComplete) {
+export function Grid_onda(canvas, onComplete, mode = 'perspective') {
   const W = canvas.width  = window.innerWidth;
   const H = canvas.height = window.innerHeight;
 
   /* ── Escena Three.js ── */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf5f3ee);
-  scene.fog = new THREE.FogExp2(0xf5f3ee, 0.03);
 
-  const camera = new THREE.PerspectiveCamera(46, W / H, 0.1, 200);
-  camera.position.set(0, 12, 17);
-  camera.lookAt(0, 0, 0);
+  const camera = new THREE.PerspectiveCamera(mode === 'zenith' ? 52 : 46, W / H, 0.1, 200);
+  if (mode === 'zenith') {
+    camera.position.set(0, 24, 0.001); // casi cenital (0.001 evita gimbal)
+    camera.lookAt(0, 0, 0);
+    camera.up.set(0, 0, -1);
+    scene.fog = new THREE.FogExp2(0xf5f3ee, 0.012); // niebla más suave desde arriba
+  } else {
+    camera.position.set(0, 12, 17);
+    camera.lookAt(0, 0, 0);
+    scene.fog = new THREE.FogExp2(0xf5f3ee, 0.03);
+  }
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
@@ -228,16 +235,13 @@ export function start(onDone) {
   tl.to(canvas, {
     opacity: 1, duration: 0.5, ease: 'power2.out',
     onStart() {
+      const mode = Math.random() < 0.5 ? 'perspective' : 'zenith';
       Grid_onda(canvas, () => {
-        // Fade out del canvas 3D y liberar control a la app
         gsap.to(canvas, {
           opacity: 0, duration: 0.9, ease: 'power2.inOut',
-          onComplete() {
-            canvas.remove();
-            onDone?.();
-          },
+          onComplete() { canvas.remove(); onDone?.(); },
         });
-      });
+      }, mode);
     },
   }, exitAt + 0.12);
 
