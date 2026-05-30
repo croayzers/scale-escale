@@ -42,6 +42,26 @@
 </head>
 <body>
 
+<!-- ============ APP LOADER (se muestra antes que nada) ============ -->
+<div id="app-loader">
+  <div id="app-loader-inner">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="72" height="72" style="overflow:visible;margin-bottom:4px">
+      <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(26,26,28,0.1)" stroke-width="0.6" stroke-dasharray="2.5 6"/>
+      <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(26,26,28,0.22)" stroke-width="0.9"/>
+      <g stroke="#1a1a1c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <line x1="32" y1="28" x2="32" y2="72"/>
+        <line x1="32" y1="28" x2="68" y2="28"/>
+        <line x1="32" y1="50" x2="60" y2="50"/>
+        <line x1="32" y1="72" x2="68" y2="72"/>
+      </g>
+      <circle cx="74" cy="27" r="3.2" fill="#1a1a1c" opacity="0.65"/>
+    </svg>
+    <div id="app-loader-wordmark">E·SCALE</div>
+    <div id="app-loader-status">Conectando…</div>
+    <div id="app-loader-bar-wrap"><div id="app-loader-bar"></div></div>
+  </div>
+</div>
+
 <canvas id="scene-canvas"></canvas>
 
 

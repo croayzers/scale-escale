@@ -931,16 +931,34 @@ function init() {
   });
 
   if (hasRecoveredIdentity()) {
+    // Auto-login: mostrar mensaje de bienvenida en el loader
+    const name = AppState.company.authDisplayName || AppState.company.authEmail?.split('@')[0] || '';
+    const loaderStatus = document.getElementById('app-loader-status');
+    const loaderBar    = document.getElementById('app-loader-bar');
+    if (loaderStatus) loaderStatus.textContent = name ? `Bienvenido de vuelta, ${name}` : 'Cargando tu espacio…';
+    if (loaderBar) requestAnimationFrame(() => { loaderBar.style.width = '100%'; });
     closeAccessModal();
     syncAccessUi();
     syncAuthUi();
     return;
   }
 
+  // Login necesario: cerrar loader y mostrar access modal
+  _dismissLoader(300);
+
   // Guest joining a collaboration session doesn't need the login/onboarding flow
   if (new URLSearchParams(window.location.search).get('collab')) return;
 
   openAccessModal();
+}
+
+function _dismissLoader(delay = 0) {
+  const el = document.getElementById('app-loader');
+  if (!el) return;
+  setTimeout(() => {
+    el.classList.add('al-fade');
+    setTimeout(() => el.remove(), 500);
+  }, delay);
 }
 
 /* ─── Company Readiness Gate ─────────────────────────────────────────────────

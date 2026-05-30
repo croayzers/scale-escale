@@ -224,6 +224,57 @@ body.cursor-measure * { cursor: crosshair !important; }
 .zones-demo-run .zd-lbl-txt  { animation: calAppear 0.25s ease 1.9s both; }
 
 /* ══════════════════════════════════════════════════════
+   APP LOADER — cubre el app desde el primer render
+   ══════════════════════════════════════════════════════ */
+#app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  background: #f5f3ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+#app-loader.al-fade { opacity: 0; pointer-events: none; }
+#app-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+#app-loader-wordmark {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: #1a1a1c;
+}
+#app-loader-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(26,26,28,0.38);
+  min-height: 16px;
+  transition: opacity 0.3s ease;
+}
+#app-loader-bar-wrap {
+  width: 140px;
+  height: 1.5px;
+  background: rgba(26,26,28,0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+#app-loader-bar {
+  height: 100%;
+  width: 0%;
+  background: #1a1a1c;
+  border-radius: 1px;
+  transition: width 2s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ══════════════════════════════════════════════════════
    SPLASH SCREEN + GRID_ONDA
    ══════════════════════════════════════════════════════ */
 #splash-overlay {

@@ -724,11 +724,19 @@ async function bootstrap() {
   if (!welcomeUnlocked && welcomeModal) welcomeModal.style.display = 'none';
   if (window.lucide) lucide.createIcons();
 
-  // Auto-login: splash sin pasar por el flujo de bienvenida
+  // Auto-login: esperar 2s (loader visible), cerrar loader y lanzar splash
   const hasSession = AuthManager.isAuthenticated?.() ||
     ['authenticated', 'authenticated_local'].includes(AppState.company?.authStatus);
   if (!welcomeUnlocked && !isCollabInvite && hasSession) {
-    SplashScreen.start();
+    setTimeout(() => {
+      const loaderEl = document.getElementById('app-loader');
+      if (loaderEl) {
+        loaderEl.classList.add('al-fade');
+        setTimeout(() => { loaderEl.remove(); SplashScreen.start(); }, 500);
+      } else {
+        SplashScreen.start();
+      }
+    }, 2000);
   }
 
   console.info('[E-scale] arranque OK');
