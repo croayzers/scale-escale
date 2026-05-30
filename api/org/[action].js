@@ -5,7 +5,11 @@ const {
   listOrgInvitations,
   deleteOrgInvitation,
   listOrgMembers,
-  removeOrgMember
+  removeOrgMember,
+  listOrgFloorPlans,
+  saveOrgFloorPlan,
+  loadOrgFloorPlanById,
+  deleteOrgFloorPlan,
 } = require('../../lib/supabase');
 const { sendEmail } = require('../../lib/resend');
 const { env } = require('../../lib/env');
@@ -102,6 +106,46 @@ async function handleMembers(req, res, access) {
   return methodNotAllowed(req, res, ['GET', 'DELETE']);
 }
 
+async function handlePlans(req, res, access) {
+  const orgId = access.organization.id;
+
+  if (req.method === 'GET') {
+    if (req.query?.id) {
+      const id = String(req.query.id).trim();
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return badRequest(res, 'id inválido');
+      const plan = await loadOrgFloorPlanById(orgId, id);
+      if (!plan) return json(res, 404, { ok: false });
+      return json(res, 200, { ok: true, plan });
+    }
+    const plans = await listOrgFloorPlans(orgId);
+    return json(res, 200, { ok: true, plans });
+  }
+
+  if (req.method === 'POST') {
+    const body = await readJsonBody(req);
+    const { name, ciudad = null, tipo = null, imageDataUrl = null, widthM, lengthM, opacity, venue = null } = body;
+    if (!name?.trim()) return badRequest(res, 'name requerido');
+    const result = await saveOrgFloorPlan({
+      orgId,
+      userId: access.user?.id,
+      userName: access.user?.fullName || access.user?.email,
+      name, venue, ciudad, tipo, widthM, lengthM, opacity, imageDataUrl,
+    });
+    if (result?.skipped) return json(res, 200, { ok: true, skipped: true });
+    return json(res, 200, { ok: true, plan: result });
+  }
+
+  if (req.method === 'DELETE') {
+    const body = await readJsonBody(req);
+    const id = String(body?.id || '').trim();
+    if (!id) return badRequest(res, 'id requerido');
+    await deleteOrgFloorPlan(orgId, id);
+    return json(res, 200, { ok: true });
+  }
+
+  return methodNotAllowed(req, res, ['GET', 'POST', 'DELETE']);
+}
+
 module.exports = async function handler(req, res) {
   const action = req.query?.action || req.url?.split('/').pop()?.split('?')[0];
   try {
@@ -112,6 +156,7 @@ module.exports = async function handler(req, res) {
 
     if (action === 'invite')  return await handleInvite(req, res, access);
     if (action === 'members') return await handleMembers(req, res, access);
+    if (action === 'plans')   return await handlePlans(req, res, access);
     return json(res, 404, { ok: false, error: 'unknown_action' });
   } catch (error) {
     return serverError(res, error);

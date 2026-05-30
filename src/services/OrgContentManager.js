@@ -1,111 +1,113 @@
 /* ─────────────────────────────────────────────────────────
    ORG CONTENT MANAGER — Planos y plantillas compartidos
-   entre miembros de la misma organización via Supabase.
+   entre miembros de la misma organización.
+   Las operaciones de org_floor_plans se enrutan al servidor
+   (/api/org/plans) usando service role key para evitar RLS.
    ───────────────────────────────────────────────────────── */
 
 import { AuthManager } from './AuthManager.js';
 import { AppState } from '../core/AppState.js';
 
-const T_PLANS     = 'org_floor_plans';
 const T_TEMPLATES = 'org_templates';
 
 /* ─── Accesos ───────────────────────────────────────────── */
+function _db()     { return AuthManager.getSupabaseClient?.() ?? null; }
+function _orgId()  { return AppState.company?.organizationId || null; }
+function _userId() { return AppState.company?.authUserId || null; }
+function _name()   { return AppState.company?.authDisplayName || AppState.company?.authEmail || null; }
 
-function _db()      { return AuthManager.getSupabaseClient?.() ?? null; }
-function _orgId()   { return AppState.company?.organizationId || null; }
-function _userId()  { return AppState.company?.authUserId || null; }
-function _name()    { return AppState.company?.authDisplayName || AppState.company?.authEmail || null; }
-export  function canSync() { return Boolean(_db() && _orgId()); }
+export function canSync() { return Boolean(_db() && _orgId()); }
+
+async function _getToken() {
+  const db = _db();
+  if (!db) return null;
+  try {
+    const { data } = await db.auth.getSession();
+    return data?.session?.access_token || null;
+  } catch { return null; }
+}
 
 function _toast(msg, kind = 'info') {
   document.dispatchEvent(new CustomEvent('escale:toast', { detail: { msg, kind } }));
 }
 
 /* ════════════════════════════════════════════════════════
-   PLANOS (org_floor_plans)
+   PLANOS — server-side (bypass RLS)
    ════════════════════════════════════════════════════════ */
 
-/**
- * Guarda el plano actual en la nube.
- * Devuelve { skipped: true } si ya existe uno con el mismo nombre.
- */
+export async function listFloorPlans() {
+  const token = await _getToken();
+  if (!token) return [];
+  try {
+    const res = await fetch('/api/org/plans', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    });
+    if (!res.ok) { console.error('[OrgContentManager] listFloorPlans HTTP', res.status); return []; }
+    const data = await res.json();
+    return data.plans ?? [];
+  } catch (err) {
+    console.error('[OrgContentManager] listFloorPlans:', err);
+    return [];
+  }
+}
+
 export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity, ciudad = null, tipo = null }) {
-  if (!canSync()) return null;
-  const trimName = name.trim();
-
-  // Deduplicación
-  const { data: dup } = await _db()
-    .from(T_PLANS)
-    .select('id')
-    .eq('organization_id', _orgId())
-    .eq('name', trimName)
-    .maybeSingle();
-  if (dup) return { skipped: true };
-
-  const { data, error } = await _db()
-    .from(T_PLANS)
-    .insert({
-      organization_id:          _orgId(),
-      created_by_user_id:       _userId(),
-      created_by_display_name:  _name(),
-      name:                     trimName,
-      venue:                    AppState.company?.venue || null,
+  const token = await _getToken();
+  if (!token) return null;
+  const res = await fetch('/api/org/plans', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      name: name.trim(),
       ciudad,
       tipo,
-      width_m:                  widthM,
-      length_m:                 lengthM,
-      opacity:                  opacity,
-      image_data_url:           imageDataUrl,
+      imageDataUrl,
+      widthM,
+      lengthM,
+      opacity,
+      venue: AppState.company?.venue || null,
     })
-    .select('id, name, ciudad, tipo, width_m, length_m, opacity, created_by_display_name, created_at')
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.skipped) return { skipped: true };
+  return data.plan || null;
 }
 
-/** Lista los planos de la organización (sin imagen para ir ligero). */
-export async function listFloorPlans() {
-  if (!canSync()) return [];
-  const { data, error } = await _db()
-    .from(T_PLANS)
-    .select('id, name, venue, ciudad, tipo, width_m, length_m, opacity, created_by_display_name, created_at')
-    .eq('organization_id', _orgId())
-    .order('created_at', { ascending: false });
-  return error ? [] : (data ?? []);
-}
-
-/** Carga la imagen + datos de un plano específico. */
 export async function loadFloorPlan(id) {
-  if (!canSync()) return null;
-  const { data, error } = await _db()
-    .from(T_PLANS)
-    .select('id, name, width_m, length_m, opacity, image_data_url')
-    .eq('id', id)
-    .eq('organization_id', _orgId())
-    .single();
-  return error ? null : data;
+  const token = await _getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`/api/org/plans?id=${encodeURIComponent(id)}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.plan || null;
+  } catch { return null; }
 }
 
-/** Elimina un plano (solo el creador). */
 export async function deleteFloorPlan(id) {
-  if (!canSync()) return;
-  await _db().from(T_PLANS).delete().eq('id', id).eq('organization_id', _orgId());
+  const token = await _getToken();
+  if (!token) return;
+  await fetch('/api/org/plans', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id })
+  });
 }
 
 /* ════════════════════════════════════════════════════════
-   PLANTILLAS (org_templates)
+   PLANTILLAS — sigue usando el cliente Supabase
    ════════════════════════════════════════════════════════ */
 
-/**
- * Guarda una plantilla en la nube.
- * Devuelve { skipped: true } si ya existe una con el mismo nombre y tipo.
- */
 export async function saveTemplate({ name, kind, data }) {
   if (!canSync()) return null;
   const trimName = name.trim();
-
-  // Deduplicación por nombre + tipo
   const { data: dup } = await _db()
     .from(T_TEMPLATES)
     .select('id')
@@ -114,25 +116,22 @@ export async function saveTemplate({ name, kind, data }) {
     .eq('name', trimName)
     .maybeSingle();
   if (dup) return { skipped: true };
-
   const { data: row, error } = await _db()
     .from(T_TEMPLATES)
     .insert({
-      organization_id:          _orgId(),
-      created_by_user_id:       _userId(),
-      created_by_display_name:  _name(),
-      name:                     trimName,
+      organization_id:         _orgId(),
+      created_by_user_id:      _userId(),
+      created_by_display_name: _name(),
+      name: trimName,
       kind,
       data,
     })
     .select('id, name, kind, created_by_display_name, created_at')
     .single();
-
   if (error) throw new Error(error.message);
   return row;
 }
 
-/** Lista plantillas de la organización por tipo ('base' | 'planning'). */
 export async function listTemplates(kind) {
   if (!canSync()) return [];
   const { data, error } = await _db()
@@ -144,7 +143,6 @@ export async function listTemplates(kind) {
   return error ? [] : (data ?? []);
 }
 
-/** Carga los datos completos de una plantilla. */
 export async function loadTemplate(id) {
   if (!canSync()) return null;
   const { data, error } = await _db()
@@ -156,7 +154,6 @@ export async function loadTemplate(id) {
   return error ? null : data;
 }
 
-/** Elimina una plantilla (solo el creador). */
 export async function deleteTemplate(id) {
   if (!canSync()) return;
   await _db().from(T_TEMPLATES).delete().eq('id', id).eq('organization_id', _orgId());
