@@ -133,6 +133,14 @@ function init() {
     controls.target.add(delta);
     cam.position.add(delta);
   })();
+
+  // ── Protección contra cierre/recarga accidental cuando hay items en el plano ──
+  window.addEventListener('beforeunload', e => {
+    if (AppState.items.length > 0) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 }
 
 function setPointer(e) {
@@ -1797,6 +1805,22 @@ function toggleFormatMode(active) {
 
 function onKeyDown(e) {
   if (e.key === 'Shift') shiftDown = true;
+
+  // ── Bloquear atajos de navegador que pueden causar pérdida de datos ──
+  const ctrl = e.ctrlKey || e.metaKey;
+  const k = e.key;
+  if (
+    (ctrl && (k === 'r' || k === 'R')) ||          // Ctrl+R / Ctrl+Shift+R: recargar
+    k === 'F5' ||                                   // F5: recargar
+    (ctrl && k === 'F5') ||                         // Ctrl+F5: recargar forzado
+    (ctrl && (k === 'w' || k === 'W')) ||           // Ctrl+W: cerrar pestaña
+    (ctrl && (k === 'n' || k === 'N')) ||           // Ctrl+N: nueva ventana
+    (ctrl && (k === 't' || k === 'T'))              // Ctrl+T: nueva pestaña
+  ) {
+    e.preventDefault();
+    return;
+  }
+
   const activeTag = document.activeElement?.tagName;
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(activeTag) || document.activeElement?.isContentEditable) return;
 

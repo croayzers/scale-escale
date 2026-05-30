@@ -201,6 +201,7 @@ export function collapseDock() {
   // Colapsar
   items && (items.style.display = 'none');
   logo  && (logo.style.display  = 'flex');
+  dock.classList.add('dock-collapsed');
   dock.style.cssText += `;width:52px;height:52px;border-radius:50%;padding:6px;
     overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:default;`;
 }
@@ -237,6 +238,7 @@ function _expandDock() {
       dock.style.width = ''; dock.style.height = '';
       dock.style.borderRadius = ''; dock.style.padding = '';
       dock.style.overflow = ''; dock.style.cursor = '';
+      dock.classList.remove('dock-collapsed');
 
       // Fase 2: revelar botones de 2 en 2 desde el centro
       const catButtons = allChildren.filter(el => el.dataset?.dockKind === 'category');

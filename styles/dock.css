@@ -508,6 +508,7 @@ body.has-items #empty-hint { display: none; }
 #dock {
   isolation: isolate;
 }
+#dock.dock-collapsed::before { display: none; }
 #dock::before {
   content: '';
   position: absolute;
