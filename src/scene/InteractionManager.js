@@ -14,6 +14,7 @@ import { SavedGroupPlacer }  from '../core/SavedGroupPlacer.js';
 import { SavedGroupLibrary } from '../core/SavedGroupLibrary.js';
 import { MeasureManager }    from '../ui/MeasureManager.js';
 import { PredictiveArray }  from '../ui/PredictiveArray.js';
+import { ContextSpawnMenu } from '../ui/ContextSpawnMenu.js';
 
 function isViewer() { return CollabManager.localRole === 'viewer'; }
 
@@ -764,7 +765,17 @@ function onContextMenu(e) {
   }
   setPointer(e);
   const item = getIntersectedItem();
-  if (!item) { hideContextMenu(); return; }
+  if (!item) {
+    hideContextMenu();
+    // Raycast al suelo Y=0 y mostrar menú de spawn rápido
+    raycaster.setFromCamera(pointer, SceneManager.activeCam);
+    const ground = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(SceneManager.dragPlane, ground)) {
+      ContextSpawnMenu.show(e.clientX, e.clientY, ground);
+    }
+    return;
+  }
+  ContextSpawnMenu.hide();
   if (AppState.selectedIds.size <= 1) AppState.select(item.id);
   showContextMenu(e.clientX, e.clientY, item);
 }

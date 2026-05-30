@@ -177,6 +177,7 @@ PROJECT STRUCTURE
 │       ├── CollabIsland.js
 │       ├── CollabJoinModal.js
 │       ├── CollabPresenceBar.js
+│       ├── ContextSpawnMenu.js
 │       ├── Dock.js
 │       ├── FeedbackModal.js
 │       ├── HeaderActionMenus.js

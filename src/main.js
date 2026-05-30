@@ -39,6 +39,7 @@ import { MeasureManager }     from './ui/MeasureManager.js';
 import { PlanSaveModal }      from './ui/PlanSaveModal.js';
 import { PredictiveArray }    from './ui/PredictiveArray.js';
 import { SplashScreen }      from './ui/SplashScreen.js';
+import { ContextSpawnMenu }  from './ui/ContextSpawnMenu.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -99,6 +100,7 @@ async function bootstrap() {
   safeInit('PlanSaveModal',  () => PlanSaveModal.init());
   AppBridge.init();
   // AICopilot disabled
+  safeInit('ContextSpawnMenu', () => ContextSpawnMenu.init());
   safeInit('CollabJoinModal',    () => CollabJoinModal.init());
   safeInit('CollabInviteModal',  () => CollabInviteModal.init());
   safeInit('CollabIsland',       () => CollabIsland.init());
@@ -342,6 +344,11 @@ async function bootstrap() {
   document.addEventListener('escale:scene-insights-changed', e => {
     updatePlanGuide();
     const reason = e.detail?.reason;
+    // Trackear último tipo añadido para el menú de spawn rápido
+    if (reason === 'add') {
+      const last = AppState.items[AppState.items.length - 1];
+      if (last?.type) ContextSpawnMenu.pushToHistory(last.type);
+    }
     if (['select', 'select-many', 'deselect', 'add', 'remove', 'undo'].includes(reason)) {
       PredictiveArray.onSelectionChanged();
     }
