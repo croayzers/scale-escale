@@ -21,7 +21,7 @@ const meshes = new Map();
 let dragPlane;
 let gridFadeStart = null;
 let gridOpacityScale = 0;
-const GRID_FADE_MS = 2400;
+const GRID_FADE_MS = 600;
 let directionalLight, ambientLight, fillLight;
 let cotasGroup;
 let placementPreview = null;
