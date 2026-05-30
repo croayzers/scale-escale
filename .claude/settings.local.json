@@ -8,7 +8,10 @@
       "Bash(Get-ChildItem -Path \"x:\\\\App\\\\E_scale\" -Directory)",
       "Bash(Select-Object Name)",
       "Bash(node generate-tree-json.js)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m 'Grid_onda: siempre modo cenital *)"
     ]
   }
 }

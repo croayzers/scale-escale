@@ -79,6 +79,9 @@ function injectStyles() {
     .ci-share-email:hover { background:#1e1e22; }
     .ci-end-btn { background:#b91c1c; border:none; border-radius:8px; color:#fff; font-size:13px; padding:8px 16px; cursor:pointer; transition:background .15s; }
     .ci-end-btn:hover { background:#dc2626; }
+    .ci-editor-warn { display:none; margin-top:10px; padding:9px 12px; background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.35); border-radius:8px; font-size:12px; color:#f59e0b; line-height:1.5; gap:7px; align-items:flex-start; }
+    .ci-editor-warn.visible { display:flex; }
+    .ci-editor-warn-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
   `;
   document.head.appendChild(s);
 }
@@ -105,9 +108,13 @@ export const CollabInviteModal = {
             <div class="ci-role-group" style="text-align:left; margin-bottom:16px;">
               <label class="ci-label">Permiso del invitado</label>
               <select data-ci="role-select" class="ci-role-select">
-                <option value="editor">✏️ Editor — puede mover y añadir elementos</option>
                 <option value="viewer">👁 Visor — solo ve los cambios en tiempo real</option>
+                <option value="editor">✏️ Editor — puede mover y añadir elementos</option>
               </select>
+              <div data-ci="editor-warn" class="ci-editor-warn">
+                <span class="ci-editor-warn-icon">⚠️</span>
+                <span>Tenga en cuenta que el modo editor, en móvil aún no está disponible.</span>
+              </div>
             </div>
             <button data-ci="create-link-btn" class="ci-create-btn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -153,6 +160,11 @@ export const CollabInviteModal = {
     document.body.appendChild(_el);
 
     q('close')?.addEventListener('click', () => this.hide());
+
+    q('role-select')?.addEventListener('change', () => {
+      const warn = q('editor-warn');
+      if (warn) warn.classList.toggle('visible', q('role-select')?.value === 'editor');
+    });
 
     q('create-link-btn')?.addEventListener('click', async () => {
       const btn = q('create-link-btn');
