@@ -1321,6 +1321,15 @@
       </button>
     </div>
 
+    <!-- Tabs -->
+    <div class="plan-search-tabs">
+      <button class="plan-tab active" data-tab="mine">Mis planos</button>
+      <button class="plan-tab" data-tab="community">
+        <i data-lucide="globe-2" style="width:11px;height:11px;flex-shrink:0"></i>
+        Comunidad
+      </button>
+    </div>
+
     <!-- Search input -->
     <div class="plan-search-input-wrap">
       <i data-lucide="search" class="plan-search-icon w-4 h-4"></i>
@@ -1337,8 +1346,8 @@
       </button>
     </div>
 
-    <!-- Filters -->
-    <div class="plan-search-filters">
+    <!-- Filters (solo visibles en tab Comunidad) -->
+    <div class="plan-search-filters hidden" id="plan-search-filters-row">
       <select id="plan-filter-city" class="plan-filter-select">
         <option value="">Ciudad…</option>
       </select>
@@ -1352,7 +1361,7 @@
       <!-- Estado inicial -->
       <div id="plan-search-empty" class="plan-search-state">
         <i data-lucide="map" class="w-8 h-8 mb-3 opacity-30"></i>
-        <p>Escribe el nombre del lugar para buscar</p>
+        <p id="plan-search-empty-msg">No hay planos guardados en la empresa</p>
       </div>
       <div id="plan-search-loading" class="plan-search-state hidden">
         <div class="plan-search-spinner"></div>

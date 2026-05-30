@@ -65,6 +65,12 @@ function init() {
     if (e.target === document.getElementById('plan-search-modal')) closeSearchModal();
   });
 
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+  document.querySelector('.plan-search-tabs')?.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]');
+    if (tab) _switchPlanTab(tab.dataset.tab);
+  });
+
   const searchInput = document.getElementById('plan-search-input');
   const clearBtn = document.getElementById('plan-search-clear');
 
@@ -138,23 +144,70 @@ function showDwgInfo() {
 
 // ── Plan search modal ─────────────────────────────────────────────────────────
 let _searchTimer = null;
+let _activeTab   = 'mine';     // 'mine' | 'community'
+let _orgPlanCache = [];        // caché para filtrado local en tab "mine"
 
 function openSearchModal() {
   if (!canSearchPlans()) return;
   const modal = document.getElementById('plan-search-modal');
   if (!modal) return;
   modal.classList.add('visible');
-  loadSearchFilters();
-  // Mostrar planos de empresa por defecto antes de cualquier búsqueda
+
+  // Resetear al tab "mine"
+  _activeTab = 'mine';
+  document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mine'));
+  document.getElementById('plan-search-filters-row')?.classList.add('hidden');
+
+  const inp = document.getElementById('plan-search-input');
+  if (inp) { inp.value = ''; inp.placeholder = 'Nombre del plano…'; }
+  document.getElementById('plan-search-clear')?.classList.add('hidden');
+  document.getElementById('plan-filter-city').value = '';
+  document.getElementById('plan-filter-type').value = '';
+
   loadOrgPlansIntoModal();
-  setTimeout(() => document.getElementById('plan-search-input')?.focus(), 80);
+  setTimeout(() => inp?.focus(), 80);
+}
+
+function _switchPlanTab(tab) {
+  if (tab === _activeTab) return;
+  _activeTab = tab;
+  document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+
+  const inp = document.getElementById('plan-search-input');
+  if (inp) inp.value = '';
+  document.getElementById('plan-search-clear')?.classList.add('hidden');
+  document.getElementById('plan-filter-city').value = '';
+  document.getElementById('plan-filter-type').value = '';
+
+  const filtersRow = document.getElementById('plan-search-filters-row');
+  if (tab === 'mine') {
+    filtersRow?.classList.add('hidden');
+    if (inp) inp.placeholder = 'Nombre del plano…';
+    loadOrgPlansIntoModal();
+  } else {
+    filtersRow?.classList.remove('hidden');
+    if (inp) inp.placeholder = 'Nombre del lugar…';
+    loadCommunityFilters();
+    fetchCommunityPlans('', '', '');
+  }
+  inp?.focus();
 }
 
 async function loadOrgPlansIntoModal() {
-  if (!OrgContentManager.canSync()) { showSearchState('empty'); return; }
+  const emptyMsg = document.getElementById('plan-search-empty-msg');
+  if (!OrgContentManager.canSync()) {
+    if (emptyMsg) emptyMsg.textContent = 'Inicia sesión para ver los planos de tu empresa';
+    showSearchState('empty');
+    return;
+  }
   showSearchState('loading');
   const plans = await OrgContentManager.listFloorPlans();
-  if (!plans.length) { showSearchState('empty'); return; }
+  _orgPlanCache = plans;
+  if (!plans.length) {
+    if (emptyMsg) emptyMsg.textContent = 'No hay planos guardados en la empresa';
+    showSearchState('empty');
+    return;
+  }
   renderOrgPlanResults(plans);
 }
 
@@ -256,13 +309,15 @@ function closeSearchModal() {
   const modal = document.getElementById('plan-search-modal');
   if (!modal) return;
   modal.classList.remove('visible');
+  _activeTab = 'mine';
+  _orgPlanCache = [];
   const inp = document.getElementById('plan-search-input');
   if (inp) inp.value = '';
   document.getElementById('plan-search-clear')?.classList.add('hidden');
-  const cityEl = document.getElementById('plan-filter-city');
-  const typeEl = document.getElementById('plan-filter-type');
-  if (cityEl) cityEl.value = '';
-  if (typeEl) typeEl.value = '';
+  document.getElementById('plan-filter-city').value = '';
+  document.getElementById('plan-filter-type').value = '';
+  document.getElementById('plan-search-filters-row')?.classList.add('hidden');
+  document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mine'));
   showSearchState('empty');
 }
 
@@ -282,9 +337,30 @@ function getSearchParams() {
 function scheduleSearch() {
   clearTimeout(_searchTimer);
   const { q, city, type } = getSearchParams();
-  if (!q && !city && !type) { showSearchState('empty'); return; }
+
+  if (_activeTab === 'mine') {
+    // Filtrado local sobre los planos de empresa
+    if (!q) {
+      if (_orgPlanCache.length) renderOrgPlanResults(_orgPlanCache);
+      else loadOrgPlansIntoModal();
+      return;
+    }
+    const filtered = _orgPlanCache.filter(p =>
+      p.name.toLowerCase().includes(q.toLowerCase())
+    );
+    if (!filtered.length) {
+      const term = document.getElementById('plan-search-term');
+      if (term) term.textContent = q;
+      showSearchState('none');
+    } else {
+      renderOrgPlanResults(filtered);
+    }
+    return;
+  }
+
+  // Tab comunidad → búsqueda en servidor
   showSearchState('loading');
-  _searchTimer = setTimeout(() => fetchPlans(q, city, type), 320);
+  _searchTimer = setTimeout(() => fetchCommunityPlans(q, city, type), 320);
 }
 
 async function fetchPlans(q, city, type) {
@@ -317,6 +393,112 @@ async function fetchPlans(q, city, type) {
     renderSearchResults(results);
   } catch {
     showSearchState('no-service');
+  }
+}
+
+async function loadCommunityFilters() {
+  try {
+    const res = await fetch('/api/plans/community?mode=filters', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    const cityEl = document.getElementById('plan-filter-city');
+    const typeEl = document.getElementById('plan-filter-type');
+    if (cityEl && data.cities?.length) {
+      cityEl.innerHTML = '<option value="">Ciudad…</option>';
+      data.cities.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cityEl.appendChild(o); });
+    }
+    if (typeEl && data.types?.length) {
+      typeEl.innerHTML = '<option value="">Tipo…</option>';
+      data.types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeEl.appendChild(o); });
+    }
+  } catch { /* filtros opcionales */ }
+}
+
+async function fetchCommunityPlans(q, city, type) {
+  const params = new URLSearchParams();
+  if (q)    params.set('q',    q);
+  if (city) params.set('city', city);
+  if (type) params.set('type', type);
+  try {
+    showSearchState('loading');
+    const res = await fetch(`/api/plans/community?${params}`, { headers: { Accept: 'application/json' } });
+    if (res.status === 503) { showSearchState('no-service'); return; }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const results = data.results ?? [];
+    if (!results.length) {
+      const term = document.getElementById('plan-search-term');
+      if (term) term.textContent = q || city || type || 'comunidad';
+      showSearchState('none');
+      return;
+    }
+    renderCommunityResults(results);
+  } catch {
+    showSearchState('no-service');
+  }
+}
+
+function renderCommunityResults(results) {
+  const grid = document.getElementById('plan-search-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'grid-column:1/-1;font-size:10px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;opacity:.5;padding:4px 2px 8px';
+  header.textContent = `${results.length} plano${results.length !== 1 ? 's' : ''} en la comunidad`;
+  grid.appendChild(header);
+
+  results.forEach(plan => {
+    const card = document.createElement('button');
+    card.className = 'plan-search-card';
+    card.type = 'button';
+    card.title = plan.name;
+
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'plan-search-thumb';
+    thumbDiv.innerHTML = '<i data-lucide="globe-2" class="w-8 h-8 opacity-20"></i>';
+
+    const info = document.createElement('div');
+    info.className = 'plan-search-card-info';
+    const meta = [plan.tipo, plan.ciudad].filter(Boolean).join(' · ');
+    info.innerHTML = `
+      <div class="plan-search-card-name">${escHtml(plan.name)}</div>
+      ${meta ? `<div class="plan-search-card-zone">${escHtml(meta)}</div>` : ''}
+      ${plan.created_by_display_name ? `<div class="plan-search-card-city" style="opacity:.55">${escHtml(plan.created_by_display_name)}</div>` : ''}
+    `;
+
+    card.appendChild(thumbDiv);
+    card.appendChild(info);
+    card.addEventListener('click', () => loadCommunityPlan(plan.id, plan.name));
+    grid.appendChild(card);
+  });
+
+  showSearchState('grid');
+  if (window.lucide) lucide.createIcons({ nodes: [grid] });
+}
+
+async function loadCommunityPlan(id, name) {
+  showSearchState('loading');
+  try {
+    const res = await fetch(`/api/plans/community?id=${encodeURIComponent(id)}`, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const plan = data.plan;
+    if (!plan?.image_data_url) {
+      alert('No se pudo cargar el plano de la comunidad.');
+      showSearchState('grid');
+      return;
+    }
+    closeSearchModal();
+    if (plan.width_m)  AppState.plan.widthM  = plan.width_m;
+    if (plan.length_m) AppState.plan.lengthM = plan.length_m;
+    if (plan.opacity !== undefined) AppState.plan.opacity = plan.opacity;
+    SceneManager.updatePlanSize?.();
+    applyImageToPlan(plan.image_data_url, name ?? 'Comunidad');
+    document.dispatchEvent(new CustomEvent('escale:org-plan-loaded', { detail: { name } }));
+  } catch (err) {
+    alert(`No se pudo cargar el plano: ${err.message}`);
+    showSearchState('grid');
   }
 }
 

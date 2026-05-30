@@ -1422,9 +1422,38 @@ input[type=range]::-webkit-slider-thumb {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   flex-shrink: 0;
 }
+
+/* ── Tabs ──────────────────────────────────────────── */
+.plan-search-tabs {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  margin: 0 -28px 14px;
+  padding: 0 28px;
+}
+.plan-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.plan-tab:hover { color: var(--ink); }
+.plan-tab.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
 
 /* ── Search input ──────────────────────────────────── */
 .plan-search-input-wrap {
