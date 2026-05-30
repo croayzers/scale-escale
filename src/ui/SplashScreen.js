@@ -235,7 +235,7 @@ export function start(onDone) {
   tl.to(canvas, {
     opacity: 1, duration: 0.5, ease: 'power2.out',
     onStart() {
-      const mode = Math.random() < 0.5 ? 'perspective' : 'zenith';
+      const mode = 'zenith';
       Grid_onda(canvas, () => {
         gsap.to(canvas, {
           opacity: 0, duration: 0.9, ease: 'power2.inOut',
