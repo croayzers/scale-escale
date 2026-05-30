@@ -157,7 +157,7 @@ function openSearchModal() {
   // Resetear al tab "mine"
   _activeTab = 'mine';
   document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mine'));
-  document.getElementById('plan-search-filters-row')?.classList.add('hidden');
+  document.getElementById('plan-search-filters-row')?.classList.remove('hidden');
 
   const inp = document.getElementById('plan-search-input');
   if (inp) { inp.value = ''; inp.placeholder = 'Nombre del plano…'; }
@@ -181,12 +181,11 @@ function _switchPlanTab(tab) {
   document.getElementById('plan-filter-type').value = '';
 
   const filtersRow = document.getElementById('plan-search-filters-row');
+  filtersRow?.classList.remove('hidden');
   if (tab === 'mine') {
-    filtersRow?.classList.add('hidden');
     if (inp) inp.placeholder = 'Nombre del plano…';
     loadOrgPlansIntoModal();
   } else {
-    filtersRow?.classList.remove('hidden');
     if (inp) inp.placeholder = 'Nombre del lugar…';
     loadCommunityFilters();
     fetchCommunityPlans('', '', '');
@@ -196,20 +195,29 @@ function _switchPlanTab(tab) {
 
 async function loadOrgPlansIntoModal() {
   const emptyMsg = document.getElementById('plan-search-empty-msg');
-  if (!OrgContentManager.canSync()) {
-    if (emptyMsg) emptyMsg.textContent = 'Inicia sesión para ver los planos de tu empresa';
-    showSearchState('empty');
-    return;
-  }
   showSearchState('loading');
   const plans = await OrgContentManager.listFloorPlans();
   _orgPlanCache = plans;
   if (!plans.length) {
     if (emptyMsg) emptyMsg.textContent = 'No hay planos guardados en la empresa';
     showSearchState('empty');
+    _populateMineFilters([]);
     return;
   }
+  _populateMineFilters(plans);
   renderOrgPlanResults(plans);
+}
+
+function _populateMineFilters(plans) {
+  const cityEl = document.getElementById('plan-filter-city');
+  const typeEl = document.getElementById('plan-filter-type');
+  if (!cityEl || !typeEl) return;
+  const cities = [...new Set(plans.map(p => p.ciudad).filter(Boolean))].sort();
+  const types  = [...new Set(plans.map(p => p.tipo).filter(Boolean))].sort();
+  cityEl.innerHTML = '<option value="">Ciudad…</option>';
+  cities.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cityEl.appendChild(o); });
+  typeEl.innerHTML = '<option value="">Tipo…</option>';
+  types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeEl.appendChild(o); });
 }
 
 function renderOrgPlanResults(plans) {
@@ -340,18 +348,20 @@ function scheduleSearch() {
   const { q, city, type } = getSearchParams();
 
   if (_activeTab === 'mine') {
-    // Filtrado local sobre los planos de empresa
-    if (!q) {
+    if (!q && !city && !type) {
       if (_orgPlanCache.length) renderOrgPlanResults(_orgPlanCache);
       else loadOrgPlansIntoModal();
       return;
     }
-    const filtered = _orgPlanCache.filter(p =>
-      p.name.toLowerCase().includes(q.toLowerCase())
-    );
+    const filtered = _orgPlanCache.filter(p => {
+      if (q && !p.name.toLowerCase().includes(q.toLowerCase())) return false;
+      if (city && (p.ciudad || '') !== city) return false;
+      if (type && (p.tipo  || '') !== type) return false;
+      return true;
+    });
     if (!filtered.length) {
       const term = document.getElementById('plan-search-term');
-      if (term) term.textContent = q;
+      if (term) term.textContent = q || city || type;
       showSearchState('none');
     } else {
       renderOrgPlanResults(filtered);
