@@ -979,56 +979,83 @@ function askRealDistance(sceneDist) {
   const modal = document.getElementById('modal');
   document.getElementById('modal-title').textContent = '¿Cuánto mide esta distancia?';
   document.getElementById('modal-desc').innerHTML =
-    `Distancia en el plano: ${sceneDist.toFixed(2)} uds.<br>Introduce el valor real y selecciona la unidad.`;
-  const input = document.getElementById('modal-input');
-  input.value = '';
-  input.placeholder = 'Ej: 12.5';
+    `Distancia en el plano: <strong>${sceneDist.toFixed(2)} uds.</strong> — Introduce el valor real en metros o centímetros.`;
 
-  // Añadir selector de unidad si no existe
-  let unitSelect = document.getElementById('modal-unit-select');
-  if (!unitSelect) {
-    unitSelect = document.createElement('select');
-    unitSelect.id = 'modal-unit-select';
-    unitSelect.style.cssText = `
-      margin-left:8px; padding:6px 10px; border-radius:8px;
-      border:1px solid rgba(0,0,0,0.15); background:#fff;
-      font-family:'JetBrains Mono',monospace; font-size:12px;
-    `;
-    unitSelect.innerHTML = '<option value="m">Metros (m)</option><option value="cm">Centímetros (cm)</option>';
-    input.parentElement.appendChild(unitSelect);
+  // Ocultar el input original y el select de unidad si existía
+  const origInput = document.getElementById('modal-input');
+  origInput.style.display = 'none';
+  document.getElementById('modal-unit-select')?.remove();
+
+  // Contenedor de dos campos conversor
+  let conversor = document.getElementById('cal-conversor');
+  if (!conversor) {
+    conversor = document.createElement('div');
+    conversor.id = 'cal-conversor';
+    conversor.style.cssText = 'display:flex;gap:10px;margin:14px 0 4px;';
+    conversor.innerHTML = `
+      <label style="flex:1;display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em">
+        Metros (m)
+        <input id="cal-input-m" type="number" min="0" step="0.01" placeholder="Ej: 12.5"
+          style="padding:10px 12px;border:1.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:15px;font-family:\'JetBrains Mono\',monospace;width:100%;box-sizing:border-box"/>
+      </label>
+      <label style="flex:1;display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.06em">
+        Centímetros (cm)
+        <input id="cal-input-cm" type="number" min="0" step="1" placeholder="Ej: 1250"
+          style="padding:10px 12px;border:1.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:15px;font-family:\'JetBrains Mono\',monospace;width:100%;box-sizing:border-box"/>
+      </label>`;
+    origInput.parentElement.insertBefore(conversor, origInput);
   }
-  unitSelect.value = 'm';
-  unitSelect.style.display = '';
+
+  const inputM  = document.getElementById('cal-input-m');
+  const inputCm = document.getElementById('cal-input-cm');
+  inputM.value  = '';
+  inputCm.value = '';
+  inputM.style.borderColor  = '';
+  inputCm.style.borderColor = '';
+  conversor.style.display   = 'flex';
+
+  // Sincronización bidireccional
+  let _syncing = false;
+  const syncFromM = () => {
+    if (_syncing) return; _syncing = true;
+    const v = parseFloat(inputM.value);
+    inputCm.value = isNaN(v) ? '' : (v * 100).toFixed(0);
+    _syncing = false;
+  };
+  const syncFromCm = () => {
+    if (_syncing) return; _syncing = true;
+    const v = parseFloat(inputCm.value);
+    inputM.value = isNaN(v) ? '' : (v / 100).toFixed(4).replace(/\.?0+$/, '');
+    _syncing = false;
+  };
+  inputM.addEventListener('input', syncFromM);
+  inputCm.addEventListener('input', syncFromCm);
 
   modal.classList.add('visible');
-  setTimeout(() => input.focus(), 80);
+  setTimeout(() => inputM.focus(), 80);
 
   const confirm = document.getElementById('modal-confirm');
   const cancel  = document.getElementById('modal-cancel');
 
   const onConfirm = () => {
-    let real = parseFloat(input.value);
+    const real = parseFloat(inputM.value);
     if (!real || real <= 0) {
-      input.style.borderColor = '#b91c1c';
+      inputM.style.borderColor  = '#b91c1c';
+      inputCm.style.borderColor = '#b91c1c';
+      inputM.focus();
       return;
     }
-    const unit = unitSelect.value;
-    if (unit === 'cm') real = real / 100;
-
     applyScale(sceneDist, real);
     modal.classList.remove('visible');
-    unitSelect.style.display = 'none';
-
-    // Toast informativo
-    const label = unit === 'cm'
-      ? `${input.value} cm → ${real.toFixed(2)} m`
-      : `${real.toFixed(2)} m`;
-    showCalibrationToast(`Calibrado: ${label}`);
+    conversor.style.display = 'none';
+    origInput.style.display = '';
+    showCalibrationToast(`Calibrado: ${real.toFixed(2)} m (${(real * 100).toFixed(0)} cm)`);
     cleanup();
   };
   const onCancel = () => {
     modal.classList.remove('visible');
-    unitSelect.style.display = 'none';
+    conversor.style.display = 'none';
+    origInput.style.display = '';
     cancelCalibration();
     cleanup();
   };
@@ -1037,11 +1064,15 @@ function askRealDistance(sceneDist) {
   function cleanup() {
     confirm.removeEventListener('click', onConfirm);
     cancel.removeEventListener('click', onCancel);
-    input.removeEventListener('keydown', onKey);
+    inputM.removeEventListener('keydown', onKey);
+    inputCm.removeEventListener('keydown', onKey);
+    inputM.removeEventListener('input', syncFromM);
+    inputCm.removeEventListener('input', syncFromCm);
   }
   confirm.addEventListener('click', onConfirm);
   cancel.addEventListener('click', onCancel);
-  input.addEventListener('keydown', onKey);
+  inputM.addEventListener('keydown', onKey);
+  inputCm.addEventListener('keydown', onKey);
 }
 
 function showCalibrationToast(msg) {
