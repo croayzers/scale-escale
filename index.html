@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="styles/layout.css">
 <link rel="stylesheet" href="styles/components.css">
 <link rel="stylesheet" href="styles/dock.css">
-<link rel="stylesheet" href="styles/ai.css">
+<!-- styles/ai.css removed with AI Copilot -->
 <script>
 (function(){
   function showErr(msg) {
@@ -1683,38 +1683,6 @@
   </button>
 </div>
 
-<!-- ============ AI COPILOT ============ -->
-<!-- Toggle button (fixed, bottom-right) -->
-<button id="ai-toggle-btn" class="ai-toggle-btn" title="Asistente IA" aria-label="Abrir asistente IA">
-  <i data-lucide="bot" class="w-5 h-5"></i>
-</button>
-
-<!-- Chat panel -->
-<div id="ai-panel" class="ai-panel ai-panel--hidden" role="dialog" aria-label="Asistente IA">
-  <div class="ai-panel-header">
-    <span class="ai-panel-title">
-      <i data-lucide="bot" class="w-4 h-4"></i>
-      Asistente E.Scale
-    </span>
-    <button id="ai-close-btn" class="ai-close-btn" aria-label="Cerrar">
-      <i data-lucide="x" class="w-4 h-4"></i>
-    </button>
-  </div>
-  <div id="ai-messages" class="ai-messages" role="log" aria-live="polite"></div>
-  <div class="ai-input-row">
-    <textarea
-      id="ai-input"
-      class="ai-input"
-      placeholder="Pregunta algo o pide ayuda…"
-      rows="1"
-      autocomplete="off"
-      spellcheck="false"
-    ></textarea>
-    <button id="ai-send-btn" class="ai-send-btn" title="Enviar" aria-label="Enviar mensaje">
-      <i data-lucide="send" class="w-4 h-4"></i>
-    </button>
-  </div>
-</div>
 
 <script type="module" src="src/main.js"></script>
 </body>

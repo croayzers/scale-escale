@@ -27,7 +27,6 @@ import { SupportManager } from './services/SupportManager.js';
 import { MessageManager } from './services/MessageManager.js';
 import { FeedbackModal } from './ui/FeedbackModal.js';
 import { AppBridge } from './core/AppBridge.js';
-import { AICopilot } from './ui/AICopilot.js';
 import { CollabManager }       from './services/CollabManager.js';
 import { CollabInviteModal }   from './ui/CollabInviteModal.js';
 import { CollabJoinModal }     from './ui/CollabJoinModal.js';
@@ -98,7 +97,7 @@ async function bootstrap() {
   safeInit('FeedbackModal',  () => FeedbackModal.init());
   safeInit('PlanSaveModal',  () => PlanSaveModal.init());
   AppBridge.init();
-  safeInit('AICopilot', () => AICopilot.init());
+  // AICopilot disabled
   safeInit('CollabJoinModal',    () => CollabJoinModal.init());
   safeInit('CollabInviteModal',  () => CollabInviteModal.init());
   safeInit('CollabIsland',       () => CollabIsland.init());
@@ -150,7 +149,7 @@ async function bootstrap() {
     }
   };
 
-  // Expose reactive state for AppBridge / AICopilot context
+  // Expose reactive state for AppBridge
   window.__ESCALE_STATE__ = state.steps;
 
   const setTopCamera = () => {
