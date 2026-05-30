@@ -131,7 +131,7 @@ function openModal(options = {}) {
       exportKind: exportIntent.kind
     });
     document.getElementById('export-modal')?.classList.add('visible');
-  });
+  }, { hint: '⚡ Para exportar el documento correctamente rellena los campos obligatorios: Nombre de empresa y Lugar del evento.' });
 }
 
 function closeModal() {
@@ -674,7 +674,10 @@ async function composePrintCanvas(imageDataUrl, view) {
 }
 
 function printPng({ view = '2d' } = {}) {
-  CompanyManager.requireReady(() => _startPrintPngWithOverlay({ view }));
+  CompanyManager.requireReady(
+    () => _startPrintPngWithOverlay({ view }),
+    { hint: '⚡ Para exportar el documento correctamente rellena los campos obligatorios: Nombre de empresa y Lugar del evento.' }
+  );
 }
 
 function _startPrintPngWithOverlay({ view = '2d' } = {}) {

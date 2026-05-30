@@ -1037,7 +1037,7 @@ function isCompanyReady() {
   return REQUIRED_FIELDS.every(f => String(c[f] ?? '').trim().length > 0);
 }
 
-function requireReady(callback) {
+function requireReady(callback, { hint } = {}) {
   if (typeof callback !== 'function') return;
 
   if (isCompanyReady()) {
@@ -1048,7 +1048,7 @@ function requireReady(callback) {
   // Muestra el modal con un banner de contexto
   const banner = document.getElementById('company-readiness-hint');
   if (banner) {
-    banner.textContent = '⚡ Añade al menos el nombre de empresa para que aparezca en el documento.';
+    banner.textContent = hint || '⚡ Añade al menos el nombre de empresa para que aparezca en el documento.';
     banner.classList.remove('hidden');
   }
 
