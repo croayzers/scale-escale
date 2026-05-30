@@ -188,64 +188,26 @@ function _buildCanvas() {
 }
 
 /* ════════════════════════════════════════════════════════
-   START — punto de entrada público
+   START — solo el wave, sin overlay de logo
    ════════════════════════════════════════════════════════ */
 export function start(onDone) {
-  if (!window.gsap || typeof THREE === 'undefined') { onDone?.(); return; }
+  if (typeof THREE === 'undefined') { onDone?.(); return; }
 
-  const overlay = _buildSplash();
-  const canvas  = _buildCanvas();
-  const gsap    = window.gsap;
+  const canvas = _buildCanvas();
+  canvas.style.opacity = '1';
 
-  /* ── Secuencia GSAP ── */
-  const tl = gsap.timeline();
-
-  // Logo y texto aparecen
-  tl.from('#splash-logo',     { opacity: 0, scale: 0.78, duration: 0.85, ease: 'power3.out' }, 0.1)
-    .from('#logo-e line',     { opacity: 0, stagger: 0.09, duration: 0.32, ease: 'power2.out' }, 0.32)
-    .from('#splash-wordmark', { opacity: 0, y: 10, duration: 0.7, ease: 'power3.out' }, 0.72)
-    .from('#splash-sub',      { opacity: 0, duration: 0.55, ease: 'power2.out' }, 1.05);
-
-  // Barra de progreso
-  tl.to('#splash-bar', {
-    width: '100%',
-    duration: PROGRESS_MS / 1000,
-    ease: 'power1.inOut',
-  }, 0.3);
-
-  // Flash del logo al completar carga
-  const flashAt = PROGRESS_MS / 1000 + 0.05;
-  tl.to('#splash-logo', {
-    filter: 'brightness(0.1) drop-shadow(0 0 24px rgba(0,0,0,0.6))',
-    duration: 0.18, ease: 'power4.in',
-  }, flashAt)
-    .to('#splash-logo', {
-      filter: 'brightness(1) drop-shadow(0 0 8px rgba(0,0,0,0.15))',
-      duration: 0.32, ease: 'power2.out',
-    }, flashAt + 0.18);
-
-  // Fade out del overlay de carga
-  const exitAt = flashAt + 0.42;
-  tl.to(overlay, {
-    opacity: 0, duration: 0.65, ease: 'power2.inOut',
-    onComplete() { overlay.remove(); },
-  }, exitAt);
-
-  // Fade in del canvas 3D + lanzar Grid_onda
-  tl.to(canvas, {
-    opacity: 1, duration: 0.5, ease: 'power2.out',
-    onStart() {
-      const mode = 'zenith';
-      Grid_onda(canvas, () => {
-        gsap.to(canvas, {
-          opacity: 0, duration: 0.9, ease: 'power2.inOut',
-          onComplete() { canvas.remove(); onDone?.(); },
-        });
-      }, mode);
-    },
-  }, exitAt + 0.12);
-
-  return tl;
+  Grid_onda(canvas, () => {
+    const gsap = window.gsap;
+    if (gsap) {
+      gsap.to(canvas, {
+        opacity: 0, duration: 0.9, ease: 'power2.inOut',
+        onComplete() { canvas.remove(); onDone?.(); },
+      });
+    } else {
+      canvas.remove();
+      onDone?.();
+    }
+  }, 'zenith');
 }
 
 export const SplashScreen = { start, Grid_onda };
