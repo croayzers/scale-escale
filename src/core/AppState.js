@@ -89,7 +89,7 @@ export const AppState = {
     mesh: null,
     widthM: 30,
     lengthM: 30,
-    opacity: 0.7,
+    opacity: 0.95,
   },
   calibration: { active: false, p1: null, p2: null },
 

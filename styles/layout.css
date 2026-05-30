@@ -230,7 +230,7 @@ body.cursor-measure * { cursor: crosshair !important; }
   position: fixed;
   inset: 0;
   z-index: 310;
-  background: #f5f3ee;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -274,7 +274,7 @@ body.cursor-measure * { cursor: crosshair !important; }
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: #f5f3ee;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
