@@ -316,7 +316,7 @@
   <div class="hdr-sep"></div>
 
   <!-- Cuenta — siempre al extremo derecho -->
-  <button id="btn-account" class="hdr-chip hdr-account" title="Acceso y licencia">
+  <button id="btn-account" class="hdr-chip hdr-account" title="Cuenta">
     <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
     <span id="account-chip-label" class="mono text-[10.5px] tracking-wide">Acceder</span>
     <span class="hdr-dot"></span>
@@ -325,6 +325,21 @@
 
   </div>
 </header>
+
+<!-- ============ ACCOUNT POPOVER ============ -->
+<div id="account-popover" class="hdr-popover hidden" aria-hidden="true">
+  <div style="padding:4px 0 8px">
+    <div id="account-pop-email" class="mono" style="font-size:10px;opacity:.5;padding:0 12px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <button id="account-pop-signout" class="account-pop-btn">
+      <i data-lucide="log-out" style="width:13px;height:13px;opacity:.7"></i>
+      Cerrar sesión
+    </button>
+    <button id="account-pop-switch" class="account-pop-btn">
+      <i data-lucide="user-round-swap" style="width:13px;height:13px;opacity:.7"></i>
+      Cambiar de cuenta
+    </button>
+  </div>
+</div>
 
 <!-- ============ MEASURE MENU ============ -->
 <div id="measure-menu" class="hdr-popover hidden" aria-hidden="true">

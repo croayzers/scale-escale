@@ -822,7 +822,14 @@ function init() {
   DashboardSync.flushPending(); // falla silenciosamente si el server local no está activo
 
   document.getElementById('btn-company')?.addEventListener('click', () => openModal());
-  document.getElementById('btn-account')?.addEventListener('click', openAccessModal);
+  document.getElementById('btn-account')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (hasRecoveredIdentity()) {
+      _toggleAccountPopover();
+    } else {
+      openAccessModal();
+    }
+  });
   document.getElementById('company-close')?.addEventListener('click', () => closeModal());
   document.getElementById('company-cancel')?.addEventListener('click', () => closeModal());
   _initTeamTab();
@@ -914,6 +921,31 @@ function init() {
 
   document.getElementById('company-save')?.addEventListener('click', () => void savePending());
 
+  // Account popover
+  document.getElementById('account-pop-signout')?.addEventListener('click', async () => {
+    _closeAccountPopover();
+    await AuthManager.signOut();
+    AppState.company.authEmail = '';
+    AppState.company.authProvider = '';
+    AppState.company.authDisplayName = '';
+    AppState.company.authStatus = 'anonymous';
+    saveCompanyState();
+    syncAuthUi();
+    setAccessMode('login');
+    openAccessModal();
+  });
+  document.getElementById('account-pop-switch')?.addEventListener('click', () => {
+    _closeAccountPopover();
+    setAccessMode('login');
+    openAccessModal();
+  });
+  document.addEventListener('click', e => {
+    const pop = document.getElementById('account-popover');
+    if (pop && !pop.contains(e.target) && e.target.id !== 'btn-account') {
+      _closeAccountPopover();
+    }
+  });
+
   document.addEventListener('escale:auth-changed', () => {
     if (!AppState.company.email && AppState.company.authEmail) {
       AppState.company.email = AppState.company.authEmail;
@@ -950,6 +982,37 @@ function init() {
   if (new URLSearchParams(window.location.search).get('collab')) return;
 
   openAccessModal();
+}
+
+/* ─── Account popover ─── */
+function _toggleAccountPopover() {
+  const pop = document.getElementById('account-popover');
+  if (!pop) return;
+  const isHidden = pop.classList.contains('hidden');
+  if (isHidden) {
+    // Rellenar email
+    const emailEl = document.getElementById('account-pop-email');
+    if (emailEl) emailEl.textContent = AppState.company.authEmail || AppState.company.authDisplayName || '';
+    // Posicionar
+    const btn = document.getElementById('btn-account');
+    const rect = btn?.getBoundingClientRect();
+    if (rect) {
+      pop.style.top  = `${rect.bottom + 6}px`;
+      const popW = 200;
+      pop.style.left = `${Math.min(rect.right - popW, window.innerWidth - popW - 8)}px`;
+    }
+    pop.classList.remove('hidden');
+    pop.setAttribute('aria-hidden', 'false');
+    if (window.lucide) lucide.createIcons({ nodes: [pop] });
+  } else {
+    _closeAccountPopover();
+  }
+}
+
+function _closeAccountPopover() {
+  const pop = document.getElementById('account-popover');
+  pop?.classList.add('hidden');
+  pop?.setAttribute('aria-hidden', 'true');
 }
 
 function _dismissLoader(delay = 0) {

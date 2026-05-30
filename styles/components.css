@@ -1653,6 +1653,26 @@ input[type=range]::-webkit-slider-thumb {
   background-image: linear-gradient(0deg, transparent calc(50% - 0.5px), rgba(10, 10, 11, 0.06) calc(50% - 0.5px), rgba(10, 10, 11, 0.06) calc(50% + 0.5px), transparent calc(50% + 0.5px));
 }
 
+/* ── Account popover ── */
+.account-pop-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-family: 'Inter Tight', sans-serif;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 7px;
+  transition: background 120ms;
+}
+.account-pop-btn:hover { background: rgba(0,0,0,0.06); }
+.account-pop-btn.danger:hover { background: rgba(185,28,28,0.08); color: #b91c1c; }
+
 /* ============== AUTH + LICENSE ============== */
 .hdr-account {
   max-width: 240px;
