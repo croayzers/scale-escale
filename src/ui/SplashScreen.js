@@ -188,6 +188,20 @@ function _buildCanvas() {
 }
 
 /* ════════════════════════════════════════════════════════
+   DOCK EXPAND
+   ════════════════════════════════════════════════════════ */
+function _expandDock() {
+  const dock = document.getElementById('dock');
+  if (!dock) return;
+  dock.classList.remove('dock-collapsed');
+  // El logo desaparece suavemente
+  const logo = document.getElementById('dock-brand-logo');
+  if (logo && window.gsap) {
+    window.gsap.to(logo, { opacity: 0, duration: 0.3, onComplete() { logo.style.display = 'none'; } });
+  }
+}
+
+/* ════════════════════════════════════════════════════════
    START — solo el wave, sin overlay de logo
    ════════════════════════════════════════════════════════ */
 export function start(onDone) {
@@ -197,17 +211,25 @@ export function start(onDone) {
   canvas.style.opacity = '1';
 
   Grid_onda(canvas, () => {
-    // Activar el grid de la app al terminar el wave
     window.SceneManager?.startGridFade?.();
     const gsap = window.gsap;
+
+    // Fade out del wave canvas
+    const afterFade = () => {
+      canvas.remove();
+      onDone?.();
+      // Expandir dock tras 2 segundos
+      setTimeout(_expandDock, 2000);
+    };
+
     if (gsap) {
       gsap.to(canvas, {
         opacity: 0, duration: 0.9, ease: 'power2.inOut',
-        onComplete() { canvas.remove(); onDone?.(); },
+        onComplete: afterFade,
       });
     } else {
       canvas.remove();
-      onDone?.();
+      afterFade();
     }
   }, 'zenith');
 }

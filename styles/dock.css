@@ -73,6 +73,29 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
+/* ── Dock collapsed → expanded ── */
+#dock.dock-collapsed {
+  width: 52px;
+  height: 52px;
+  border-radius: 50% !important;
+  padding: 0;
+  overflow: hidden;
+  cursor: default;
+}
+#dock.dock-collapsed #dock-items { display: none; }
+#dock:not(.dock-collapsed) .dock-brand-logo { display: none; }
+
+.dock-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
 /* ── Dock inferior ── */
 #dock-items button {
   width: 44px; height: 44px;
