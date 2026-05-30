@@ -7,7 +7,7 @@ const {
 } = require('../../lib/supabase');
 
 const MAX_Q_LENGTH = 120;
-const MAX_RESULTS  = 24;
+const MAX_RESULTS  = 500;
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(req, res, ['GET']);
