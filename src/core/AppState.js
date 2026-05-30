@@ -131,7 +131,7 @@ export const AppState = {
   grid: {
     majorSize: 1,
     subSize: 1,
-    opacity: 15,
+    opacity: 10,
     extent: 60,
     extentX: 60,
     extentZ: 60,

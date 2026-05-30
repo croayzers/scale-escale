@@ -110,6 +110,7 @@ async function bootstrap() {
   // Exponer al window para acceso desde consola y botones inline
   window.InteractionManager = InteractionManager;
   window.SelectionManager   = SelectionManager;
+  window.SceneManager       = SceneManager;
   window.EscaleAI = window.EscaleAI; // ya registrado por AppBridge.init()
 
   document.addEventListener('escale:collab-joined', e => {

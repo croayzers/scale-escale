@@ -157,7 +157,11 @@ function init() {
 
   window.addEventListener('resize', onResize);
   animate();
-  gridFadeStart = performance.now();
+  // El grid se activa después del wave (ver startGridFade)
+}
+
+export function startGridFade() {
+  if (gridFadeStart === null) gridFadeStart = performance.now();
 }
 
 
@@ -1641,5 +1645,6 @@ export const SceneManager = {
   get activeCam() { return activeCam; },
   get activeControls() { return activeControls; },
   get meshes() { return meshes; },
-  get dragPlane() { return dragPlane; }
+  get dragPlane() { return dragPlane; },
+  startGridFade,
 };

@@ -85,7 +85,7 @@ export function Grid_onda(canvas, onComplete, mode = 'perspective') {
 
   /* ── Malla de alambre gris oscuro (misma geometría) ── */
   const wireMat = new THREE.MeshBasicMaterial({
-    color: 0x2a2a2e, wireframe: true, transparent: true, opacity: 0.18,
+    color: 0xbbbbbb, wireframe: true, transparent: true, opacity: 0.45,
   });
   const wire = new THREE.Mesh(geo, wireMat);
   wire.position.y = 0.005;
@@ -197,6 +197,8 @@ export function start(onDone) {
   canvas.style.opacity = '1';
 
   Grid_onda(canvas, () => {
+    // Activar el grid de la app al terminar el wave
+    window.SceneManager?.startGridFade?.();
     const gsap = window.gsap;
     if (gsap) {
       gsap.to(canvas, {
