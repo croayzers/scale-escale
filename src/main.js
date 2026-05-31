@@ -38,7 +38,7 @@ import { OrgContentManager }  from './services/OrgContentManager.js';
 import { MeasureManager }     from './ui/MeasureManager.js';
 import { PlanSaveModal }      from './ui/PlanSaveModal.js';
 import { PredictiveArray }    from './ui/PredictiveArray.js';
-import { SplashScreen, collapseDock } from './ui/SplashScreen.js';
+import { SplashScreen, collapseDock, collapseHeader } from './ui/SplashScreen.js';
 import { ContextSpawnMenu }  from './ui/ContextSpawnMenu.js';
 import { SceneModeManager } from './ui/SceneModeManager.js';
 
@@ -90,6 +90,7 @@ async function bootstrap() {
   await safeInit('CatalogModal', () => CatalogModal.init());
   await safeInit('Dock', () => Dock.init());
   collapseDock();
+  collapseHeader();
   await safeInit('TemplateManager', () => TemplateManager.init());
   await safeInit('HeaderActionMenus', () => HeaderActionMenus.init());
   await safeInit('PlansModal', () => PlansModal.init());

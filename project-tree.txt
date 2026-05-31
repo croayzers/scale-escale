@@ -95,7 +95,6 @@ PROJECT STRUCTURE
 ├── README.md
 ├── server.py
 ├── sprites/
-│   └── dock.png
 ├── src/
 │   ├── core/
 │   │   ├── AppBridge.js

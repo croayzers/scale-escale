@@ -190,6 +190,29 @@ function _buildCanvas() {
 /* ════════════════════════════════════════════════════════
    DOCK: colapsar al inicio → expandir tras el wave
    ════════════════════════════════════════════════════════ */
+export function collapseHeader() {
+  const header = document.getElementById('header-mac');
+  const inner  = document.getElementById('header-inner');
+  if (!header || !inner) return;
+  // Ocultar todo excepto el brand
+  Array.from(inner.children).forEach(el => {
+    if (el.id !== 'header-brand') { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }
+  });
+}
+
+function _expandHeader() {
+  const inner = document.getElementById('header-inner');
+  if (!inner) return;
+  const children = Array.from(inner.children).filter(el => el.id !== 'header-brand');
+  children.forEach(el => { el.style.opacity = '0'; el.style.transition = 'none'; el.style.pointerEvents = ''; });
+  children.forEach((el, i) => {
+    setTimeout(() => {
+      el.style.transition = 'opacity 0.5s';
+      el.style.opacity = '1';
+    }, i * 60);
+  });
+}
+
 export function collapseDock() {
   const dock  = document.getElementById('dock');
   const items = document.getElementById('dock-items');
@@ -290,6 +313,7 @@ export function start(onDone) {
         canvas.remove();
         onDone?.();
         _expandDock();
+        _expandHeader();
       };
 
       if (gsap) {
