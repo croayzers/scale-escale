@@ -1,45 +1,61 @@
 /**
- * WallPainter — Herramienta de dibujo de paredes 2D → 3D
+ * WallPainter — Dibujo de plano 2D → transformación a paredes 3D
  *
  * Flujo:
- *   1. Se activa sobre la vista TOP (cenital).
- *   2. El usuario dibuja líneas / rectángulos sobre un <canvas> overlay.
- *   3. Cada segmento se convierte instantáneamente en una pared 3D (BoxGeometry).
- *   4. Las paredes muestran su longitud como label 3D (CSS2DObject).
- *   5. Menú contextual (botón derecho) sobre cada pared: ocultar medida · eliminar.
+ *   1. El usuario dibuja segmentos 2D sobre el canvas (líneas o rectángulo).
+ *   2. Puede marcar huecos de puerta (2 clics sobre un segmento).
+ *   3. Al pulsar "Transformar" se genera la geometría 3D.
  */
 
 import { SceneManager } from '../scene/SceneManager.js';
 import { AppState }     from '../core/AppState.js';
 
-/* ─── Constantes ──────────────────────────────────────────────────────────── */
+/* ─── Constantes ─────────────────────────────────────────────────────────── */
 const WALL_THICKNESS  = 0.10;
-const WALL_COLOR      = 0x1a1a2c;
-const ANGLE_SNAP_RAD  = Math.PI / 12;  // 15° — Shift lo deshabilita
-const ENDPOINT_SNAP_M = 0.35;          // metros — radio de snap de extremos de pared
+const ANGLE_SNAP_RAD  = Math.PI / 12;   // 15°
+const ENDPOINT_SNAP_M = 0.35;           // radio snap extremos (metros)
+const LINE_SNAP_M     = 0.4;            // radio snap sobre segmento (modo puerta)
 
-/* ─── Estado interno ──────────────────────────────────────────────────────── */
-let _active    = false;
-let _tool      = 'line';       // 'line' | 'rect'
+/* ─── Estado ─────────────────────────────────────────────────────────────── */
+let _active     = false;
+let _tool       = 'line';    // 'line' | 'rect' | 'door'
 let _wallHeight = 2.5;
-let _wallColor  = '#1a1a2c';   // color activo para nuevas paredes
+let _wallColor  = '#1a1a2c';
 
-// Canvas 2D overlay
+// Canvas
 let _cvs, _ctx;
 
-// Dibujo en curso
-let _drawing   = false;
-let _p1        = null;         // {wx, wz} — mundo THREE
-let _p1Screen  = null;         // {x, y}   — pantalla
-let _walls     = [];           // [{mesh3d, labelEl, p1, p2, len, height, labelVisible}]
-let _doors     = [];           // [{p1, p2, width, angle}] — huecos de puerta (canvas 2D)
-let _ctxWall   = null;         // pared con menú abierto
+// Dibujo de segmento en curso
+let _drawing    = false;
+let _p1         = null;      // {wx, wz}
+let _p1Screen   = null;      // {x, y}
+let _downPos    = null;
+let _isDragging = false;
+let _cursorScreen = { x: 0, y: 0 };
+let _shiftDown  = false;
+let _altDown    = false;
 
-/* ─── Contenedor de etiquetas HTML (persistente, fuera del overlay) ─────── */
+// Datos del plano 2D (solo líneas, sin 3D todavía)
+let _segs   = [];  // [{p1:{x,z}, p2:{x,z}, color}]
+let _doors  = [];  // [{segIdx, t1, t2}]  — hueco sobre el segmento
+let _meshes = [];  // THREE.Mesh[] creados al transformar
+let _labels = [];  // {el, seg} para etiquetas
+
+// Modo puerta: primer punto ya marcado
+let _doorPt1  = null;  // {x, z} en mundo, sobre el segmento
+let _doorSeg  = null;  // índice de _segs del segmento seleccionado
+
+// Menú contextual (click en seg)
+let _ctxSeg   = null;
+let _globalContextMenuBound = false;
+let _globalDownPos  = null;
+let _globalDownSeg  = null;
+
+// Contenedor de etiquetas
 let _labelContainer = null;
 let _rafId = null;
-let _globalContextMenuBound = false;
 
+/* ─── Label container ────────────────────────────────────────────────────── */
 function _ensureLabelContainer() {
   if (_labelContainer) return;
   _labelContainer = document.createElement('div');
@@ -49,93 +65,40 @@ function _ensureLabelContainer() {
   document.body.appendChild(_labelContainer);
 }
 
-// Loop RAF permanente — sigue corriendo aunque WallPainter esté inactivo
-function _startLabelLoop() {
+/* ─── RAF loop — redibujar canvas 2D y etiquetas ─────────────────────────── */
+function _startRafLoop() {
   if (_rafId) return;
   function tick() {
-    const cam = SceneManager.activeCam;
-    if (cam && _labelContainer && _walls.length) {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      _walls.forEach(wall => {
-        if (!wall.labelEl) return;
-        if (!wall.labelVisible) { wall.labelEl.style.display = 'none'; return; }
-        const cx = (wall.p1.x + wall.p2.x) / 2;
-        const cz = (wall.p1.z + wall.p2.z) / 2;
-        const v  = new THREE.Vector3(cx, wall.height + 0.25, cz).project(cam);
-        if (v.z > 1) { wall.labelEl.style.display = 'none'; return; }
-        wall.labelEl.style.display = '';
-        wall.labelEl.style.left = `${(v.x + 1) / 2 * w}px`;
-        wall.labelEl.style.top  = `${(-v.y + 1) / 2 * h}px`;
-      });
-    }
-    // Redibujar puertas solo cuando no hay trazo activo (la guía gestiona su propio canvas)
-    if (_cvs && _ctx && _doors.length && !_drawing) {
-      _ctx.clearRect(0, 0, _cvs.width, _cvs.height);
-      _drawDoors();
-    }
+    _redrawCanvas();
+    _updateLabels();
     _rafId = requestAnimationFrame(tick);
   }
   tick();
 }
 
-/* ─── Menú contextual de pared (persistente en scene-canvas) ────────────── */
-let _globalDownPos  = null;
-let _globalDownWall = null; // pared detectada en pointerdown — evita mover cámara
-
-function _ensureGlobalContextMenu() {
-  if (_globalContextMenuBound) return;
-  _globalContextMenuBound = true;
-  const canvas = document.getElementById('scene-canvas');
-  if (!canvas) return;
-
-  canvas.addEventListener('pointerdown', e => {
-    if (_active || e.button !== 0 || !_walls.length) return;
-    const wall = _pickWall(e.clientX, e.clientY);
-    if (!wall) { _globalDownWall = null; _globalDownPos = null; return; }
-    // Hay pared bajo el cursor: bloquear OrbitControls para esta pulsación
-    e.stopPropagation();
-    _globalDownWall = wall;
-    _globalDownPos  = { x: e.clientX, y: e.clientY };
-  }, true); // capture — antes que OrbitControls
-
-  canvas.addEventListener('pointerup', e => {
-    if (_active || e.button !== 0) return;
-    const wall = _globalDownWall;
-    const down = _globalDownPos;
-    _globalDownWall = null;
-    _globalDownPos  = null;
-    if (!wall || !down) { _closeCtxMenu(); return; }
-    // Ignorar si fue un drag
-    if (Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 5) return;
-    e.stopPropagation();
-    _openCtxMenu(wall, e.clientX, e.clientY);
-  }, true);
-
-  // Cerrar menú al clicar fuera (permanente, no depende de si WallPainter está activo)
-  document.addEventListener('pointerdown', e => {
-    const menu = document.getElementById('wall-ctx-menu');
-    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) _closeCtxMenu();
+function _updateLabels() {
+  const cam = SceneManager.activeCam;
+  if (!cam || !_labelContainer) return;
+  const W = window.innerWidth, H = window.innerHeight;
+  _labels.forEach(({ el, seg }) => {
+    const cx = (seg.p1.x + seg.p2.x) / 2;
+    const cz = (seg.p1.z + seg.p2.z) / 2;
+    const v  = new THREE.Vector3(cx, 0.25, cz).project(cam);
+    if (v.z > 1) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.left = `${(v.x + 1) / 2 * W}px`;
+    el.style.top  = `${(-v.y + 1) / 2 * H}px`;
   });
 }
 
 /* ─── Conversión coordenadas ─────────────────────────────────────────────── */
-
-/**
- * Convierte posición de pantalla {x,y} → coordenadas del mundo THREE {x,z}
- * usando el raycaster sobre el plano Y=0.
- */
 function _screenToWorld(sx, sy) {
   return SceneManager.screenToGround(sx, sy) ?? null;
 }
 
-/**
- * Convierte {wx, wz} del mundo THREE → posición de pantalla {x, y}
- * proyectando con la cámara activa.
- */
 function _worldToScreen(wx, wz) {
   const cam = SceneManager.activeCam;
-  if (!cam) return { x: 0, y: 0 };
+  if (!cam || !_cvs) return { x: 0, y: 0 };
   const v = new THREE.Vector3(wx, 0, wz).project(cam);
   return {
     x: (v.x + 1) / 2 * _cvs.width,
@@ -143,83 +106,185 @@ function _worldToScreen(wx, wz) {
   };
 }
 
-/* ─── Snap angular 15° (Shift = libre) ──────────────────────────────────── */
+/* ─── Snaps ──────────────────────────────────────────────────────────────── */
 function _applyAngleSnap(p1w, p2w) {
-  const dx  = p2w.x - p1w.wx;
-  const dz  = p2w.z - p1w.wz;
-  const len = Math.sqrt(dx * dx + dz * dz);
+  const dx = p2w.x - p1w.wx, dz = p2w.z - p1w.wz;
+  const len = Math.sqrt(dx*dx + dz*dz);
   if (len < 0.01) return p2w;
-  // Sin Shift → snap a múltiplos de 15°; con Shift → libre
   let angle = Math.atan2(dz, dx);
   if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
   return { x: p1w.wx + len * Math.cos(angle), z: p1w.wz + len * Math.sin(angle) };
 }
 
-/* ─── Snap de extremos de pared (Alt lo deshabilita) ────────────────────── */
-function _applyEndpointSnap(p2w) {
-  if (_altDown) return p2w;
+function _applyEndpointSnap(p) {
+  if (_altDown) return p;
   let best = null, bestDist = ENDPOINT_SNAP_M;
-  for (const wall of _walls) {
-    for (const ep of [wall.p1, wall.p2]) {
-      const d = Math.hypot(p2w.x - ep.x, p2w.z - ep.z);
+  for (const s of _segs) {
+    for (const ep of [s.p1, s.p2]) {
+      const d = Math.hypot(p.x - ep.x, p.z - ep.z);
       if (d < bestDist) { bestDist = d; best = ep; }
     }
   }
-  return best ? { x: best.x, z: best.z } : p2w;
+  return best ? { x: best.x, z: best.z } : p;
 }
 
-/* ─── Canvas 2D overlay ──────────────────────────────────────────────────── */
-function _resizeCanvas() {
-  if (!_cvs) return;
-  _cvs.width  = window.innerWidth;
-  _cvs.height = window.innerHeight;
+// Proyecta punto sobre segmento — devuelve {pt, t, dist}
+function _snapToSegment(px, pz, seg) {
+  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
+  const len2 = dx*dx + dz*dz;
+  if (len2 < 0.0001) return null;
+  const t = Math.max(0, Math.min(1, ((px - seg.p1.x)*dx + (pz - seg.p1.z)*dz) / len2));
+  const cx = seg.p1.x + t*dx, cz = seg.p1.z + t*dz;
+  const dist = Math.hypot(px - cx, pz - cz);
+  return { pt: {x: cx, z: cz}, t, dist };
 }
 
-function _clearGuide() {
-  if (!_ctx) return;
+function _findClosestSegPoint(px, pz) {
+  let best = null, bestDist = LINE_SNAP_M, bestIdx = -1;
+  _segs.forEach((seg, i) => {
+    const r = _snapToSegment(px, pz, seg);
+    if (r && r.dist < bestDist) { bestDist = r.dist; best = r; bestIdx = i; }
+  });
+  return bestIdx >= 0 ? { ...best, segIdx: bestIdx } : null;
+}
+
+/* ─── Dibuja canvas 2D completo ──────────────────────────────────────────── */
+function _redrawCanvas() {
+  if (!_ctx || !_cvs) return;
   _ctx.clearRect(0, 0, _cvs.width, _cvs.height);
-  if (_doors.length) _drawDoors();
+
+  // Segmentos base
+  for (let i = 0; i < _segs.length; i++) {
+    const seg = _segs[i];
+    const s1  = _worldToScreen(seg.p1.x, seg.p1.z);
+    const s2  = _worldToScreen(seg.p2.x, seg.p2.z);
+
+    // Puertas sobre este segmento
+    const doorsOnSeg = _doors.filter(d => d.segIdx === i);
+
+    if (doorsOnSeg.length === 0) {
+      _drawSegLine(s1, s2, seg.color);
+    } else {
+      // Dibujar segmento con huecos
+      const pts = [0, ...doorsOnSeg.flatMap(d => [d.t1, d.t2]), 1].sort((a,b) => a-b);
+      for (let k = 0; k < pts.length - 1; k += 2) {
+        const a = _lerpScreen(s1, s2, pts[k]);
+        const b = _lerpScreen(s1, s2, pts[k+1]);
+        _drawSegLine(a, b, seg.color);
+      }
+      // Arcos de puerta
+      doorsOnSeg.forEach(d => _drawDoorArc(s1, s2, d));
+    }
+
+    // Vértices
+    _drawDot(_worldToScreen(seg.p1.x, seg.p1.z), seg.color);
+    _drawDot(_worldToScreen(seg.p2.x, seg.p2.z), seg.color);
+  }
+
+  // Primer punto de puerta marcado (feedback)
+  if (_tool === 'door' && _doorPt1) {
+    const s = _worldToScreen(_doorPt1.x, _doorPt1.z);
+    _ctx.save();
+    _ctx.fillStyle = '#f59e0b';
+    _ctx.beginPath();
+    _ctx.arc(s.x, s.y, 6, 0, Math.PI*2);
+    _ctx.fill();
+    _ctx.restore();
+  }
 }
 
-function _drawGuide(p1s, p2s, isRect, snapPoint = null) {
-  _clearGuide();
+function _lerpScreen(s1, s2, t) {
+  return { x: s1.x + (s2.x - s1.x)*t, y: s1.y + (s2.y - s1.y)*t };
+}
+
+function _drawSegLine(s1, s2, color) {
+  _ctx.save();
+  _ctx.strokeStyle = color || '#1a1a2c';
+  _ctx.lineWidth   = 2.5;
+  _ctx.lineCap     = 'round';
+  _ctx.setLineDash([]);
+  _ctx.beginPath();
+  _ctx.moveTo(s1.x, s1.y);
+  _ctx.lineTo(s2.x, s2.y);
+  _ctx.stroke();
+  _ctx.restore();
+}
+
+function _drawDot(s, color) {
+  _ctx.save();
+  _ctx.fillStyle = color || '#1a1a2c';
+  _ctx.beginPath();
+  _ctx.arc(s.x, s.y, 4, 0, Math.PI*2);
+  _ctx.fill();
+  _ctx.restore();
+}
+
+function _drawDoorArc(s1, s2, door) {
+  // Puntos del hueco en pantalla
+  const hA = _lerpScreen(s1, s2, door.t1);
+  const hB = _lerpScreen(s1, s2, door.t2);
+  const radiusPx = Math.hypot(hB.x - hA.x, hB.y - hA.y);
+  if (radiusPx < 3) return;
+
+  const wallAngle = Math.atan2(s2.y - s1.y, s2.x - s1.x);
+
+  _ctx.save();
+  _ctx.strokeStyle = '#1a1a2c';
+  _ctx.lineWidth   = 1.8;
+  _ctx.lineCap     = 'round';
+  _ctx.setLineDash([]);
+
+  // Hueco (línea discontinua)
+  _ctx.save();
+  _ctx.setLineDash([4, 3]);
+  _ctx.beginPath();
+  _ctx.moveTo(hA.x, hA.y);
+  _ctx.lineTo(hB.x, hB.y);
+  _ctx.stroke();
+  _ctx.restore();
+
+  // Hoja de puerta (línea desde hA perpendicular)
+  const leafX = hA.x + Math.cos(wallAngle - Math.PI/2) * radiusPx;
+  const leafY = hA.y + Math.sin(wallAngle - Math.PI/2) * radiusPx;
+  _ctx.beginPath();
+  _ctx.moveTo(hA.x, hA.y);
+  _ctx.lineTo(leafX, leafY);
+  _ctx.stroke();
+
+  // Arco de apertura 90°
+  _ctx.beginPath();
+  _ctx.arc(hA.x, hA.y, radiusPx, wallAngle - Math.PI/2, wallAngle, false);
+  _ctx.stroke();
+
+  _ctx.restore();
+}
+
+/* ─── Guía de dibujo (preview mientras se arrastra) ─────────────────────── */
+function _drawGuide(p1s, p2s, isRect, snapPt) {
   _ctx.save();
   _ctx.strokeStyle = '#2563eb';
   _ctx.lineWidth   = 1.5;
   _ctx.setLineDash([6, 4]);
-  _ctx.lineCap = 'round';
-
+  _ctx.lineCap     = 'round';
   if (isRect) {
-    const x = Math.min(p1s.x, p2s.x);
-    const y = Math.min(p1s.y, p2s.y);
-    const w = Math.abs(p2s.x - p1s.x);
-    const h = Math.abs(p2s.y - p1s.y);
-    _ctx.strokeRect(x, y, w, h);
+    _ctx.strokeRect(
+      Math.min(p1s.x, p2s.x), Math.min(p1s.y, p2s.y),
+      Math.abs(p2s.x - p1s.x), Math.abs(p2s.y - p1s.y)
+    );
   } else {
-    _ctx.beginPath();
-    _ctx.moveTo(p1s.x, p1s.y);
-    _ctx.lineTo(p2s.x, p2s.y);
-    _ctx.stroke();
+    _ctx.beginPath(); _ctx.moveTo(p1s.x, p1s.y); _ctx.lineTo(p2s.x, p2s.y); _ctx.stroke();
   }
   _ctx.restore();
 
-  // Punto de origen
   _ctx.save();
   _ctx.fillStyle = '#2563eb';
-  _ctx.beginPath();
-  _ctx.arc(p1s.x, p1s.y, 5, 0, Math.PI * 2);
-  _ctx.fill();
+  _ctx.beginPath(); _ctx.arc(p1s.x, p1s.y, 5, 0, Math.PI*2); _ctx.fill();
   _ctx.restore();
 
-  // Indicador de snap: círculo vacío en el punto snapeado
-  if (snapPoint) {
+  if (snapPt) {
     _ctx.save();
-    _ctx.strokeStyle = '#2563eb';
-    _ctx.lineWidth = 1.5;
-    _ctx.setLineDash([]);
-    _ctx.beginPath();
-    _ctx.arc(snapPoint.x, snapPoint.y, 7, 0, Math.PI * 2);
-    _ctx.stroke();
+    _ctx.strokeStyle = '#2563eb'; _ctx.lineWidth = 1.5; _ctx.setLineDash([]);
+    _ctx.beginPath(); _ctx.arc(snapPt.x, snapPt.y, 7, 0, Math.PI*2); _ctx.stroke();
     _ctx.restore();
   }
 }
@@ -238,33 +303,16 @@ function _hideTooltip() {
   if (el) el.style.display = 'none';
 }
 
-/* ─── Crear pared 3D ─────────────────────────────────────────────────────── */
-function _buildWall(p1w, p2w) {
-  const dx  = p2w.x - p1w.wx;
-  const dz  = p2w.z - p1w.wz;
-  const len = Math.sqrt(dx * dx + dz * dz);
-  if (len < 0.05) return null;
+/* ─── Añadir segmento 2D ─────────────────────────────────────────────────── */
+function _addSeg(p1, p2) {
+  const dx = p2.x - p1.x, dz = p2.z - p1.z;
+  const len = Math.sqrt(dx*dx + dz*dz);
+  if (len < 0.05) return;
 
-  const cx = (p1w.wx + p2w.x) / 2;
-  const cz = (p1w.wz + p2w.z) / 2;
-  const angle = Math.atan2(dx, dz); // rotación en Y
+  const seg = { p1: {x: p1.x, z: p1.z}, p2: {x: p2.x, z: p2.z}, len, color: _wallColor };
+  _segs.push(seg);
 
-  const geo = new THREE.BoxGeometry(WALL_THICKNESS, _wallHeight, len);
-  const mat = new THREE.MeshStandardMaterial({
-    color:     _wallColor,
-    roughness: 0.85,
-    metalness: 0.0
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(cx, _wallHeight / 2, cz);
-  mesh.rotation.y = angle;
-  mesh.castShadow    = true;
-  mesh.receiveShadow = true;
-  mesh.userData.isWall = true;
-
-  SceneManager.scene.add(mesh);
-
-  // ─── Etiqueta HTML posicionada en 2D ────────────────────────────────────
+  // Etiqueta de medida
   const labelEl = document.createElement('div');
   labelEl.className = 'wall-label';
   labelEl.textContent = `${len.toFixed(2)} m`;
@@ -276,178 +324,160 @@ function _buildWall(p1w, p2w) {
     white-space:nowrap;user-select:none;pointer-events:none;
   `;
   _labelContainer?.appendChild(labelEl);
-
-  const wallData = {
-    mesh, labelEl,
-    p1: { x: p1w.wx, z: p1w.wz },
-    p2: { x: p2w.x,  z: p2w.z  },
-    len, height: _wallHeight, labelVisible: true
-  };
-  _walls.push(wallData);
-  return wallData;
+  _labels.push({ el: labelEl, seg });
 }
 
-/* ─── Rectángulo → 4 paredes ─────────────────────────────────────────────── */
-function _buildRect(p1w, p2w) {
-  const corners = [
-    { wx: p1w.wx, wz: p1w.wz },
-    { wx: p2w.x,  wz: p1w.wz },
-    { wx: p2w.x,  wz: p2w.z  },
-    { wx: p1w.wx, wz: p2w.z  }
-  ];
-  for (let i = 0; i < 4; i++) {
-    const a = corners[i];
-    const b = corners[(i + 1) % 4];
-    _buildWall(a, { x: b.wx, z: b.wz });
+/* ─── Añadir puerta (2 clics) ────────────────────────────────────────────── */
+function _doorClick(wx, wz) {
+  const hit = _findClosestSegPoint(wx, wz);
+  if (!hit) return;
+
+  if (!_doorPt1) {
+    // Primer clic: guardar punto y segmento
+    _doorPt1 = hit.pt;
+    _doorSeg  = hit.segIdx;
+    _doorT1   = hit.t;
+    _showTooltip('Marca el segundo extremo de la puerta', _cursorScreen.x, _cursorScreen.y);
+  } else {
+    // Segundo clic: validar que está en el mismo segmento
+    if (hit.segIdx !== _doorSeg) {
+      // Segmento diferente → reiniciar
+      _doorPt1 = hit.pt;
+      _doorSeg  = hit.segIdx;
+      _doorT1   = hit.t;
+      return;
+    }
+    let t1 = _doorT1, t2 = hit.t;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    const seg = _segs[_doorSeg];
+    const gapLen = seg.len * (t2 - t1);
+    if (gapLen < 0.2 || gapLen > seg.len * 0.95) {
+      _doorPt1 = null; _doorSeg = null; _doorT1 = null;
+      return;
+    }
+    _doors.push({ segIdx: _doorSeg, t1, t2 });
+    _doorPt1 = null; _doorSeg = null; _doorT1 = null;
+    _hideTooltip();
+  }
+}
+let _doorT1 = null;
+
+/* ─── Transformar: generar 3D ────────────────────────────────────────────── */
+function _transform() {
+  // Eliminar meshes anteriores si se re-transforma
+  _meshes.forEach(m => {
+    SceneManager.scene.remove(m);
+    m.geometry.dispose(); m.material.dispose();
+  });
+  _meshes = [];
+
+  for (let i = 0; i < _segs.length; i++) {
+    const seg = _segs[i];
+    const doorsOnSeg = _doors.filter(d => d.segIdx === i);
+
+    if (doorsOnSeg.length === 0) {
+      _buildMesh(seg.p1, seg.p2, seg.len, seg.color);
+    } else {
+      // Partir en trozos respetando huecos
+      const ts = [0, ...doorsOnSeg.flatMap(d => [d.t1, d.t2]), 1].sort((a,b) => a-b);
+      for (let k = 0; k < ts.length - 1; k += 2) {
+        const tA = ts[k], tB = ts[k+1];
+        const pA = { x: seg.p1.x + (seg.p2.x - seg.p1.x)*tA, z: seg.p1.z + (seg.p2.z - seg.p1.z)*tA };
+        const pB = { x: seg.p1.x + (seg.p2.x - seg.p1.x)*tB, z: seg.p1.z + (seg.p2.z - seg.p1.z)*tB };
+        const subLen = seg.len * (tB - tA);
+        if (subLen > 0.05) _buildMesh(pA, pB, subLen, seg.color);
+      }
+    }
   }
 }
 
-/* ─── Puertas ────────────────────────────────────────────────────────────── */
-function _addDoor(wall, widthM) {
-  const w = Math.max(0.5, Math.min(3, widthM));
-  if (w >= wall.len) return; // puerta más grande que la pared → ignorar
+function _buildMesh(p1, p2, len, color) {
+  const dx = p2.x - p1.x, dz = p2.z - p1.z;
+  const cx = (p1.x + p2.x) / 2, cz = (p1.z + p2.z) / 2;
+  const angle = Math.atan2(dx, dz);
 
-  const mx = (wall.p1.x + wall.p2.x) / 2;
-  const mz = (wall.p1.z + wall.p2.z) / 2;
-  const dx = wall.p2.x - wall.p1.x;
-  const dz = wall.p2.z - wall.p1.z;
-  const wallAngle = Math.atan2(dz, dx);
-
-  // Dirección unitaria a lo largo de la pared
-  const ux = Math.cos(wallAngle);
-  const uz = Math.sin(wallAngle);
-  const half = w / 2;
-
-  // Los dos puntos del hueco (centrado en la pared)
-  const doorP1 = { x: mx - ux * half, z: mz - uz * half };
-  const doorP2 = { x: mx + ux * half, z: mz + uz * half };
-
-  // Angulo de apertura del arco (perpendicular a la pared, 90°)
-  const arcAngle = wallAngle + Math.PI / 2;
-
-  _doors.push({ p1: doorP1, p2: doorP2, width: w, arcAngle, wallAngle });
-
-  // Partir la pared en dos segmentos (eliminar original, crear dos trozos)
-  _removeWall(wall);
-  _walls = _walls.filter(ww => ww !== wall);
-
-  const seg1Len = wall.len / 2 - half;
-  const seg2Len = wall.len / 2 - half;
-
-  if (seg1Len > 0.05) {
-    _buildWall(
-      { wx: wall.p1.x, wz: wall.p1.z },
-      { x: doorP1.x, z: doorP1.z }
-    );
-  }
-  if (seg2Len > 0.05) {
-    _buildWall(
-      { wx: doorP2.x, wz: doorP2.z },
-      { x: wall.p2.x, z: wall.p2.z }
-    );
-  }
+  const geo = new THREE.BoxGeometry(WALL_THICKNESS, _wallHeight, len);
+  const mat = new THREE.MeshStandardMaterial({ color: color || _wallColor, roughness: 0.85, metalness: 0 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(cx, _wallHeight / 2, cz);
+  mesh.rotation.y = angle;
+  mesh.castShadow = mesh.receiveShadow = true;
+  mesh.userData.isWall = true;
+  SceneManager.scene.add(mesh);
+  _meshes.push(mesh);
 }
 
-function _drawDoors() {
-  if (!_ctx || !_doors.length) return;
+/* ─── Menú contextual de segmento (click fuera del overlay, modo inactivo) ── */
+function _pickSeg(sx, sy) {
+  // Raycast sobre meshes transformados
   const cam = SceneManager.activeCam;
-  if (!cam) return;
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-
-  function project(wx, wz) {
-    const v = new THREE.Vector3(wx, 0, wz).project(cam);
-    return { x: (v.x + 1) / 2 * W, y: (-v.y + 1) / 2 * H };
-  }
-
-  _ctx.save();
-  _ctx.strokeStyle = '#1a1a2c';
-  _ctx.lineWidth = 1.5;
-  _ctx.setLineDash([]);
-  _ctx.lineCap = 'round';
-
-  for (const door of _doors) {
-    const s1 = project(door.p1.x, door.p1.z);
-    const s2 = project(door.p2.x, door.p2.z);
-
-    // Línea de umbral (hueco de la puerta)
-    _ctx.save();
-    _ctx.setLineDash([3, 3]);
-    _ctx.beginPath();
-    _ctx.moveTo(s1.x, s1.y);
-    _ctx.lineTo(s2.x, s2.y);
-    _ctx.stroke();
-    _ctx.restore();
-
-    // Arco de apertura desde p1 — radio = ancho puerta proyectado en pantalla
-    const radiusPx = Math.hypot(s2.x - s1.x, s2.y - s1.y);
-    if (radiusPx < 4) continue;
-
-    // Ángulo de inicio: dirección de s1 → s2 en pantalla
-    const screenAngle = Math.atan2(s2.y - s1.y, s2.x - s1.x);
-
-    _ctx.beginPath();
-    _ctx.moveTo(s1.x, s1.y);
-    // Línea de la hoja de la puerta (perpendicular al arco)
-    _ctx.lineTo(
-      s1.x + Math.cos(screenAngle - Math.PI / 2) * radiusPx,
-      s1.y + Math.sin(screenAngle - Math.PI / 2) * radiusPx
-    );
-    // Arco de 90°
-    _ctx.arc(s1.x, s1.y, radiusPx, screenAngle - Math.PI / 2, screenAngle, false);
-    _ctx.stroke();
-  }
-  _ctx.restore();
+  if (!cam || !_meshes.length) return null;
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(
+    new THREE.Vector2((sx / window.innerWidth)*2-1, -(sy / window.innerHeight)*2+1),
+    cam
+  );
+  const hits = raycaster.intersectObjects(_meshes);
+  return hits.length ? hits[0].object : null;
 }
 
-/* ─── Menú contextual ────────────────────────────────────────────────────── */
-function _openCtxMenu(wallData, sx, sy) {
-  _ctxWall = wallData;
+function _ensureGlobalContextMenu() {
+  if (_globalContextMenuBound) return;
+  _globalContextMenuBound = true;
+  const canvas = document.getElementById('scene-canvas');
+  if (!canvas) return;
+
+  canvas.addEventListener('pointerdown', e => {
+    if (_active || e.button !== 0 || !_meshes.length) return;
+    const hit = _pickSeg(e.clientX, e.clientY);
+    if (!hit) { _globalDownSeg = null; _globalDownPos = null; return; }
+    e.stopPropagation();
+    _globalDownSeg = hit;
+    _globalDownPos = { x: e.clientX, y: e.clientY };
+  }, true);
+
+  canvas.addEventListener('pointerup', e => {
+    if (_active || e.button !== 0) return;
+    const hit = _globalDownSeg, down = _globalDownPos;
+    _globalDownSeg = null; _globalDownPos = null;
+    if (!hit || !down) { _closeCtxMenu(); return; }
+    if (Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 5) return;
+    e.stopPropagation();
+    _openCtxMenuForMesh(hit, e.clientX, e.clientY);
+  }, true);
+
+  document.addEventListener('pointerdown', e => {
+    const menu = document.getElementById('wall-ctx-menu');
+    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) _closeCtxMenu();
+  });
+}
+
+function _openCtxMenuForMesh(mesh, sx, sy) {
+  _ctxSeg = mesh;
   const menu = document.getElementById('wall-ctx-menu');
   if (!menu) return;
-
-  const toggleBtn = document.getElementById('wall-ctx-toggle-label');
-  if (toggleBtn) toggleBtn.textContent = wallData.labelVisible ? 'Ocultar medida' : 'Mostrar medida';
-
-  // Sincronizar el color picker con el color actual de la pared
   const colorPicker = document.getElementById('wall-ctx-color');
-  if (colorPicker) {
-    const hex = '#' + wallData.mesh.material.color.getHexString();
-    colorPicker.value = hex;
-  }
-
-  // Posicionar sin salirse de la pantalla
+  if (colorPicker) colorPicker.value = '#' + mesh.material.color.getHexString();
   menu.style.display = 'block';
-  const menuW = 180, menuH = 130;
-  menu.style.left = `${Math.min(sx, window.innerWidth  - menuW)}px`;
+  const menuW = 200, menuH = 160;
+  menu.style.left = `${Math.min(sx, window.innerWidth - menuW)}px`;
   menu.style.top  = `${Math.min(sy, window.innerHeight - menuH)}px`;
 }
+
 function _closeCtxMenu() {
   const menu = document.getElementById('wall-ctx-menu');
   if (menu) menu.style.display = 'none';
-  _ctxWall = null;
+  _ctxSeg = null;
 }
 
-/* ─── Raycasting sobre paredes (clic derecho) ────────────────────────────── */
-function _pickWall(sx, sy) {
-  const cam = SceneManager.activeCam;
-  if (!cam) return null;
-  const raycaster = new THREE.Raycaster();
-  const ndc = new THREE.Vector2(
-    (sx / window.innerWidth)  *  2 - 1,
-    (sy / window.innerHeight) * -2 + 1
-  );
-  raycaster.setFromCamera(ndc, cam);
-  const meshes = _walls.map(w => w.mesh);
-  const hits   = raycaster.intersectObjects(meshes);
-  if (!hits.length) return null;
-  return _walls.find(w => w.mesh === hits[0].object) ?? null;
+/* ─── Canvas resize ──────────────────────────────────────────────────────── */
+function _resizeCanvas() {
+  if (!_cvs) return;
+  _cvs.width  = window.innerWidth;
+  _cvs.height = window.innerHeight;
 }
 
 /* ─── Handlers de input ──────────────────────────────────────────────────── */
-let _shiftDown = false;
-let _altDown   = false;
-
 function _onKeyDown(e) {
   if (!_active) return;
   if (e.key === 'Shift') { _shiftDown = true; return; }
@@ -456,8 +486,7 @@ function _onKeyDown(e) {
   if (e.key === 'l' || e.key === 'L') _setTool('line');
   if (e.key === 'r' || e.key === 'R') _setTool('rect');
   if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
-    e.preventDefault();
-    _undoLast();
+    e.preventDefault(); _undoLast();
   }
 }
 function _onKeyUp(e) {
@@ -465,88 +494,30 @@ function _onKeyUp(e) {
   if (e.key === 'Alt')   _altDown   = false;
 }
 
-// Guardamos posición del pointerdown para distinguir click de drag
-let _downPos    = null;
-let _isDragging = false;
-
-// Posición actual del ratón en pantalla (para orientar la línea al confirmar distancia)
-let _cursorScreen = { x: 0, y: 0 };
-
-/* ─── Input de distancia directa (estilo AutoCAD) ────────────────────────── */
-function _showDistInput(sx, sy) {
-  const wrap  = document.getElementById('wp-dist-input-wrap');
-  const input = document.getElementById('wp-dist-input');
-  if (!wrap || !input) return;
-  wrap.style.display = 'flex';
-  wrap.style.left = `${sx}px`;
-  wrap.style.top  = `${sy}px`;
-  input.value = '';
-  setTimeout(() => input.focus(), 50);
-}
-
-function _hideDistInput() {
-  const wrap = document.getElementById('wp-dist-input-wrap');
-  if (wrap) wrap.style.display = 'none';
-}
-
-function _confirmDistInput() {
-  const input = document.getElementById('wp-dist-input');
-  const dist  = parseFloat(input?.value);
-  _hideDistInput();
-  if (!_drawing || !_p1 || isNaN(dist) || dist <= 0) return;
-
-  // Calcular dirección desde _p1 hacia la posición actual del cursor
-  const worldCursor = _screenToWorld(_cursorScreen.x, _cursorScreen.y);
-  const dx  = worldCursor ? worldCursor.x - _p1.wx : 1;
-  const dz  = worldCursor ? worldCursor.z - _p1.wz : 0;
-  const len = Math.sqrt(dx * dx + dz * dz);
-
-  // Aplicar snap angular a esa dirección
-  let angle = Math.atan2(dz, dx);
-  if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
-
-  const p2w = {
-    x: _p1.wx + dist * Math.cos(angle),
-    z: _p1.wz + dist * Math.sin(angle)
-  };
-
-  _buildWall(_p1, p2w);
-  _p1 = { wx: p2w.x, wz: p2w.z };
-  _p1Screen = _worldToScreen(p2w.x, p2w.z);
-  _clearGuide();
-
-  // Mostrar inmediatamente el input para la siguiente longitud
-  _showDistInput(_p1Screen.x, _p1Screen.y);
-}
-
-function _forwardToScene(e) {
-  const scene = document.getElementById('scene-canvas');
-  if (!scene) return;
-  scene.dispatchEvent(new PointerEvent(e.type, e));
-}
-
 function _onPointerDown(e) {
   if (!_active) return;
   if (e.button === 2) return;
-  _downPos    = { x: e.clientX, y: e.clientY };
+  _downPos = { x: e.clientX, y: e.clientY };
   _isDragging = false;
-  // Reenviar al OrbitControls para que pueda iniciar pan si resulta ser drag
-  _forwardToScene(e);
+  if (_tool !== 'door') {
+    const scene = document.getElementById('scene-canvas');
+    scene?.dispatchEvent(new PointerEvent(e.type, e));
+  }
 }
 
 function _onPointerUp(e) {
   if (!_active) return;
   if (e.button === 2) return;
 
-  // Si fue drag, reenviar el pointerup al scene para que OrbitControls lo cierre
   if (_isDragging) {
-    _forwardToScene(e);
-    _downPos    = null;
-    _isDragging = false;
+    if (_tool !== 'door') {
+      const scene = document.getElementById('scene-canvas');
+      scene?.dispatchEvent(new PointerEvent(e.type, e));
+    }
+    _downPos = null; _isDragging = false;
     return;
   }
 
-  // Ignorar si fue un drag (movió más de 5px)
   if (!_downPos) return;
   const moved = Math.abs(e.clientX - _downPos.x) + Math.abs(e.clientY - _downPos.y);
   _downPos = null;
@@ -557,83 +528,92 @@ function _onPointerUp(e) {
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
 
+  // Modo puerta
+  if (_tool === 'door') {
+    _doorClick(worldPos.x, worldPos.z);
+    return;
+  }
+
+  // Modo línea / rectángulo
   if (!_drawing) {
-    // Primer clic: fijar origen (con snap de extremo)
-    let p1w = _applyEndpointSnap({ x: worldPos.x, z: worldPos.z });
+    const p1w = _applyEndpointSnap({ x: worldPos.x, z: worldPos.z });
     _drawing  = true;
     _p1       = { wx: p1w.x, wz: p1w.z };
     _p1Screen = { x: e.clientX, y: e.clientY };
-    // Mostrar input de distancia solo en modo línea
     if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
-    // Segundo clic: endpoint snap primero; si hay snap exacto, omitir angle snap
-    const raw2 = { x: worldPos.x, z: worldPos.z };
+    const raw2     = { x: worldPos.x, z: worldPos.z };
     const snapped2 = _applyEndpointSnap(raw2);
     const hasSnap2 = snapped2.x !== raw2.x || snapped2.z !== raw2.z;
-    let p2w = hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2);
+    const p2w      = hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2);
 
     if (_tool === 'rect') {
-      _buildRect(_p1, p2w);
+      _addSeg({ x: _p1.wx, z: _p1.wz }, { x: p2w.x,   z: _p1.wz });
+      _addSeg({ x: p2w.x,   z: _p1.wz }, { x: p2w.x,   z: p2w.z  });
+      _addSeg({ x: p2w.x,   z: p2w.z  }, { x: _p1.wx, z: p2w.z  });
+      _addSeg({ x: _p1.wx, z: p2w.z  }, { x: _p1.wx, z: _p1.wz });
       _cancelDrawing();
     } else {
       _hideDistInput();
-      _buildWall(_p1, p2w);
-      // Encadenar: el punto final es el nuevo origen
+      _addSeg({ x: _p1.wx, z: _p1.wz }, p2w);
       _p1       = { wx: p2w.x, wz: p2w.z };
       _p1Screen = { x: e.clientX, y: e.clientY };
-      _clearGuide();
-      // Volver a mostrar el input para el siguiente segmento
       if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
     }
   }
 }
 
-
 function _onPointerMove(e) {
   if (!_active) return;
   _cursorScreen = { x: e.clientX, y: e.clientY };
 
-  // Detectar drag y reenviar al OrbitControls si es navegación
-  if (_downPos && !_drawing) {
+  if (_downPos && _tool !== 'door') {
     const moved = Math.abs(e.clientX - _downPos.x) + Math.abs(e.clientY - _downPos.y);
     if (moved > 4) {
       _isDragging = true;
-      _forwardToScene(e);
+      const scene = document.getElementById('scene-canvas');
+      scene?.dispatchEvent(new PointerEvent(e.type, e));
       return;
     }
   }
 
-  // Cursor siempre muestra el snap de extremo aunque no estemos dibujando
+  if (_cvs) _cvs.style.cursor = _tool === 'door' ? 'cell' : 'crosshair';
+
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
 
-  const raw = { x: worldPos.x, z: worldPos.z };
-  const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
-  const isSnapped = snappedEp !== raw && (snappedEp.x !== raw.x || snappedEp.z !== raw.z);
-
-  if (_cvs) _cvs.style.cursor = 'crosshair';
+  // Modo puerta: mostrar snap al segmento
+  if (_tool === 'door') {
+    const hit = _findClosestSegPoint(worldPos.x, worldPos.z);
+    if (hit) {
+      const s = _worldToScreen(hit.pt.x, hit.pt.z);
+      _ctx.save();
+      _ctx.strokeStyle = '#f59e0b';
+      _ctx.lineWidth = 1.5;
+      _ctx.setLineDash([]);
+      _ctx.beginPath();
+      _ctx.arc(s.x, s.y, 7, 0, Math.PI*2);
+      _ctx.stroke();
+      _ctx.restore();
+    }
+    return;
+  }
 
   if (!_drawing || !_p1) { _hideTooltip(); return; }
 
-  // Recalcular p1Screen en cada frame — puede haber cambiado por pan/zoom
   _p1Screen = _worldToScreen(_p1.wx, _p1.wz);
 
-  // Si hay snap de extremo, usarlo directo sin snap angular (el extremo exacto tiene prioridad)
-  let p2w = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
-
-  // Calcular posición en pantalla del p2
-  const p2s = isSnapped
-    ? _worldToScreen(p2w.x, p2w.z)
-    : { x: e.clientX, y: e.clientY };
+  const raw      = { x: worldPos.x, z: worldPos.z };
+  const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
+  const isSnapped = snappedEp.x !== raw.x || snappedEp.z !== raw.z;
+  const p2w       = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
+  const p2s       = isSnapped ? _worldToScreen(p2w.x, p2w.z) : { x: e.clientX, y: e.clientY };
 
   _drawGuide(_p1Screen, p2s, _tool === 'rect', isSnapped ? p2s : null);
 
-  // Tooltip con medidas
-  const dx = p2w.x - _p1.wx;
-  const dz = p2w.z - _p1.wz;
+  const dx = p2w.x - _p1.wx, dz = p2w.z - _p1.wz;
   if (_tool === 'line') {
-    const len = Math.sqrt(dx * dx + dz * dz);
-    _showTooltip(`${len.toFixed(2)} m`, e.clientX, e.clientY);
+    _showTooltip(`${Math.sqrt(dx*dx+dz*dz).toFixed(2)} m`, e.clientX, e.clientY);
   } else {
     _showTooltip(`Ancho: ${Math.abs(dx).toFixed(2)} m | Fondo: ${Math.abs(dz).toFixed(2)} m`, e.clientX, e.clientY);
   }
@@ -641,56 +621,73 @@ function _onPointerMove(e) {
 
 function _onContextMenu(e) {
   if (!_active) return;
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
+  if (_drawing || _tool === 'door') { _cancelDrawing(); return; }
+}
 
-  // Si estamos dibujando, clic derecho cancela el segmento en curso
-  if (_drawing) {
-    _cancelDrawing();
-    return;
-  }
-
-  // Si no dibujamos, abrir menú contextual de pared
-  const wall = _pickWall(e.clientX, e.clientY);
-  if (wall) _openCtxMenu(wall, e.clientX, e.clientY);
-  else      _closeCtxMenu();
+/* ─── Input distancia directa ────────────────────────────────────────────── */
+function _showDistInput(sx, sy) {
+  const wrap = document.getElementById('wp-dist-input-wrap');
+  const input = document.getElementById('wp-dist-input');
+  if (!wrap || !input) return;
+  wrap.style.display = 'flex';
+  wrap.style.left = `${sx}px`;
+  wrap.style.top  = `${sy}px`;
+  input.value = '';
+  setTimeout(() => input.focus(), 50);
+}
+function _hideDistInput() {
+  const wrap = document.getElementById('wp-dist-input-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+function _confirmDistInput() {
+  const input = document.getElementById('wp-dist-input');
+  const dist  = parseFloat(input?.value);
+  _hideDistInput();
+  if (!_drawing || !_p1 || isNaN(dist) || dist <= 0) return;
+  const worldCursor = _screenToWorld(_cursorScreen.x, _cursorScreen.y);
+  const dx = worldCursor ? worldCursor.x - _p1.wx : 1;
+  const dz = worldCursor ? worldCursor.z - _p1.wz : 0;
+  let angle = Math.atan2(dz, dx);
+  if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
+  const p2w = { x: _p1.wx + dist * Math.cos(angle), z: _p1.wz + dist * Math.sin(angle) };
+  _addSeg({ x: _p1.wx, z: _p1.wz }, p2w);
+  _p1 = { wx: p2w.x, wz: p2w.z };
+  _p1Screen = _worldToScreen(p2w.x, p2w.z);
+  _showDistInput(_p1Screen.x, _p1Screen.y);
 }
 
 /* ─── Utilidades ─────────────────────────────────────────────────────────── */
 function _cancelDrawing() {
   _drawing  = false;
-  _p1       = null;
-  _p1Screen = null;
-  _clearGuide();
-  _hideTooltip();
-  _hideDistInput();
-}
-
-function _removeWall(wall) {
-  SceneManager.scene.remove(wall.mesh);
-  wall.mesh.geometry.dispose();
-  wall.mesh.material.dispose();
-  wall.labelEl?.remove();
+  _p1 = null; _p1Screen = null;
+  _doorPt1 = null; _doorSeg = null; _doorT1 = null;
+  _hideTooltip(); _hideDistInput();
 }
 
 function _undoLast() {
-  const last = _walls.pop();
-  if (!last) return;
-  _removeWall(last);
+  if (_segs.length === 0) return;
+  _segs.pop();
+  const lbl = _labels.pop();
+  lbl?.el.remove();
+  // Si había puertas sobre el último segmento, eliminarlas
+  _doors = _doors.filter(d => d.segIdx < _segs.length);
 }
 
 function _clearAll() {
-  [..._walls].forEach(_removeWall);
-  _walls = [];
-  _doors = [];
+  _segs = []; _doors = []; _labels.forEach(l => l.el.remove()); _labels = [];
+  _meshes.forEach(m => { SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+  _meshes = [];
   _cancelDrawing();
 }
 
 function _setTool(tool) {
   _tool = tool;
+  _cancelDrawing();
   document.getElementById('wp-tool-line')?.classList.toggle('wp-tool-active', tool === 'line');
   document.getElementById('wp-tool-rect')?.classList.toggle('wp-tool-active', tool === 'rect');
-  _cancelDrawing();
+  document.getElementById('wp-tool-door')?.classList.toggle('wp-tool-active', tool === 'door');
+  _cvs && (_cvs.style.cursor = tool === 'door' ? 'cell' : 'crosshair');
 }
 
 /* ─── Activar / desactivar ───────────────────────────────────────────────── */
@@ -701,32 +698,32 @@ function activate() {
   SceneManager.setCamera('top');
   document.getElementById('cam-top')?.classList.add('active');
   document.getElementById('cam-iso')?.classList.remove('active');
-
-  const overlay = document.getElementById('wall-painter-overlay');
-  overlay?.classList.remove('hidden');
+  document.getElementById('wall-painter-overlay')?.classList.remove('hidden');
 
   _cvs = document.getElementById('wall-painter-canvas');
   _ctx = _cvs?.getContext('2d');
   _resizeCanvas();
 
   _ensureLabelContainer();
-  _startLabelLoop();
+  _startRafLoop();
   _ensureGlobalContextMenu();
   SceneManager.setControlsEnabled(true);
 
   _cvs?.addEventListener('pointerdown', _onPointerDown);
   _cvs?.addEventListener('pointerup',   _onPointerUp);
   _cvs?.addEventListener('pointermove', _onPointerMove);
-
   _cvs?.addEventListener('contextmenu', _onContextMenu);
   document.addEventListener('keydown',  _onKeyDown);
   document.addEventListener('keyup',    _onKeyUp);
   window.addEventListener('resize',     _resizeCanvas);
 
+  // Toolbar buttons
   document.getElementById('wp-tool-line')?.addEventListener('click', () => _setTool('line'));
   document.getElementById('wp-tool-rect')?.addEventListener('click', () => _setTool('rect'));
+  document.getElementById('wp-tool-door')?.addEventListener('click', () => _setTool('door'));
   document.getElementById('wp-undo')?.addEventListener('click', _undoLast);
   document.getElementById('wp-clear')?.addEventListener('click', _clearAll);
+  document.getElementById('wp-transform')?.addEventListener('click', _transform);
   document.getElementById('wp-finish')?.addEventListener('click', deactivate);
   document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
   document.getElementById('wp-wall-height')?.addEventListener('input', e => {
@@ -735,7 +732,6 @@ function activate() {
 
   const cotasBtn = document.getElementById('wp-toggle-cotas');
   if (cotasBtn) {
-    // Sync estado inicial
     cotasBtn.classList.toggle('wp-tool-active', Boolean(AppState.showCotas));
     cotasBtn.addEventListener('click', () => {
       AppState.showCotas = !AppState.showCotas;
@@ -756,30 +752,25 @@ function activate() {
   document.getElementById('wp-dist-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); _confirmDistInput(); }
     if (e.key === 'Escape') { _hideDistInput(); _cancelDrawing(); }
-    e.stopPropagation(); // evitar que Esc cancele el dibujo por duplicado
+    e.stopPropagation();
   });
 
+  // Menú contextual de segmento (color + eliminar)
   document.getElementById('wall-ctx-color')?.addEventListener('input', e => {
-    if (!_ctxWall) return;
-    _ctxWall.mesh.material.color.set(e.target.value);
+    if (!_ctxSeg) return;
+    _ctxSeg.material.color.set(e.target.value);
   });
   document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => {
-    if (!_ctxWall) return;
-    _ctxWall.labelVisible = !_ctxWall.labelVisible;
-    if (_ctxWall.labelObj) _ctxWall.labelObj.visible = _ctxWall.labelVisible;
-    else _ctxWall.labelEl.style.display = _ctxWall.labelVisible ? '' : 'none';
-    _closeCtxMenu();
-  });
-  document.getElementById('wall-ctx-add-door')?.addEventListener('click', () => {
-    if (!_ctxWall) return;
-    const w = parseFloat(document.getElementById('wall-ctx-door-width')?.value) || 0.9;
-    _addDoor(_ctxWall, w);
     _closeCtxMenu();
   });
   document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {
-    if (!_ctxWall) return;
-    _removeWall(_ctxWall);
-    _walls = _walls.filter(w => w !== _ctxWall);
+    if (!_ctxSeg) return;
+    const idx = _meshes.indexOf(_ctxSeg);
+    if (idx >= 0) {
+      SceneManager.scene.remove(_ctxSeg);
+      _ctxSeg.geometry.dispose(); _ctxSeg.material.dispose();
+      _meshes.splice(idx, 1);
+    }
     _closeCtxMenu();
   });
 
@@ -791,12 +782,8 @@ function deactivate() {
   _active = false;
   _cancelDrawing();
   _closeCtxMenu();
-
   document.getElementById('wall-painter-overlay')?.classList.add('hidden');
-
-  // El RAF de etiquetas sigue corriendo para mantener las medidas visibles
   SceneManager.setControlsEnabled(true);
-
   _cvs?.removeEventListener('pointerdown', _onPointerDown);
   _cvs?.removeEventListener('pointerup',   _onPointerUp);
   _cvs?.removeEventListener('pointermove', _onPointerMove);
@@ -811,5 +798,5 @@ export const WallPainter = {
   activate,
   deactivate,
   get isActive() { return _active; },
-  get walls() { return _walls; }
+  get segments() { return _segs; }
 };

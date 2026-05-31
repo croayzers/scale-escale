@@ -1762,6 +1762,9 @@
     <button id="wp-tool-rect" class="wp-tool-btn" title="Rectángulo (R)">
       <i data-lucide="square" class="w-4 h-4"></i>
     </button>
+    <button id="wp-tool-door" class="wp-tool-btn" title="Puerta: 2 clics sobre una línea">
+      <i data-lucide="door-open" class="w-4 h-4"></i>
+    </button>
     <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
     <button id="wp-undo" class="wp-tool-btn" title="Deshacer (Ctrl+Z)">
       <i data-lucide="undo-2" class="w-4 h-4"></i>
@@ -1784,6 +1787,7 @@
       <i data-lucide="ruler" class="w-4 h-4"></i>
     </button>
     <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
+    <button id="wp-transform" style="background:#0f172a;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">⬛ Transformar</button>
     <button id="wp-finish" style="background:var(--brand-primary,#2563eb);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">Terminar</button>
     <button id="wp-cancel" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px">Cancelar</button>
   </div>
@@ -1827,15 +1831,7 @@
     Color de la pared
   </label>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
-  <button class="wall-ctx-item" id="wall-ctx-toggle-label">Ocultar medida</button>
-  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
-  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px">
-    <span style="font-size:12px;color:var(--ink)">Puerta</span>
-    <input id="wall-ctx-door-width" type="number" min="0.5" max="3" step="0.05" value="0.9"
-      style="width:52px;font-size:11px;border:1px solid rgba(0,0,0,0.15);border-radius:5px;padding:2px 5px;text-align:center"/>
-    <span style="font-size:11px;color:var(--muted)">m</span>
-    <button id="wall-ctx-add-door" style="background:var(--ink);color:var(--paper);border:none;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer">+ Añadir</button>
-  </div>
+  <button class="wall-ctx-item" id="wall-ctx-toggle-label">Cerrar</button>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item wall-ctx-danger" id="wall-ctx-delete">Eliminar pared</button>
 </div>
