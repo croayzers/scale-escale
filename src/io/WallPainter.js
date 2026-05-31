@@ -49,6 +49,9 @@ function _ensureLabelContainer() {
   _labelContainer.style.cssText =
     'position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden';
   document.body.appendChild(_labelContainer);
+  document.addEventListener('escale:plan-cotas-changed', e => {
+    _labelContainer.style.display = e.detail.visible ? '' : 'none';
+  });
 }
 
 /* ─── RAF loop ───────────────────────────────────────────────────────────── */

@@ -9,7 +9,7 @@ const SKY_PRESETS = {
 };
 
 let _nightMode = false;
-let _currentSky = 'day';
+let _currentSky = 'blue';
 let _currentUi  = 'light';
 let _lightDeg   = 45;
 
@@ -159,11 +159,6 @@ export const SceneModeManager = {
       _setShadows(e.target.checked);
     });
 
-    // Cotas
-    document.getElementById('smp-cotas')?.addEventListener('change', e => {
-      _setCotas(e.target.checked);
-    });
-
     // Cerrar al clicar fuera
     document.addEventListener('pointerdown', e => {
       if (!panel.contains(e.target) && e.target !== btn) {
@@ -171,7 +166,20 @@ export const SceneModeManager = {
       }
     });
 
+    // Cotas elementos
+    document.getElementById('smp-cotas-elements')?.addEventListener('change', e => {
+      AppState.showCotas = e.target.checked;
+      SceneManager.redrawCotas();
+    });
+
+    // Cotas plano y medidas
+    document.getElementById('smp-cotas-plan')?.addEventListener('change', e => {
+      AppState.showPlanCotas = e.target.checked;
+      document.dispatchEvent(new CustomEvent('escale:plan-cotas-changed', { detail: { visible: e.target.checked } }));
+    });
+
     // Estado inicial
     _applyLightAngle(45);
+    _applySky('blue');
   }
 };
