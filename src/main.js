@@ -241,7 +241,9 @@ async function bootstrap() {
   };
 
   const refreshHeaderStats = () => {
-    const pax = AppState.items.reduce((sum, item) => sum + (item.chairs || 0), 0);
+    const autoPax = AppState.items.reduce((sum, item) => sum + (item.chairs || 0), 0);
+    const manualPaxVal = document.getElementById('inventory-manual-pax')?.value;
+    const pax = manualPaxVal && parseInt(manualPaxVal) > 0 ? parseInt(manualPaxVal) : autoPax;
     const area = AppState.items
       .filter(item => item.type === 'zone')
       .reduce((sum, item) => sum + (item.dims?.length || 0) * (item.dims?.width || 0), 0);
@@ -575,6 +577,11 @@ async function bootstrap() {
     document.dispatchEvent(new CustomEvent('escale:inventory-close'));
     document.dispatchEvent(new CustomEvent('escale:open-print-menu'));
   });
+  document.getElementById('inventory-manual-pax')?.addEventListener('input', () => {
+    refreshHeaderStats();
+    InventoryPanel.refresh();
+  });
+
   inventoryEventName?.addEventListener('input', () => {
     AppState.emitSceneInsights('event-name');
     const templateMeta = TemplateManager.getCurrentTemplateMeta();

@@ -1913,7 +1913,15 @@
 
     <!-- Nombre evento (editable) -->
     <input id="inventory-event-name" type="text" placeholder="Nombre del eventoâ€¦"
-      class="input-field mb-4" style="font-size:12px"/>
+      class="input-field mb-2" style="font-size:12px"/>
+
+    <!-- PAX manual (coctel / sin sillas) -->
+    <div class="flex items-center gap-2 mb-4">
+      <span class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted);white-space:nowrap">PAX manual</span>
+      <input id="inventory-manual-pax" type="number" min="0" placeholder="Auto"
+        class="input-field" style="font-size:12px;width:80px;text-align:center"/>
+      <span class="text-[11px]" style="color:var(--muted)">vacío = contar sillas</span>
+    </div>
 
     <!-- Lista desglose -->
     <div id="inventory-list" class="flex-1 overflow-y-auto space-y-4 mb-4">

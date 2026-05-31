@@ -18,7 +18,10 @@ function refresh() {
   if (!list || !totalPax || !totalItems || !totalPrice) return;
 
   const groups = groupInventoryLines(AppState.items);
-  totalPax.textContent = String(getInventoryTotalPax(AppState.items));
+  const manualPaxVal = document.getElementById('inventory-manual-pax')?.value;
+  const autoPax = getInventoryTotalPax(AppState.items);
+  const displayPax = manualPaxVal && parseInt(manualPaxVal) > 0 ? parseInt(manualPaxVal) : autoPax;
+  totalPax.textContent = String(displayPax);
   totalItems.textContent = String(getInventoryTotalItems(AppState.items));
   totalPrice.textContent = '—';
 
