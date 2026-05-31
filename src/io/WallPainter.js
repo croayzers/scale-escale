@@ -263,15 +263,33 @@ function _onKeyUp(e) {
   if (e.key === 'Shift') _shiftDown = false;
 }
 
+// Guardamos posición del pointerdown para distinguir click de drag
+let _downPos = null;
+
 function _onPointerDown(e) {
   if (!_active) return;
+  e.stopPropagation();
+  if (e.button === 2) return; // el contextmenu lo maneja _onContextMenu
+  _downPos = { x: e.clientX, y: e.clientY };
+}
+
+function _onPointerUp(e) {
+  if (!_active) return;
+  e.stopPropagation();
+
   if (e.button === 2) {
-    // Clic derecho — pick de pared
     const wall = _pickWall(e.clientX, e.clientY);
     if (wall) _openCtxMenu(wall, e.clientX, e.clientY);
-    else       _closeCtxMenu();
+    else      _closeCtxMenu();
     return;
   }
+
+  // Ignorar si fue un drag (movió más de 5px)
+  if (!_downPos) return;
+  const moved = Math.abs(e.clientX - _downPos.x) + Math.abs(e.clientY - _downPos.y);
+  _downPos = null;
+  if (moved > 5) return;
+
   _closeCtxMenu();
 
   const worldPos = _screenToWorld(e.clientX, e.clientY);
@@ -279,29 +297,32 @@ function _onPointerDown(e) {
 
   if (!_drawing) {
     // Primer clic: fijar origen
-    _drawing   = true;
-    _p1        = { wx: worldPos.x, wz: worldPos.z };
-    _p1Screen  = { x: e.clientX, y: e.clientY };
+    _drawing  = true;
+    _p1       = { wx: worldPos.x, wz: worldPos.z };
+    _p1Screen = { x: e.clientX, y: e.clientY };
   } else {
     // Segundo clic: confirmar segmento
-    let p2w = worldPos;
-    if (_shiftDown) p2w = _snapAngle(_p1, { x: p2w.x, z: p2w.z }, true);
+    let p2w = { x: worldPos.x, z: worldPos.z };
+    if (_shiftDown) p2w = _snapAngle(_p1, p2w, true);
 
     if (_tool === 'rect') {
-      _buildRect(_p1, { x: p2w.x, z: p2w.z });
+      _buildRect(_p1, p2w);
       _cancelDrawing();
     } else {
-      // Línea: el punto final se convierte en nuevo origen (modo encadenado)
-      _buildWall(_p1, { x: p2w.x, z: p2w.z });
+      _buildWall(_p1, p2w);
+      // Encadenar: el punto final es el nuevo origen
       _p1       = { wx: p2w.x, wz: p2w.z };
-      _p1Screen = _worldToScreen(p2w.x, p2w.z);
+      _p1Screen = { x: e.clientX, y: e.clientY };
       _clearGuide();
     }
   }
 }
 
-function _onDblClick() {
+function _onDblClick(e) {
   if (!_active || !_drawing) return;
+  e.stopPropagation();
+  // El dblclick dispara 2x pointerup antes — la última pared ya fue creada,
+  // solo cancelamos el modo encadenado
   _cancelDrawing();
 }
 
@@ -393,8 +414,12 @@ function activate() {
   // Parchear el render loop para incluir el labelRenderer
   _patchRenderLoop(true);
 
+  // Desactivar OrbitControls para que no compitan con el dibujo
+  SceneManager.setControlsEnabled(false);
+
   // Listeners
   _cvs?.addEventListener('pointerdown', _onPointerDown);
+  _cvs?.addEventListener('pointerup',   _onPointerUp);
   _cvs?.addEventListener('pointermove', _onPointerMove);
   _cvs?.addEventListener('dblclick',    _onDblClick);
   _cvs?.addEventListener('contextmenu', _onContextMenu);
@@ -445,7 +470,11 @@ function deactivate() {
   document.getElementById('wall-painter-overlay')?.classList.add('hidden');
   _patchRenderLoop(false);
 
+  // Reactivar OrbitControls
+  SceneManager.setControlsEnabled(true);
+
   _cvs?.removeEventListener('pointerdown', _onPointerDown);
+  _cvs?.removeEventListener('pointerup',   _onPointerUp);
   _cvs?.removeEventListener('pointermove', _onPointerMove);
   _cvs?.removeEventListener('dblclick',    _onDblClick);
   _cvs?.removeEventListener('contextmenu', _onContextMenu);
