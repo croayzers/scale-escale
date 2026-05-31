@@ -1,6 +1,7 @@
-import { CollabManager } from '../services/CollabManager.js';
-import { AppState }       from '../core/AppState.js';
-import { AuthManager }    from '../services/AuthManager.js';
+import { CollabManager }       from '../services/CollabManager.js';
+import { AppState }            from '../core/AppState.js';
+import { AuthManager }         from '../services/AuthManager.js';
+import { SubscriptionManager } from '../services/SubscriptionManager.js';
 
 let _el = null;
 
@@ -167,6 +168,7 @@ export const CollabInviteModal = {
     });
 
     q('create-link-btn')?.addEventListener('click', async () => {
+      if (!SubscriptionManager.ensureFeature('collabHost')) return;
       const btn = q('create-link-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
 

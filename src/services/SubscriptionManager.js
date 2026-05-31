@@ -173,7 +173,8 @@ function featureLabel(featureKey) {
     crmIntegration: 'integracion CRM',
     erpIntegration: 'integracion ERP',
     sharepointIntegration: 'integracion SharePoint',
-    companyReporting: 'reportes empresariales'
+    companyReporting: 'reportes empresariales',
+    collabHost: 'colaboracion en tiempo real'
   }[featureKey] || featureKey;
 }
 
