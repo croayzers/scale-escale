@@ -567,6 +567,105 @@ function _setTool(tool) {
 }
 
 /* ─── Activar / desactivar ───────────────────────────────────────────────── */
+let _listenersInit = false;
+
+function _initListeners() {
+  if (_listenersInit) return;
+  _listenersInit = true;
+
+  document.getElementById('wp-tool-select')?.addEventListener('click', () => _setTool('select'));
+  document.getElementById('wp-tool-line')?.addEventListener('click', () => _setTool('line'));
+  document.getElementById('wp-tool-rect')?.addEventListener('click', () => _setTool('rect'));
+  document.getElementById('wp-undo')?.addEventListener('click', _undoLast);
+  document.getElementById('wp-clear')?.addEventListener('click', _clearAll);
+  document.getElementById('wp-transform')?.addEventListener('click', () => { _transform(); deactivate(); });
+  document.getElementById('wp-finish-2d')?.addEventListener('click', () => deactivate());
+  document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
+
+  document.getElementById('wp-wall-height')?.addEventListener('input', e => {
+    _wallHeight = parseFloat(e.target.value) || 2.5;
+  });
+
+  const colorInput   = document.getElementById('wp-wall-color');
+  const colorPreview = document.getElementById('wp-color-preview');
+  document.getElementById('wp-color-preview')?.addEventListener('click', () => colorInput?.click());
+  colorInput?.addEventListener('input', e => {
+    _wallColor = e.target.value;
+    if (colorPreview) colorPreview.style.background = _wallColor;
+  });
+
+  document.getElementById('wp-toggle-cotas')?.addEventListener('click', () => {
+    AppState.showCotas = !AppState.showCotas;
+    SceneManager.redrawCotas();
+    document.getElementById('wp-toggle-cotas')?.classList.toggle('wp-tool-active', AppState.showCotas);
+  });
+
+  document.getElementById('wp-dist-ok')?.addEventListener('click', _confirmDistInput);
+  document.getElementById('wp-dist-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _confirmDistInput(); }
+    if (e.key === 'Escape') { _hideDistInput(); _cancelDrawing(); }
+    e.stopPropagation();
+  });
+
+  // Menú segmento 2D
+  document.getElementById('wp-seg-color')?.addEventListener('input', e => {
+    if (_ctxSegIdx < 0) return;
+    _segs[_ctxSegIdx].color = e.target.value;
+    const mesh = _meshes.find(m => m.userData.segIdx === _ctxSegIdx);
+    if (mesh) mesh.material.color.set(e.target.value);
+  });
+  document.getElementById('wp-seg-toggle-label')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    _segs[_ctxSegIdx].labelHidden = !_segs[_ctxSegIdx].labelHidden;
+    _closeSegMenu();
+  });
+  document.getElementById('wp-seg-delete')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    const idx = _ctxSegIdx;
+    const meshIdx = _meshes.findIndex(m => m.userData.segIdx === idx);
+    if (meshIdx >= 0) {
+      const m = _meshes[meshIdx];
+      SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
+      _meshes.splice(meshIdx, 1);
+      _meshes.forEach(m => { if (m.userData.segIdx > idx) m.userData.segIdx--; });
+    }
+    _segs.splice(idx, 1);
+    const lbl = _labels.splice(idx, 1)[0];
+    lbl?.el.remove();
+    _closeSegMenu();
+  });
+
+  // Menú mesh 3D
+  document.getElementById('wall-ctx-color')?.addEventListener('input', e => {
+    if (!_ctxSeg) return;
+    _ctxSeg.material.color.set(e.target.value);
+  });
+  document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => _closeCtxMenu());
+  document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {
+    if (!_ctxSeg) return;
+    const meshIdx = _meshes.indexOf(_ctxSeg);
+    const segIdx  = _ctxSeg.userData.segIdx;
+    if (meshIdx >= 0) {
+      SceneManager.scene.remove(_ctxSeg);
+      _ctxSeg.geometry.dispose(); _ctxSeg.material.dispose();
+      _meshes.splice(meshIdx, 1);
+    }
+    if (segIdx >= 0 && segIdx < _segs.length) {
+      _segs.splice(segIdx, 1);
+      const lbl = _labels.splice(segIdx, 1)[0];
+      lbl?.el.remove();
+      _meshes.forEach(m => { if (m.userData.segIdx > segIdx) m.userData.segIdx--; });
+    }
+    _closeCtxMenu();
+  });
+
+  // Cerrar menús al clicar fuera
+  document.addEventListener('pointerdown', e => {
+    const sm = document.getElementById('wp-seg-menu');
+    if (sm && sm.style.display !== 'none' && !sm.contains(e.target)) _closeSegMenu();
+  });
+}
+
 function activate() {
   if (_active) return;
   _active = true;
@@ -583,7 +682,11 @@ function activate() {
   _ensureLabelContainer();
   _startRafLoop();
   _ensureGlobalContextMenu();
+  _initListeners();
   SceneManager.setControlsEnabled(true);
+
+  // Sync estado cotas
+  document.getElementById('wp-toggle-cotas')?.classList.toggle('wp-tool-active', Boolean(AppState.showCotas));
 
   _cvs?.addEventListener('pointerdown', _onPointerDown);
   _cvs?.addEventListener('pointerup',   _onPointerUp);
@@ -592,109 +695,6 @@ function activate() {
   document.addEventListener('keydown',  _onKeyDown);
   document.addEventListener('keyup',    _onKeyUp);
   window.addEventListener('resize',     _resizeCanvas);
-
-  document.getElementById('wp-tool-select')?.addEventListener('click', () => _setTool('select'));
-  document.getElementById('wp-tool-line')?.addEventListener('click', () => _setTool('line'));
-  document.getElementById('wp-tool-rect')?.addEventListener('click', () => _setTool('rect'));
-  document.getElementById('wp-undo')?.addEventListener('click', _undoLast);
-  document.getElementById('wp-clear')?.addEventListener('click', _clearAll);
-  document.getElementById('wp-transform')?.addEventListener('click', () => { _transform(); deactivate(); });
-  document.getElementById('wp-finish-2d')?.addEventListener('click', deactivate);
-  document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
-
-  // Menú contextual de segmento 2D
-  document.getElementById('wp-seg-color')?.addEventListener('input', e => {
-    if (_ctxSegIdx < 0) return;
-    _segs[_ctxSegIdx].color = e.target.value;
-    // Actualizar mesh 3D correspondiente si existe
-    const mesh = _meshes.find(m => m.userData.segIdx === _ctxSegIdx);
-    if (mesh) mesh.material.color.set(e.target.value);
-  });
-  document.getElementById('wp-seg-toggle-label')?.addEventListener('click', () => {
-    if (_ctxSegIdx < 0) return;
-    _segs[_ctxSegIdx].labelHidden = !_segs[_ctxSegIdx].labelHidden;
-    _closeSegMenu();
-  });
-  document.getElementById('wp-seg-delete')?.addEventListener('click', () => {
-    if (_ctxSegIdx < 0) return;
-    const idx = _ctxSegIdx;
-    // Eliminar mesh 3D si existe
-    const meshIdx = _meshes.findIndex(m => m.userData.segIdx === idx);
-    if (meshIdx >= 0) {
-      const m = _meshes[meshIdx];
-      SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
-      _meshes.splice(meshIdx, 1);
-      _meshes.forEach(m => { if (m.userData.segIdx > idx) m.userData.segIdx--; });
-    }
-    // Eliminar segmento y etiqueta
-    _segs.splice(idx, 1);
-    const lbl = _labels.splice(idx, 1)[0];
-    lbl?.el.remove();
-    _closeSegMenu();
-  });
-
-  // Cerrar menú de segmento al clicar fuera
-  document.addEventListener('pointerdown', e => {
-    const menu = document.getElementById('wp-seg-menu');
-    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) _closeSegMenu();
-  });
-  document.getElementById('wp-wall-height')?.addEventListener('input', e => {
-    _wallHeight = parseFloat(e.target.value) || 2.5;
-  });
-
-  const cotasBtn = document.getElementById('wp-toggle-cotas');
-  if (cotasBtn) {
-    cotasBtn.classList.toggle('wp-tool-active', Boolean(AppState.showCotas));
-    cotasBtn.addEventListener('click', () => {
-      AppState.showCotas = !AppState.showCotas;
-      SceneManager.drawCotas();
-      cotasBtn.classList.toggle('wp-tool-active', AppState.showCotas);
-    });
-  }
-
-  const colorInput   = document.getElementById('wp-wall-color');
-  const colorPreview = document.getElementById('wp-color-preview');
-  document.getElementById('wp-color-preview')?.addEventListener('click', () => colorInput?.click());
-  colorInput?.addEventListener('input', e => {
-    _wallColor = e.target.value;
-    if (colorPreview) colorPreview.style.background = _wallColor;
-  });
-
-  document.getElementById('wp-dist-ok')?.addEventListener('click', _confirmDistInput);
-  document.getElementById('wp-dist-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); _confirmDistInput(); }
-    if (e.key === 'Escape') { _hideDistInput(); _cancelDrawing(); }
-    e.stopPropagation();
-  });
-
-  document.getElementById('wall-ctx-color')?.addEventListener('input', e => {
-    if (!_ctxSeg) return;
-    _ctxSeg.material.color.set(e.target.value);
-  });
-  document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => {
-    _closeCtxMenu();
-  });
-  document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {
-    if (!_ctxSeg) return;
-    const meshIdx = _meshes.indexOf(_ctxSeg);
-    const segIdx  = _ctxSeg.userData.segIdx;
-    if (meshIdx >= 0) {
-      SceneManager.scene.remove(_ctxSeg);
-      _ctxSeg.geometry.dispose(); _ctxSeg.material.dispose();
-      _meshes.splice(meshIdx, 1);
-    }
-    // Eliminar segmento 2D y su etiqueta
-    if (segIdx >= 0 && segIdx < _segs.length) {
-      _segs.splice(segIdx, 1);
-      const lbl = _labels.splice(segIdx, 1)[0];
-      lbl?.el.remove();
-      // Reajustar segIdx en los meshes restantes
-      _meshes.forEach(m => {
-        if (m.userData.segIdx > segIdx) m.userData.segIdx--;
-      });
-    }
-    _closeCtxMenu();
-  });
 
   if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('wall-painter-toolbar')] });
 }
