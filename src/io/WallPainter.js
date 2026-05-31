@@ -78,12 +78,13 @@ function _ensureGlobalContextMenu() {
   _globalContextMenuBound = true;
   const canvas = document.getElementById('scene-canvas');
   if (!canvas) return;
-  canvas.addEventListener('contextmenu', e => {
-    if (_active) return; // WallPainter activo lo maneja por su propio canvas
+  // Shift + clic izquierdo sobre pared → abrir menú de propiedades
+  canvas.addEventListener('pointerup', e => {
+    if (_active) return;
     if (!_walls.length) return;
+    if (e.button !== 0 || !e.shiftKey) return;
     const wall = _pickWall(e.clientX, e.clientY);
     if (!wall) return;
-    e.preventDefault();
     e.stopPropagation();
     _openCtxMenu(wall, e.clientX, e.clientY);
   });
