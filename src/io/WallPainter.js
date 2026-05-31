@@ -21,6 +21,7 @@ const ENDPOINT_SNAP_M = 0.35;          // metros — radio de snap de extremos d
 let _active    = false;
 let _tool      = 'line';       // 'line' | 'rect'
 let _wallHeight = 2.5;
+let _wallColor  = '#1a1a2c';   // color activo para nuevas paredes
 
 // Canvas 2D overlay
 let _cvs, _ctx;
@@ -242,7 +243,7 @@ function _buildWall(p1w, p2w) {
 
   const geo = new THREE.BoxGeometry(WALL_THICKNESS, _wallHeight, len);
   const mat = new THREE.MeshStandardMaterial({
-    color:     WALL_COLOR,
+    color:     _wallColor,
     roughness: 0.85,
     metalness: 0.0
   });
@@ -623,6 +624,14 @@ function activate() {
   document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
   document.getElementById('wp-wall-height')?.addEventListener('input', e => {
     _wallHeight = parseFloat(e.target.value) || 2.5;
+  });
+
+  const colorInput   = document.getElementById('wp-wall-color');
+  const colorPreview = document.getElementById('wp-color-preview');
+  document.getElementById('wp-color-preview')?.addEventListener('click', () => colorInput?.click());
+  colorInput?.addEventListener('input', e => {
+    _wallColor = e.target.value;
+    if (colorPreview) colorPreview.style.background = _wallColor;
   });
 
   document.getElementById('wp-dist-ok')?.addEventListener('click', _confirmDistInput);
