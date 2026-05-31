@@ -29,6 +29,8 @@ let _cvs, _ctx;
 let _drawing    = false;
 let _p1         = null;      // {wx, wz}
 let _p1Screen   = null;      // {x, y}
+// Estado de guía activa (para redibujarla en el RAF)
+let _guideState = null;      // {p1s, p2s, isRect, snapPt} | null
 let _downPos    = null;
 let _isDragging = false;
 let _cursorScreen = { x: 0, y: 0 };
@@ -190,6 +192,12 @@ function _redrawCanvas() {
     _ctx.arc(s.x, s.y, 6, 0, Math.PI*2);
     _ctx.fill();
     _ctx.restore();
+  }
+
+  // Guía de trazo activa
+  if (_guideState) {
+    const { p1s, p2s, isRect, snapPt } = _guideState;
+    _drawGuide(p1s, p2s, isRect, snapPt);
   }
 }
 
@@ -431,8 +439,8 @@ function _buildDoorArcMesh(pA, pB, seg) {
   const wallDz = seg.p2.z - seg.p1.z;
   const wallLen = Math.sqrt(wallDx*wallDx + wallDz*wallDz);
   const ux = wallDx / wallLen, uz = wallDz / wallLen; // unitario a lo largo de la pared
-  // Perpendicular (hacia dentro) — elegimos el lado positivo
-  const nx = -uz, nz = ux;
+  // Perpendicular izquierda (mismo lado que el arco 2D: wallAngle - PI/2)
+  const nx = uz, nz = -ux;
 
   const doorWidth = Math.hypot(pB.x - pA.x, pB.z - pA.z);
   const segs = 24;
@@ -618,6 +626,7 @@ function _onPointerUp(e) {
       _addSeg({ x: _p1.wx, z: _p1.wz }, p2w);
       _p1       = { wx: p2w.x, wz: p2w.z };
       _p1Screen = { x: e.clientX, y: e.clientY };
+      _guideState = null;
       if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
     }
   }
@@ -692,7 +701,7 @@ function _onPointerMove(e) {
   const p2w       = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
   const p2s       = isSnapped ? _worldToScreen(p2w.x, p2w.z) : { x: e.clientX, y: e.clientY };
 
-  _drawGuide(_p1Screen, p2s, _tool === 'rect', isSnapped ? p2s : null);
+  _guideState = { p1s: _p1Screen, p2s, isRect: _tool === 'rect', snapPt: isSnapped ? p2s : null };
 
   const dx = p2w.x - _p1.wx, dz = p2w.z - _p1.wz;
   if (_tool === 'line') {
@@ -744,6 +753,7 @@ function _confirmDistInput() {
 function _cancelDrawing() {
   _drawing  = false;
   _p1 = null; _p1Screen = null;
+  _guideState = null;
   _doorPt1 = null; _doorSeg = null; _doorT1 = null;
   _hideTooltip(); _hideDistInput();
 }
