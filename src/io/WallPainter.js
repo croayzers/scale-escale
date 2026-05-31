@@ -454,9 +454,11 @@ function _onPointerUp(e) {
     // Mostrar input de distancia solo en modo línea
     if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
-    // Segundo clic: aplicar snaps y confirmar
-    let p2w = _applyAngleSnap(_p1, { x: worldPos.x, z: worldPos.z });
-    p2w = _applyEndpointSnap(p2w);
+    // Segundo clic: endpoint snap primero; si hay snap exacto, omitir angle snap
+    const raw2 = { x: worldPos.x, z: worldPos.z };
+    const snapped2 = _applyEndpointSnap(raw2);
+    const hasSnap2 = snapped2.x !== raw2.x || snapped2.z !== raw2.z;
+    let p2w = hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2);
 
     if (_tool === 'rect') {
       _buildRect(_p1, p2w);
@@ -511,8 +513,8 @@ function _onPointerMove(e) {
   // Recalcular p1Screen en cada frame — puede haber cambiado por pan/zoom
   _p1Screen = _worldToScreen(_p1.wx, _p1.wz);
 
-  // Aplicar snaps al p2 del preview
-  let p2w = _applyAngleSnap(_p1, snappedEp);
+  // Si hay snap de extremo, usarlo directo sin snap angular (el extremo exacto tiene prioridad)
+  let p2w = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
 
   // Calcular posición en pantalla del p2
   const p2s = isSnapped
