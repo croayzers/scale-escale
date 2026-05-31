@@ -3830,3 +3830,31 @@ body.format-mode-active #btn-format-tool {
 }
 .ctx-spawn-catalog:hover { background: rgba(0,0,0,0.06); color: var(--ink); }
 
+/* ═══════════ WALL PAINTER ═══════════ */
+.wp-tool-btn {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  border-radius: 7px; cursor: pointer;
+  color: var(--ink);
+  transition: background 120ms;
+}
+.wp-tool-btn:hover { background: rgba(0,0,0,0.07); }
+.wp-tool-active {
+  background: var(--brand-primary, #2563eb) !important;
+  color: #fff !important;
+}
+
+.wall-ctx-item {
+  display: block; width: 100%;
+  padding: 8px 12px;
+  background: none; border: none;
+  text-align: left; font-size: 13px;
+  color: var(--ink); cursor: pointer;
+  border-radius: 7px;
+  transition: background 120ms;
+}
+.wall-ctx-item:hover { background: rgba(0,0,0,0.05); }
+.wall-ctx-danger { color: #ef4444 !important; }
+.wall-ctx-danger:hover { background: rgba(239,68,68,0.08) !important; }
+

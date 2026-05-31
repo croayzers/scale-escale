@@ -1602,6 +1602,46 @@
   </div>
 </div>
 
+<!-- ============ WALL PAINTER OVERLAY ============ -->
+<div id="wall-painter-overlay" class="hidden" style="position:fixed;inset:0;z-index:60;pointer-events:none">
+  <!-- Canvas 2D de dibujo (cubre el scene-canvas) -->
+  <canvas id="wall-painter-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;cursor:crosshair"></canvas>
+
+  <!-- Toolbar flotante -->
+  <div id="wall-painter-toolbar" style="pointer-events:auto;position:absolute;top:72px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;padding:6px 10px;box-shadow:0 4px 20px -8px rgba(0,0,0,0.25)">
+    <span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-right:4px">Crear plano</span>
+    <button id="wp-tool-line" class="wp-tool-btn wp-tool-active" title="Línea (L)">
+      <i data-lucide="minus" class="w-4 h-4"></i>
+    </button>
+    <button id="wp-tool-rect" class="wp-tool-btn" title="Rectángulo (R)">
+      <i data-lucide="square" class="w-4 h-4"></i>
+    </button>
+    <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
+    <button id="wp-undo" class="wp-tool-btn" title="Deshacer (Ctrl+Z)">
+      <i data-lucide="undo-2" class="w-4 h-4"></i>
+    </button>
+    <button id="wp-clear" class="wp-tool-btn" title="Borrar todo">
+      <i data-lucide="trash-2" class="w-4 h-4"></i>
+    </button>
+    <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
+    <span style="font-size:11px;color:var(--muted)">Alto pared:</span>
+    <input id="wp-wall-height" type="number" value="2.5" step="0.1" min="0.5" max="10" style="width:52px;font-size:11px;border:1px solid rgba(0,0,0,0.15);border-radius:6px;padding:2px 6px;text-align:center">
+    <span style="font-size:11px;color:var(--muted)">m</span>
+    <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
+    <button id="wp-finish" style="background:var(--brand-primary,#2563eb);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">Terminar</button>
+    <button id="wp-cancel" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px">Cancelar</button>
+  </div>
+
+  <!-- Tooltip dinámico de medidas -->
+  <div id="wall-painter-tooltip" style="pointer-events:none;position:absolute;background:rgba(10,10,11,0.82);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:6px;white-space:nowrap;display:none"></div>
+
+  <!-- Menú contextual de pared -->
+  <div id="wall-ctx-menu" style="pointer-events:auto;display:none;position:absolute;background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;box-shadow:0 8px 24px -8px rgba(0,0,0,0.22);padding:4px;min-width:160px;z-index:100">
+    <button class="wall-ctx-item" id="wall-ctx-toggle-label">Ocultar medida</button>
+    <button class="wall-ctx-item wall-ctx-danger" id="wall-ctx-delete">Eliminar pared</button>
+  </div>
+</div>
+
 <!-- Elementos legacy ocultos (compatibilidad con cÃ³digo existente) -->
 <div class="hidden">
   <div id="add-buttons"></div>
@@ -1711,6 +1751,10 @@
   <button id="plan-drop-search" class="plan-dropdown-item">
     <i data-lucide="search" class="w-3.5 h-3.5"></i>
     Buscar plano
+  </button>
+  <button id="plan-drop-create" class="plan-dropdown-item">
+    <i data-lucide="pencil-ruler" class="w-3.5 h-3.5"></i>
+    Crear plano
   </button>
   <button id="plan-drop-org" class="plan-dropdown-item hidden">
     <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
