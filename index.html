@@ -1759,6 +1759,9 @@
   <!-- Toolbar flotante -->
   <div id="wall-painter-toolbar" class="wp-toolbar-glow" style="pointer-events:auto;position:absolute;top:72px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);backdrop-filter:blur(16px);border-radius:12px;padding:6px 10px;box-shadow:0 4px 20px -8px rgba(0,0,0,0.25)">
     <span class="mono" style="font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-right:4px">Crear plano</span>
+    <button id="wp-tool-select" class="wp-tool-btn" title="Selección (S)">
+      <i data-lucide="mouse-pointer-2" class="w-4 h-4"></i>
+    </button>
     <button id="wp-tool-line" class="wp-tool-btn wp-tool-active" title="Línea (L)">
       <i data-lucide="minus" class="w-4 h-4"></i>
     </button>
@@ -1788,7 +1791,8 @@
     </button>
     <div style="width:1px;height:20px;background:rgba(0,0,0,0.1);margin:0 4px"></div>
     <button id="wp-transform" style="background:#0f172a;color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">Plano a 3D</button>
-    <button id="wp-cancel" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px">Cancelar</button>
+    <button id="wp-finish-2d" style="background:transparent;border:1px solid rgba(0,0,0,0.15);color:var(--ink);font-size:12px;font-weight:500;border-radius:8px;padding:5px 12px;cursor:pointer">2D</button>
+    <button id="wp-cancel" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px">✕</button>
   </div>
 
   <!-- Leyenda de atajos -->
@@ -1833,6 +1837,19 @@
   <button class="wall-ctx-item" id="wall-ctx-toggle-label">Cerrar</button>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item wall-ctx-danger" id="wall-ctx-delete">Eliminar pared</button>
+</div>
+
+<!-- Menú contextual segmento 2D (modo Selección WallPainter) -->
+<div id="wp-seg-menu" style="pointer-events:auto;display:none;position:fixed;background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;box-shadow:0 8px 24px -8px rgba(0,0,0,0.22);padding:4px;min-width:180px;z-index:210">
+  <div class="mono" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 12px 4px">Segmento</div>
+  <label style="display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:13px;color:var(--ink);cursor:pointer">
+    <input type="color" id="wp-seg-color" value="#1a1a2c" style="width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none">
+    Color
+  </label>
+  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
+  <button class="wall-ctx-item" id="wp-seg-toggle-label">Ocultar medida</button>
+  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
+  <button class="wall-ctx-item wall-ctx-danger" id="wp-seg-delete">Eliminar segmento</button>
 </div>
 
 <!-- Elementos legacy ocultos (compatibilidad con cÃ³digo existente) -->

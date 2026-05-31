@@ -12,7 +12,7 @@ const ENDPOINT_SNAP_M = 0.35;
 
 /* ─── Estado ─────────────────────────────────────────────────────────────── */
 let _active     = false;
-let _tool       = 'line';    // 'line' | 'rect'
+let _tool       = 'line';    // 'line' | 'rect' | 'select'
 let _wallHeight = 2.5;
 let _wallColor  = '#1a1a2c';
 
@@ -32,7 +32,8 @@ let _segs   = [];
 let _meshes = [];
 let _labels = [];
 
-let _ctxSeg   = null;
+let _ctxSeg     = null;  // mesh 3D seleccionado (menú wall-ctx-menu)
+let _ctxSegIdx  = -1;    // índice de segmento 2D seleccionado (menú wp-seg-menu)
 let _globalContextMenuBound = false;
 let _globalDownPos  = null;
 let _globalDownSeg  = null;
@@ -66,6 +67,7 @@ function _updateLabels() {
   if (!cam || !_labelContainer) return;
   const W = window.innerWidth, H = window.innerHeight;
   _labels.forEach(({ el, seg }) => {
+    if (seg.labelHidden) { el.style.display = 'none'; return; }
     const cx = (seg.p1.x + seg.p2.x) / 2;
     const cz = (seg.p1.z + seg.p2.z) / 2;
     const v  = new THREE.Vector3(cx, 0.25, cz).project(cam);
@@ -118,10 +120,12 @@ function _redrawCanvas() {
   if (!_ctx || !_cvs) return;
   _ctx.clearRect(0, 0, _cvs.width, _cvs.height);
 
-  for (const seg of _segs) {
+  for (let i = 0; i < _segs.length; i++) {
+    const seg = _segs[i];
     const s1 = _worldToScreen(seg.p1.x, seg.p1.z);
     const s2 = _worldToScreen(seg.p2.x, seg.p2.z);
-    _drawSegLine(s1, s2, seg.color);
+    const isSelected = _tool === 'select' && i === _ctxSegIdx;
+    _drawSegLine(s1, s2, isSelected ? '#2563eb' : seg.color, isSelected ? 3.5 : 2.5);
     _drawDot(s1, seg.color);
     _drawDot(s2, seg.color);
   }
@@ -132,10 +136,10 @@ function _redrawCanvas() {
   }
 }
 
-function _drawSegLine(s1, s2, color) {
+function _drawSegLine(s1, s2, color, lineWidth = 2.5) {
   _ctx.save();
   _ctx.strokeStyle = color || '#1a1a2c';
-  _ctx.lineWidth   = 2.5;
+  _ctx.lineWidth   = lineWidth;
   _ctx.lineCap     = 'round';
   _ctx.setLineDash([]);
   _ctx.beginPath();
@@ -249,6 +253,46 @@ function _buildWallMesh(p1, p2, color, segIdx = -1) {
   mesh.userData.segIdx = segIdx;
   SceneManager.scene.add(mesh);
   _meshes.push(mesh);
+}
+
+/* ─── Menú contextual de segmento 2D (modo Selección) ───────────────────── */
+const SEG_PICK_PX = 10; // píxeles de tolerancia para seleccionar segmento
+
+function _pickSegIdx(sx, sy) {
+  let best = -1, bestDist = SEG_PICK_PX;
+  for (let i = 0; i < _segs.length; i++) {
+    const s1 = _worldToScreen(_segs[i].p1.x, _segs[i].p1.z);
+    const s2 = _worldToScreen(_segs[i].p2.x, _segs[i].p2.z);
+    // Distancia punto-segmento en pantalla
+    const dx = s2.x - s1.x, dy = s2.y - s1.y;
+    const len2 = dx*dx + dy*dy;
+    if (len2 < 0.01) continue;
+    const t = Math.max(0, Math.min(1, ((sx-s1.x)*dx + (sy-s1.y)*dy) / len2));
+    const dist = Math.hypot(sx - (s1.x+t*dx), sy - (s1.y+t*dy));
+    if (dist < bestDist) { bestDist = dist; best = i; }
+  }
+  return best;
+}
+
+function _openSegMenu(idx, sx, sy) {
+  _ctxSegIdx = idx;
+  const menu = document.getElementById('wp-seg-menu');
+  if (!menu) return;
+  const seg = _segs[idx];
+  const colorEl = document.getElementById('wp-seg-color');
+  if (colorEl) colorEl.value = seg.color || '#1a1a2c';
+  const toggleEl = document.getElementById('wp-seg-toggle-label');
+  if (toggleEl) toggleEl.textContent = seg.labelHidden ? 'Mostrar medida' : 'Ocultar medida';
+  menu.style.display = 'block';
+  const mw = 180, mh = 130;
+  menu.style.left = `${Math.min(sx, window.innerWidth - mw)}px`;
+  menu.style.top  = `${Math.min(sy, window.innerHeight - mh)}px`;
+}
+
+function _closeSegMenu() {
+  const menu = document.getElementById('wp-seg-menu');
+  if (menu) menu.style.display = 'none';
+  _ctxSegIdx = -1;
 }
 
 /* ─── Menú contextual (meshes transformados) ─────────────────────────────── */
@@ -365,9 +409,17 @@ function _onPointerUp(e) {
   if (moved > 5) return;
 
   _closeCtxMenu();
+  _closeSegMenu();
 
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
+
+  // Modo selección: pick de segmento 2D
+  if (_tool === 'select') {
+    const idx = _pickSegIdx(e.clientX, e.clientY);
+    if (idx >= 0) _openSegMenu(idx, e.clientX, e.clientY);
+    return;
+  }
 
   if (!_drawing) {
     const p1w = _applyEndpointSnap({ x: worldPos.x, z: worldPos.z });
@@ -411,7 +463,14 @@ function _onPointerMove(e) {
     }
   }
 
-  if (_cvs) _cvs.style.cursor = 'crosshair';
+  if (_cvs) {
+    if (_tool === 'select') {
+      const idx = _pickSegIdx(e.clientX, e.clientY);
+      _cvs.style.cursor = idx >= 0 ? 'pointer' : 'default';
+    } else {
+      _cvs.style.cursor = 'crosshair';
+    }
+  }
 
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
@@ -480,6 +539,7 @@ function _cancelDrawing() {
   _p1 = null; _p1Screen = null;
   _guideState = null;
   _hideTooltip(); _hideDistInput();
+  _closeSegMenu();
 }
 
 function _undoLast() {
@@ -499,9 +559,11 @@ function _clearAll() {
 function _setTool(tool) {
   _tool = tool;
   _cancelDrawing();
+  _closeSegMenu();
+  document.getElementById('wp-tool-select')?.classList.toggle('wp-tool-active', tool === 'select');
   document.getElementById('wp-tool-line')?.classList.toggle('wp-tool-active', tool === 'line');
   document.getElementById('wp-tool-rect')?.classList.toggle('wp-tool-active', tool === 'rect');
-  _cvs && (_cvs.style.cursor = 'crosshair');
+  _cvs && (_cvs.style.cursor = tool === 'select' ? 'default' : 'crosshair');
 }
 
 /* ─── Activar / desactivar ───────────────────────────────────────────────── */
@@ -531,12 +593,51 @@ function activate() {
   document.addEventListener('keyup',    _onKeyUp);
   window.addEventListener('resize',     _resizeCanvas);
 
+  document.getElementById('wp-tool-select')?.addEventListener('click', () => _setTool('select'));
   document.getElementById('wp-tool-line')?.addEventListener('click', () => _setTool('line'));
   document.getElementById('wp-tool-rect')?.addEventListener('click', () => _setTool('rect'));
   document.getElementById('wp-undo')?.addEventListener('click', _undoLast);
   document.getElementById('wp-clear')?.addEventListener('click', _clearAll);
   document.getElementById('wp-transform')?.addEventListener('click', () => { _transform(); deactivate(); });
+  document.getElementById('wp-finish-2d')?.addEventListener('click', deactivate);
   document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
+
+  // Menú contextual de segmento 2D
+  document.getElementById('wp-seg-color')?.addEventListener('input', e => {
+    if (_ctxSegIdx < 0) return;
+    _segs[_ctxSegIdx].color = e.target.value;
+    // Actualizar mesh 3D correspondiente si existe
+    const mesh = _meshes.find(m => m.userData.segIdx === _ctxSegIdx);
+    if (mesh) mesh.material.color.set(e.target.value);
+  });
+  document.getElementById('wp-seg-toggle-label')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    _segs[_ctxSegIdx].labelHidden = !_segs[_ctxSegIdx].labelHidden;
+    _closeSegMenu();
+  });
+  document.getElementById('wp-seg-delete')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    const idx = _ctxSegIdx;
+    // Eliminar mesh 3D si existe
+    const meshIdx = _meshes.findIndex(m => m.userData.segIdx === idx);
+    if (meshIdx >= 0) {
+      const m = _meshes[meshIdx];
+      SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
+      _meshes.splice(meshIdx, 1);
+      _meshes.forEach(m => { if (m.userData.segIdx > idx) m.userData.segIdx--; });
+    }
+    // Eliminar segmento y etiqueta
+    _segs.splice(idx, 1);
+    const lbl = _labels.splice(idx, 1)[0];
+    lbl?.el.remove();
+    _closeSegMenu();
+  });
+
+  // Cerrar menú de segmento al clicar fuera
+  document.addEventListener('pointerdown', e => {
+    const menu = document.getElementById('wp-seg-menu');
+    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) _closeSegMenu();
+  });
   document.getElementById('wp-wall-height')?.addEventListener('input', e => {
     _wallHeight = parseFloat(e.target.value) || 2.5;
   });
