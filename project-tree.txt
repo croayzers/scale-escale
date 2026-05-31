@@ -207,6 +207,7 @@ PROJECT STRUCTURE
 │   │   ├── 20260529_org_invitations.sql
 │   │   ├── 20260529_org_shared_content.sql
 │   │   ├── 20260529_saved_groups.sql
+│   │   ├── 20260531_unique_billing_email.sql
 │   │   └── add_owner_user_id.sql
 │   └── schema.sql
 ├── Supabase tablas/
