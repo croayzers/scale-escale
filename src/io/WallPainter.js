@@ -464,7 +464,6 @@ function _undoLast() {
 }
 
 function _clearAll() {
-  if (!confirm('¿Borrar todas las paredes dibujadas?')) return;
   [..._walls].forEach(_removeWall);
   _walls = [];
   _cancelDrawing();
