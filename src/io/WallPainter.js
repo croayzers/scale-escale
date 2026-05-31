@@ -433,16 +433,17 @@ function _onPointerUp(e) {
   }
 
   if (!_drawing) {
-    const p1w = _applyEndpointSnap({ x: worldPos.x, z: worldPos.z });
+    const raw1 = { x: worldPos.x, z: worldPos.z };
+    const p1w  = _tool === 'rect' ? raw1 : _applyEndpointSnap(raw1);
     _drawing  = true;
     _p1       = { wx: p1w.x, wz: p1w.z };
     _p1Screen = { x: e.clientX, y: e.clientY };
     if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
     const raw2     = { x: worldPos.x, z: worldPos.z };
-    const snapped2 = _applyEndpointSnap(raw2);
+    const snapped2 = _tool === 'rect' ? raw2 : _applyEndpointSnap(raw2);
     const hasSnap2 = snapped2.x !== raw2.x || snapped2.z !== raw2.z;
-    const p2w      = hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2);
+    const p2w      = hasSnap2 ? snapped2 : (_tool === 'rect' ? raw2 : _applyAngleSnap(_p1, raw2));
 
     if (_tool === 'rect') {
       _addSeg({ x: _p1.wx, z: _p1.wz }, { x: p2w.x,  z: _p1.wz });
@@ -670,10 +671,16 @@ function _initListeners() {
   });
   document.getElementById('wall-ctx-flatten')?.addEventListener('click', () => {
     if (!_ctxSeg) return;
-    const geo = _ctxSeg.geometry;
     const newH = 0.10;
-    const params = geo.parameters;
-    const newGeo = new THREE.BoxGeometry(params.width, newH, params.depth);
+    // Reconstruir geometría: leer dimensiones del bounding box del mesh actual
+    const box = new THREE.Box3().setFromObject(_ctxSeg);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    // size está en world-space; la pared puede estar rotada así que usamos WALL_THICKNESS y el largo del segmento
+    const segIdx = _ctxSeg.userData.segIdx;
+    const seg = segIdx >= 0 ? _segs[segIdx] : null;
+    const len = seg ? seg.len : Math.max(size.x, size.z);
+    const newGeo = new THREE.BoxGeometry(WALL_THICKNESS, newH, len);
     _ctxSeg.geometry.dispose();
     _ctxSeg.geometry = newGeo;
     _ctxSeg.position.y = newH / 2;
