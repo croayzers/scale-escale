@@ -224,10 +224,8 @@ function _expandDock() {
 
   const logo = document.getElementById('dock-brand-logo');
 
-  // Fase 1: esperar 5s con el dock en círculo
-  setTimeout(() => {
-    // Fade out logo
-    gsap.to(logo, { opacity: 0, duration: 0.2, onComplete() {
+  // Fade out logo e iniciar expansión del dock
+  gsap.to(logo, { opacity: 0, duration: 0.2, onComplete() {
       logo && (logo.style.display = 'none');
 
       // Mostrar el dock expandido de golpe (sin animación de tamaño), botones invisibles
@@ -267,41 +265,44 @@ function _expandDock() {
         }, i * 200);
       });
     }});
-  }, 3000);
 }
 
 /* ════════════════════════════════════════════════════════
    START — solo el wave, sin overlay de logo
    ════════════════════════════════════════════════════════ */
+const LOGO_HOLD_MS = 2000; // tiempo que el logo del dock es visible antes del wave
+
 export function start(onDone) {
   if (typeof THREE === 'undefined') { onDone?.(); return; }
 
   const canvas = _buildCanvas();
-  canvas.style.opacity = '0.9';
-  canvas.style.transition = 'opacity 0.9s ease';
 
-  Grid_onda(canvas, () => {
-    window.SceneManager?.startGridFade?.();
-    const gsap = window.gsap;
+  // Esperar LOGO_HOLD_MS para que el logo del dock sea visible, luego iniciar el wave
+  setTimeout(() => {
+    canvas.style.opacity = '0.9';
+    canvas.style.transition = 'opacity 0.9s ease';
 
-    // Fade out del wave canvas
-    const afterFade = () => {
-      canvas.remove();
-      onDone?.();
-      // Expandir dock tras 2 segundos
-      setTimeout(_expandDock, 2000);
-    };
+    Grid_onda(canvas, () => {
+      window.SceneManager?.startGridFade?.();
+      const gsap = window.gsap;
 
-    if (gsap) {
-      gsap.to(canvas, {
-        opacity: 0, duration: 0.9, ease: 'power2.inOut',
-        onComplete: afterFade,
-      });
-    } else {
-      canvas.remove();
-      afterFade();
-    }
-  }, 'zenith');
+      const afterFade = () => {
+        canvas.remove();
+        onDone?.();
+        _expandDock();
+      };
+
+      if (gsap) {
+        gsap.to(canvas, {
+          opacity: 0, duration: 0.9, ease: 'power2.inOut',
+          onComplete: afterFade,
+        });
+      } else {
+        canvas.remove();
+        afterFade();
+      }
+    }, 'zenith');
+  }, LOGO_HOLD_MS);
 }
 
 export const SplashScreen = { start, Grid_onda };
