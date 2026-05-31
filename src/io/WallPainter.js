@@ -497,10 +497,13 @@ function _onPointerMove(e) {
 
   if (!_drawing || !_p1) { _hideTooltip(); return; }
 
+  // Recalcular p1Screen en cada frame — puede haber cambiado por pan/zoom
+  _p1Screen = _worldToScreen(_p1.wx, _p1.wz);
+
   // Aplicar snaps al p2 del preview
   let p2w = _applyAngleSnap(_p1, snappedEp);
 
-  // Calcular posición en pantalla del p2 snapeado (proyección inversa)
+  // Calcular posición en pantalla del p2
   const p2s = isSnapped
     ? _worldToScreen(p2w.x, p2w.z)
     : { x: e.clientX, y: e.clientY };
