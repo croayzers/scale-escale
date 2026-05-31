@@ -433,44 +433,48 @@ function _buildWallMesh(p1, p2, color) {
 }
 
 function _buildDoorArcMesh(pA, pB, seg) {
-  // pA = extremo bisagra, pB = extremo libre
-  // Dirección de la pared
+  // Dirección unitaria de la pared (de p1 a p2)
   const wallDx = seg.p2.x - seg.p1.x;
   const wallDz = seg.p2.z - seg.p1.z;
   const wallLen = Math.sqrt(wallDx*wallDx + wallDz*wallDz);
-  const ux = wallDx / wallLen, uz = wallDz / wallLen; // unitario a lo largo de la pared
-  // Perpendicular izquierda (mismo lado que el arco 2D: wallAngle - PI/2)
+  const ux = wallDx / wallLen, uz = wallDz / wallLen;
+
+  // Perpendicular izquierda: igual que el arco 2D (wallAngle - PI/2)
   const nx = uz, nz = -ux;
 
   const doorWidth = Math.hypot(pB.x - pA.x, pB.z - pA.z);
-  const segs = 24;
+  const ARC_SEGS  = 32;
+  const Y         = 0.02;
 
-  // Línea de la hoja (desde pA en dirección perpendicular, longitud = doorWidth)
-  const leafPoints = [];
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs;
-    const angle = (Math.PI / 2) * t; // 0 → 90°
-    // Rotación del extremo de la hoja alrededor de pA
-    const lx = pA.x + Math.cos(angle) * nx * doorWidth - Math.sin(angle) * ux * doorWidth;
-    const lz = pA.z + Math.cos(angle) * nz * doorWidth - Math.sin(angle) * uz * doorWidth;
-    leafPoints.push(new THREE.Vector3(lx, 0, lz));
+  // El arco rota el punto (pA + perp*doorWidth) alrededor de pA, 0→90°
+  // Rotación 2D en XZ: punto inicial = pA + (nx, nz)*r
+  // Tras rotar θ: x' = px + r*(nx*cosθ - nz*sinθ), z' = pz + r*(nz*cosθ + nx*sinθ)
+  const arcPts = [];
+  for (let i = 0; i <= ARC_SEGS; i++) {
+    const theta = (Math.PI / 2) * (i / ARC_SEGS);
+    const rx = nx * Math.cos(theta) - nz * Math.sin(theta);
+    const rz = nz * Math.cos(theta) + nx * Math.sin(theta);
+    arcPts.push(new THREE.Vector3(pA.x + rx * doorWidth, Y, pA.z + rz * doorWidth));
   }
 
-  // Crear geometría de línea en el suelo
-  const arcGeo = new THREE.BufferGeometry().setFromPoints(leafPoints);
-  const arcMat = new THREE.LineBasicMaterial({ color: 0x1a1a2c, linewidth: 1 });
-  const arcLine = new THREE.Line(arcGeo, arcMat);
-  arcLine.position.y = 0.01; // ligeramente sobre el suelo
+  const mat = new THREE.LineBasicMaterial({ color: 0x1a1a2c });
+
+  // Arco
+  const arcLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(arcPts), mat
+  );
   arcLine.userData.isWall = true;
   SceneManager.scene.add(arcLine);
   _meshes.push(arcLine);
 
-  // Línea recta de la hoja de puerta (de pA al primer punto del arco)
-  const leafGeo = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(pA.x, 0.01, pA.z),
-    new THREE.Vector3(pA.x + nx * doorWidth, 0.01, pA.z + nz * doorWidth)
-  ]);
-  const leafLine = new THREE.Line(leafGeo, arcMat.clone());
+  // Hoja de puerta cerrada (línea recta pA → pA + perp*doorWidth)
+  const leafLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(pA.x, Y, pA.z),
+      new THREE.Vector3(pA.x + nx * doorWidth, Y, pA.z + nz * doorWidth)
+    ]),
+    mat.clone()
+  );
   leafLine.userData.isWall = true;
   SceneManager.scene.add(leafLine);
   _meshes.push(leafLine);
