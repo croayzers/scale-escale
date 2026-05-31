@@ -364,7 +364,6 @@ let _doorT1 = null;
 
 /* ─── Transformar: generar 3D ────────────────────────────────────────────── */
 function _transform() {
-  // Eliminar meshes anteriores si se re-transforma
   _meshes.forEach(m => {
     SceneManager.scene.remove(m);
     m.geometry.dispose(); m.material.dispose();
@@ -376,26 +375,44 @@ function _transform() {
     const doorsOnSeg = _doors.filter(d => d.segIdx === i);
 
     if (doorsOnSeg.length === 0) {
-      _buildMesh(seg.p1, seg.p2, seg.len, seg.color);
+      _buildWallMesh(seg.p1, seg.p2, seg.color);
     } else {
-      // Partir en trozos respetando huecos
-      const ts = [0, ...doorsOnSeg.flatMap(d => [d.t1, d.t2]), 1].sort((a,b) => a-b);
-      for (let k = 0; k < ts.length - 1; k += 2) {
-        const tA = ts[k], tB = ts[k+1];
-        const pA = { x: seg.p1.x + (seg.p2.x - seg.p1.x)*tA, z: seg.p1.z + (seg.p2.z - seg.p1.z)*tA };
-        const pB = { x: seg.p1.x + (seg.p2.x - seg.p1.x)*tB, z: seg.p1.z + (seg.p2.z - seg.p1.z)*tB };
-        const subLen = seg.len * (tB - tA);
-        if (subLen > 0.05) _buildMesh(pA, pB, subLen, seg.color);
+      // ts: lista ordenada de t-values [0, t1_door, t2_door, ..., 1]
+      // Trozos de PARED son los intervalos en índices pares: [0]→[1], [2]→[3], …
+      // Trozos de PUERTA son los intervalos impares: [1]→[2], [3]→[4], …
+      const ts = [0, ...doorsOnSeg.flatMap(d => [d.t1, d.t2]), 1].sort((a, b) => a - b);
+
+      for (let k = 0; k < ts.length - 1; k++) {
+        const tA = ts[k], tB = ts[k + 1];
+        if (tB - tA < 0.001) continue;
+        const pA = _segPt(seg, tA);
+        const pB = _segPt(seg, tB);
+        const isHueco = k % 2 === 1; // índices impares = hueco de puerta
+
+        if (!isHueco) {
+          _buildWallMesh(pA, pB, seg.color);
+        } else {
+          // Arco de puerta en el suelo (plano XZ, y = 0)
+          _buildDoorArcMesh(pA, pB, seg);
+        }
       }
     }
   }
 }
 
-function _buildMesh(p1, p2, len, color) {
+function _segPt(seg, t) {
+  return {
+    x: seg.p1.x + (seg.p2.x - seg.p1.x) * t,
+    z: seg.p1.z + (seg.p2.z - seg.p1.z) * t
+  };
+}
+
+function _buildWallMesh(p1, p2, color) {
   const dx = p2.x - p1.x, dz = p2.z - p1.z;
+  const len = Math.sqrt(dx*dx + dz*dz);
+  if (len < 0.05) return;
   const cx = (p1.x + p2.x) / 2, cz = (p1.z + p2.z) / 2;
   const angle = Math.atan2(dx, dz);
-
   const geo = new THREE.BoxGeometry(WALL_THICKNESS, _wallHeight, len);
   const mat = new THREE.MeshStandardMaterial({ color: color || _wallColor, roughness: 0.85, metalness: 0 });
   const mesh = new THREE.Mesh(geo, mat);
@@ -406,6 +423,51 @@ function _buildMesh(p1, p2, len, color) {
   SceneManager.scene.add(mesh);
   _meshes.push(mesh);
 }
+
+function _buildDoorArcMesh(pA, pB, seg) {
+  // pA = extremo bisagra, pB = extremo libre
+  // Dirección de la pared
+  const wallDx = seg.p2.x - seg.p1.x;
+  const wallDz = seg.p2.z - seg.p1.z;
+  const wallLen = Math.sqrt(wallDx*wallDx + wallDz*wallDz);
+  const ux = wallDx / wallLen, uz = wallDz / wallLen; // unitario a lo largo de la pared
+  // Perpendicular (hacia dentro) — elegimos el lado positivo
+  const nx = -uz, nz = ux;
+
+  const doorWidth = Math.hypot(pB.x - pA.x, pB.z - pA.z);
+  const segs = 24;
+
+  // Línea de la hoja (desde pA en dirección perpendicular, longitud = doorWidth)
+  const leafPoints = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const angle = (Math.PI / 2) * t; // 0 → 90°
+    // Rotación del extremo de la hoja alrededor de pA
+    const lx = pA.x + Math.cos(angle) * nx * doorWidth - Math.sin(angle) * ux * doorWidth;
+    const lz = pA.z + Math.cos(angle) * nz * doorWidth - Math.sin(angle) * uz * doorWidth;
+    leafPoints.push(new THREE.Vector3(lx, 0, lz));
+  }
+
+  // Crear geometría de línea en el suelo
+  const arcGeo = new THREE.BufferGeometry().setFromPoints(leafPoints);
+  const arcMat = new THREE.LineBasicMaterial({ color: 0x1a1a2c, linewidth: 1 });
+  const arcLine = new THREE.Line(arcGeo, arcMat);
+  arcLine.position.y = 0.01; // ligeramente sobre el suelo
+  arcLine.userData.isWall = true;
+  SceneManager.scene.add(arcLine);
+  _meshes.push(arcLine);
+
+  // Línea recta de la hoja de puerta (de pA al primer punto del arco)
+  const leafGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(pA.x, 0.01, pA.z),
+    new THREE.Vector3(pA.x + nx * doorWidth, 0.01, pA.z + nz * doorWidth)
+  ]);
+  const leafLine = new THREE.Line(leafGeo, arcMat.clone());
+  leafLine.userData.isWall = true;
+  SceneManager.scene.add(leafLine);
+  _meshes.push(leafLine);
+}
+
 
 /* ─── Menú contextual de segmento (click fuera del overlay, modo inactivo) ── */
 function _pickSeg(sx, sy) {
