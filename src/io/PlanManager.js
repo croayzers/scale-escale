@@ -70,7 +70,15 @@ function init() {
   // ── Tabs ──────────────────────────────────────────────────────────────────
   document.querySelector('.plan-search-tabs')?.addEventListener('click', e => {
     const tab = e.target.closest('[data-tab]');
-    if (tab) _switchPlanTab(tab.dataset.tab);
+    if (!tab) return;
+    if (tab.dataset.tab === 'community') {
+      const code = SubscriptionManager.currentPlanCode();
+      if (code !== 'pro' && code !== 'premium') {
+        SubscriptionManager.ensureFeature('planCommunity');
+        return;
+      }
+    }
+    _switchPlanTab(tab.dataset.tab);
   });
 
   const searchInput = document.getElementById('plan-search-input');
@@ -160,6 +168,14 @@ function openSearchModal() {
   _activeTab = 'mine';
   document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mine'));
   document.getElementById('plan-search-filters-row')?.classList.remove('hidden');
+
+  // Apagar tab Comunidad si no es PRO
+  const isPro = ['pro', 'premium'].includes(SubscriptionManager.currentPlanCode());
+  const communityTab = document.querySelector('.plan-tab[data-tab="community"]');
+  if (communityTab) {
+    communityTab.style.opacity = isPro ? '' : '0.4';
+    communityTab.title = isPro ? '' : 'Disponible en plan PRO';
+  }
 
   const inp = document.getElementById('plan-search-input');
   if (inp) { inp.value = ''; inp.placeholder = 'Nombre del plano…'; }

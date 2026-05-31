@@ -175,7 +175,8 @@ function featureLabel(featureKey) {
     sharepointIntegration: 'integracion SharePoint',
     companyReporting: 'reportes empresariales',
     collabHost: 'colaboracion en tiempo real',
-    planSearch: 'busqueda de planos'
+    planSearch: 'busqueda de planos',
+    planCommunity: 'biblioteca de planos de la comunidad'
   }[featureKey] || featureKey;
 }
 
