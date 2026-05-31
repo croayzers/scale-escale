@@ -999,6 +999,44 @@
   </div>
 </div>
 
+<!-- ============ DEMO CREAR PLANO (WallPainter) ============ -->
+<div id="wp-demo" class="modal-bg" role="dialog" aria-modal="true">
+  <div class="glass p-8" style="border-radius:16px;max-width:400px;width:calc(100% - 48px)">
+    <div class="mono text-[10px] tracking-widest uppercase mb-2" style="color:var(--muted)">Herramienta · Crear plano</div>
+    <h3 class="display-font text-2xl mb-2 leading-tight">Dibuja tu espacio</h3>
+    <p class="text-sm mb-5" style="color:var(--muted)">Traza las paredes de tu recinto directamente sobre el lienzo. Cada segmento se convierte en una pared 3D al instante.</p>
+
+    <div style="background:rgba(10,10,11,0.04);border-radius:10px;padding:14px 16px;margin-bottom:20px">
+      <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px">
+        <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">1</span>
+          <span>Haz clic para fijar el <strong>primer punto</strong> de la pared</span>
+        </li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">2</span>
+          <span>Escribe la <strong>distancia en metros</strong> o haz clic en el segundo punto</span>
+        </li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">3</span>
+          <span>Las paredes se <strong>encadenan</strong> — doble clic para terminar la cadena</span>
+        </li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:13px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0">4</span>
+          <span>Haz clic en una pared para <strong>editar o eliminarla</strong></span>
+        </li>
+      </ol>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="wp-demo-cancel" class="btn ghost">Cancelar</button>
+      <button id="wp-demo-start" class="btn primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M12 2l10 10-10 10"/></svg>
+        Entendido
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal demos -->
 <!-- ============ DEMO ZONAS ============ -->
 <div id="zones-demo" class="modal-bg" role="dialog" aria-modal="true">

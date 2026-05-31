@@ -100,6 +100,44 @@ async function bootstrap() {
   safeInit('FeedbackModal',  () => FeedbackModal.init());
   safeInit('PlanSaveModal',  () => PlanSaveModal.init());
   AppBridge.init();
+
+  // ── WallPainter: mostrar demo antes de activar ──────────────────────────────
+  function _activateWallPainter() {
+    try {
+      const mod = window.__WallPainter__;
+      if (mod) { mod.activate(); return; }
+      import('./io/WallPainter.js').then(({ WallPainter }) => {
+        window.__WallPainter__ = WallPainter;
+        WallPainter.activate();
+      }).catch(err => {
+        console.error('[WallPainter] Error al cargar:', err);
+        alert('Error al cargar Crear Plano: ' + err.message);
+      });
+    } catch (err) {
+      console.error('[WallPainter] Error:', err);
+    }
+  }
+
+  document.addEventListener('escale:wallpainter-requested', () => {
+    if (!AppState.showDemos) { _activateWallPainter(); return; }
+    const overlay = document.getElementById('wp-demo');
+    if (!overlay) { _activateWallPainter(); return; }
+    overlay.classList.add('visible');
+  });
+
+  document.getElementById('wp-demo-cancel')?.addEventListener('click', () => {
+    document.getElementById('wp-demo')?.classList.remove('visible');
+  });
+  document.getElementById('wp-demo-start')?.addEventListener('click', () => {
+    document.getElementById('wp-demo')?.classList.remove('visible');
+    const shortcuts = document.getElementById('wp-shortcuts-panel');
+    if (shortcuts) {
+      shortcuts.classList.add('wp-shortcuts-glow');
+      setTimeout(() => shortcuts.classList.remove('wp-shortcuts-glow'), 5000);
+    }
+    _activateWallPainter();
+  });
+
   // AICopilot disabled
   safeInit('ContextSpawnMenu', () => ContextSpawnMenu.init());
   safeInit('CollabJoinModal',    () => CollabJoinModal.init());

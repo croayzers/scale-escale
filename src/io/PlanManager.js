@@ -38,19 +38,7 @@ function init() {
 
   document.getElementById('plan-drop-create')?.addEventListener('click', () => {
     closePlanDropdown();
-    try {
-      const mod = window.__WallPainter__;
-      if (mod) { mod.activate(); return; }
-      import('./WallPainter.js').then(({ WallPainter }) => {
-        window.__WallPainter__ = WallPainter;
-        WallPainter.activate();
-      }).catch(err => {
-        console.error('[WallPainter] Error al cargar:', err);
-        alert('Error al cargar Crear Plano: ' + err.message);
-      });
-    } catch(err) {
-      console.error('[WallPainter] Error:', err);
-    }
+    document.dispatchEvent(new CustomEvent('escale:wallpainter-requested'));
   });
   // 'Compartir con empresa' reemplazado por el flujo automático post-calibración
   // El botón #plan-drop-org permanece oculto (hidden) en el HTML
