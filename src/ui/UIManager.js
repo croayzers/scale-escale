@@ -142,11 +142,6 @@ function refresh() {
 }
 
 /* ─── Tooltip ─── */
-function showTooltip(item) {
-  // Desactivado — info visible en panel lateral
-  return;
-}
-
 function hideTooltip() {
   _els().tooltip?.classList.remove('visible');
 }
@@ -195,8 +190,6 @@ function updateTooltipPosition() {
   if (!tip) return;
   tip.style.left = x + 'px';
   tip.style.top  = y + 'px';
-
-  if (!tip.classList.contains('visible')) showTooltip(item);
 }
 
 function ensureItemSettingsHandle() {

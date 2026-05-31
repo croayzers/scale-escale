@@ -88,7 +88,7 @@ async function bootstrap() {
   await safeInit('ShareManager', () => ShareManager.init());
   await safeInit('CatalogModal', () => CatalogModal.init());
   await safeInit('Dock', () => Dock.init());
-  collapseDock(); // colapsar dock antes de mostrar la app
+  collapseDock();
   await safeInit('TemplateManager', () => TemplateManager.init());
   await safeInit('HeaderActionMenus', () => HeaderActionMenus.init());
   await safeInit('PlansModal', () => PlansModal.init());
@@ -112,7 +112,6 @@ async function bootstrap() {
   window.InteractionManager = InteractionManager;
   window.SelectionManager   = SelectionManager;
   window.SceneManager       = SceneManager;
-  window.EscaleAI = window.EscaleAI; // ya registrado por AppBridge.init()
 
   document.addEventListener('escale:collab-joined', e => {
     CollabIsland.show();

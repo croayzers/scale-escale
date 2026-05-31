@@ -87,11 +87,6 @@ function _ensureGlobalContextMenu() {
     e.stopPropagation();
     _openCtxMenu(wall, e.clientX, e.clientY);
   });
-  // Cerrar menú al hacer clic en cualquier parte
-  document.addEventListener('pointerdown', e => {
-    const menu = document.getElementById('wall-ctx-menu');
-    if (menu && !menu.contains(e.target)) _closeCtxMenu();
-  });
 }
 
 /* ─── Conversión coordenadas ─────────────────────────────────────────────── */
@@ -565,26 +560,20 @@ function activate() {
   if (_active) return;
   _active = true;
 
-  // Cambiar a vista TOP para dibujar
   SceneManager.setCamera('top');
   document.getElementById('cam-top')?.classList.add('active');
   document.getElementById('cam-iso')?.classList.remove('active');
 
-  // Mostrar overlay
   const overlay = document.getElementById('wall-painter-overlay');
   overlay?.classList.remove('hidden');
 
-  // Configurar canvas
   _cvs = document.getElementById('wall-painter-canvas');
   _ctx = _cvs?.getContext('2d');
   _resizeCanvas();
 
-  // Contenedor de etiquetas y loop RAF permanente
   _ensureLabelContainer();
   _startLabelLoop();
   _ensureGlobalContextMenu();
-
-  // Controles habilitados para pan/zoom; el canvas overlay reenvía drags
   SceneManager.setControlsEnabled(true);
 
   _cvs?.addEventListener('pointerdown', _onPointerDown);
@@ -596,7 +585,6 @@ function activate() {
   document.addEventListener('keyup',    _onKeyUp);
   window.addEventListener('resize',     _resizeCanvas);
 
-  // Toolbar
   document.getElementById('wp-tool-line')?.addEventListener('click', () => _setTool('line'));
   document.getElementById('wp-tool-rect')?.addEventListener('click', () => _setTool('rect'));
   document.getElementById('wp-undo')?.addEventListener('click', _undoLast);
@@ -607,7 +595,6 @@ function activate() {
     _wallHeight = parseFloat(e.target.value) || 2.5;
   });
 
-  // Input de distancia directa
   document.getElementById('wp-dist-ok')?.addEventListener('click', _confirmDistInput);
   document.getElementById('wp-dist-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); _confirmDistInput(); }
@@ -615,12 +602,10 @@ function activate() {
     e.stopPropagation(); // evitar que Esc cancele el dibujo por duplicado
   });
 
-  // Menú contextual
   document.getElementById('wall-ctx-color')?.addEventListener('input', e => {
     if (!_ctxWall) return;
     _ctxWall.mesh.material.color.set(e.target.value);
   });
-
   document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => {
     if (!_ctxWall) return;
     _ctxWall.labelVisible = !_ctxWall.labelVisible;
@@ -635,7 +620,6 @@ function activate() {
     _closeCtxMenu();
   });
 
-  // Cerrar menú con clic fuera
   document.addEventListener('pointerdown', _onDocPointerDown);
 
   if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('wall-painter-toolbar')] });
@@ -650,8 +634,6 @@ function deactivate() {
   document.getElementById('wall-painter-overlay')?.classList.add('hidden');
 
   // El RAF de etiquetas sigue corriendo para mantener las medidas visibles
-
-  // Reactivar OrbitControls
   SceneManager.setControlsEnabled(true);
 
   _cvs?.removeEventListener('pointerdown', _onPointerDown);
@@ -668,24 +650,6 @@ function deactivate() {
 function _onDocPointerDown(e) {
   const menu = document.getElementById('wall-ctx-menu');
   if (menu && !menu.contains(e.target)) _closeCtxMenu();
-}
-
-/* ─── Parchear render loop de SceneManager para incluir CSS2DRenderer ────── */
-let _origRender = null;
-function _patchRenderLoop(on) {
-  if (on && !_origRender && _labelRenderer) {
-    _origRender = SceneManager.renderer?.render?.bind(SceneManager.renderer);
-    if (SceneManager.renderer) {
-      const orig = SceneManager.renderer.render.bind(SceneManager.renderer);
-      SceneManager.renderer.render = (scene, cam) => {
-        orig(scene, cam);
-        if (_active && _labelRenderer) _labelRenderer.render(scene, cam);
-      };
-    }
-  } else if (!on && _origRender && SceneManager.renderer) {
-    SceneManager.renderer.render = _origRender;
-    _origRender = null;
-  }
 }
 
 /* ─── API pública ────────────────────────────────────────────────────────── */

@@ -21,7 +21,6 @@ let _throttleTimer   = null;  // throttle for 30 broadcasts/s
 let _pendingBroadcast = false;
 let _presenceCb  = null;
 let _camMoveCb   = null;
-let _noteCb      = null;
 let _localCompany = null;
 
 // ── Supabase realtime client ──────────────────────────────────────────────────
@@ -278,7 +277,6 @@ export const CollabManager = {
 
   onPresenceChange(fn) { _presenceCb = fn; },
   onCameraMove(fn)     { _camMoveCb  = fn; },
-  onNoteEvent(fn)      { _noteCb     = fn; },
 
   updatePresence(extra = {}) {
     if (!_channel) return;
