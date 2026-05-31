@@ -226,7 +226,7 @@ function _drawDot(s, color) {
   _ctx.restore();
 }
 
-/* ─── Dibujo de puerta ────────────────────────────────────────────────────── */
+/* ─── Dibujo de puerta (v2) ──────────────────────────────────────────────── */
 // hBisagra: punto bisagra en pantalla
 // angleRad: ángulo de apertura de la hoja (desde bisagra, en coords canvas)
 // widthPx: ancho de la puerta en píxeles
