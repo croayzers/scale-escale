@@ -654,6 +654,17 @@ function _initListeners() {
     if (!_ctxSeg) return;
     _ctxSeg.material.color.set(e.target.value);
   });
+  document.getElementById('wall-ctx-flatten')?.addEventListener('click', () => {
+    if (!_ctxSeg) return;
+    const geo = _ctxSeg.geometry;
+    const newH = 0.10;
+    const params = geo.parameters;
+    const newGeo = new THREE.BoxGeometry(params.width, newH, params.depth);
+    _ctxSeg.geometry.dispose();
+    _ctxSeg.geometry = newGeo;
+    _ctxSeg.position.y = newH / 2;
+    _closeCtxMenu();
+  });
   document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => _closeCtxMenu());
   document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {
     if (!_ctxSeg) return;
