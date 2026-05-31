@@ -262,9 +262,11 @@ function _drawDoorArc(s1, s2, door) {
   _ctx.stroke();
   _ctx.restore();
 
-  // Hoja de puerta (línea desde hA perpendicular)
-  const leafX = hA.x + Math.cos(wallAngle - Math.PI/2) * radiusPx;
-  const leafY = hA.y + Math.sin(wallAngle - Math.PI/2) * radiusPx;
+  // Hoja de puerta y arco usando el side guardado
+  const side      = door.side ?? 1;
+  const perpAngle = wallAngle - (Math.PI / 2) * side;
+  const leafX = hA.x + Math.cos(perpAngle) * radiusPx;
+  const leafY = hA.y + Math.sin(perpAngle) * radiusPx;
   _ctx.beginPath();
   _ctx.moveTo(hA.x, hA.y);
   _ctx.lineTo(leafX, leafY);
@@ -272,7 +274,11 @@ function _drawDoorArc(s1, s2, door) {
 
   // Arco de apertura 90°
   _ctx.beginPath();
-  _ctx.arc(hA.x, hA.y, radiusPx, wallAngle - Math.PI/2, wallAngle, false);
+  if (side === 1) {
+    _ctx.arc(hA.x, hA.y, radiusPx, perpAngle, wallAngle, false);
+  } else {
+    _ctx.arc(hA.x, hA.y, radiusPx, wallAngle, perpAngle, false);
+  }
   _ctx.stroke();
 
   _ctx.restore();
@@ -394,29 +400,25 @@ function _addSeg(p1, p2) {
 
 /* ─── Añadir puerta (3 clics) ────────────────────────────────────────────── */
 function _doorClick(wx, wz) {
-  // Estado 3: elegir lado — comparar distancia en pantalla al centro de cada arco
+  // Estado 3: elegir lado por proximidad en pantalla usando _cursorScreen
   if (_doorPending) {
     const d = _doorPending;
-    const seg = d.seg;
-    const wallDx = seg.p2.x - seg.p1.x, wallDz = seg.p2.z - seg.p1.z;
-    const wallLen = Math.sqrt(wallDx*wallDx + wallDz*wallDz);
-    const ux = wallDx / wallLen, uz = wallDz / wallLen;
-    const doorWidth = Math.hypot(d.pB.x - d.pA.x, d.pB.z - d.pA.z);
-    const midT = (d.t1 + d.t2) / 2;
-    const midPt = _segPt(seg, midT);
+    const s1 = _worldToScreen(d.seg.p1.x, d.seg.p1.z);
+    const s2 = _worldToScreen(d.seg.p2.x, d.seg.p2.z);
+    const hA = _lerpScreen(s1, s2, d.t1);
+    const hB = _lerpScreen(s1, s2, d.t2);
+    const radiusPx = Math.hypot(hB.x - hA.x, hB.y - hA.y);
+    const wallAngle = Math.atan2(s2.y - s1.y, s2.x - s1.x);
+    const cx = _cursorScreen.x, cy = _cursorScreen.y;
 
-    // Centro aproximado de cada arco (a 0.6*r de pA en la perpendicular + a lo largo)
-    const sides = [1, -1];
+    // Centro de cada arco en pantalla: hA + perp*r*0.5 (en el ángulo medio del arco 45°)
     let bestSide = 1, bestDist = Infinity;
-    for (const s of sides) {
-      const nx = uz * s, nz = -ux * s;
-      // Centro del arco en mundo: pA + perp*r*0.6 + along*r*0.4
-      const cx = d.pA.x + nx * doorWidth * 0.6 + ux * doorWidth * 0.4;
-      const cz = d.pA.z + nz * doorWidth * 0.6 + uz * doorWidth * 0.4;
-      // Proyectar a pantalla y medir distancia al clic
-      const cs = _worldToScreen(cx, cz);
-      const clickS = _worldToScreen(wx, wz);
-      const dist = Math.hypot(cs.x - clickS.x, cs.y - clickS.y);
+    for (const s of [1, -1]) {
+      const perpAngle = wallAngle - (Math.PI / 2) * s;
+      const midAngle  = perpAngle + (Math.PI / 4) * s; // 45° = mitad del arco
+      const acx = hA.x + Math.cos(midAngle) * radiusPx * 0.7;
+      const acy = hA.y + Math.sin(midAngle) * radiusPx * 0.7;
+      const dist = Math.hypot(cx - acx, cy - acy);
       if (dist < bestDist) { bestDist = dist; bestSide = s; }
     }
     _doors.push({ segIdx: d.segIdx, t1: d.t1, t2: d.t2, side: bestSide });
