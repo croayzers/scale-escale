@@ -331,8 +331,58 @@ function _onKeyUp(e) {
 }
 
 // Guardamos posición del pointerdown para distinguir click de drag
-let _downPos  = null;
+let _downPos    = null;
 let _isDragging = false;
+
+// Posición actual del ratón en pantalla (para orientar la línea al confirmar distancia)
+let _cursorScreen = { x: 0, y: 0 };
+
+/* ─── Input de distancia directa (estilo AutoCAD) ────────────────────────── */
+function _showDistInput(sx, sy) {
+  const wrap  = document.getElementById('wp-dist-input-wrap');
+  const input = document.getElementById('wp-dist-input');
+  if (!wrap || !input) return;
+  wrap.style.display = 'flex';
+  wrap.style.left = `${sx}px`;
+  wrap.style.top  = `${sy}px`;
+  input.value = '';
+  setTimeout(() => input.focus(), 50);
+}
+
+function _hideDistInput() {
+  const wrap = document.getElementById('wp-dist-input-wrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function _confirmDistInput() {
+  const input = document.getElementById('wp-dist-input');
+  const dist  = parseFloat(input?.value);
+  _hideDistInput();
+  if (!_drawing || !_p1 || isNaN(dist) || dist <= 0) return;
+
+  // Calcular dirección desde _p1 hacia la posición actual del cursor
+  const worldCursor = _screenToWorld(_cursorScreen.x, _cursorScreen.y);
+  const dx  = worldCursor ? worldCursor.x - _p1.wx : 1;
+  const dz  = worldCursor ? worldCursor.z - _p1.wz : 0;
+  const len = Math.sqrt(dx * dx + dz * dz);
+
+  // Aplicar snap angular a esa dirección
+  let angle = Math.atan2(dz, dx);
+  if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
+
+  const p2w = {
+    x: _p1.wx + dist * Math.cos(angle),
+    z: _p1.wz + dist * Math.sin(angle)
+  };
+
+  _buildWall(_p1, p2w);
+  _p1 = { wx: p2w.x, wz: p2w.z };
+  _p1Screen = _worldToScreen(p2w.x, p2w.z);
+  _clearGuide();
+
+  // Mostrar inmediatamente el input para la siguiente longitud
+  _showDistInput(_p1Screen.x, _p1Screen.y);
+}
 
 function _forwardToScene(e) {
   const scene = document.getElementById('scene-canvas');
@@ -378,6 +428,8 @@ function _onPointerUp(e) {
     _drawing  = true;
     _p1       = { wx: p1w.x, wz: p1w.z };
     _p1Screen = { x: e.clientX, y: e.clientY };
+    // Mostrar input de distancia solo en modo línea
+    if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
     // Segundo clic: aplicar snaps y confirmar
     let p2w = _applyAngleSnap(_p1, { x: worldPos.x, z: worldPos.z });
@@ -387,11 +439,14 @@ function _onPointerUp(e) {
       _buildRect(_p1, p2w);
       _cancelDrawing();
     } else {
+      _hideDistInput();
       _buildWall(_p1, p2w);
       // Encadenar: el punto final es el nuevo origen
       _p1       = { wx: p2w.x, wz: p2w.z };
       _p1Screen = { x: e.clientX, y: e.clientY };
       _clearGuide();
+      // Volver a mostrar el input para el siguiente segmento
+      if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
     }
   }
 }
@@ -406,6 +461,7 @@ function _onDblClick(e) {
 
 function _onPointerMove(e) {
   if (!_active) return;
+  _cursorScreen = { x: e.clientX, y: e.clientY };
 
   // Detectar drag y reenviar al OrbitControls si es navegación
   if (_downPos && !_drawing) {
@@ -476,6 +532,7 @@ function _cancelDrawing() {
   _p1Screen = null;
   _clearGuide();
   _hideTooltip();
+  _hideDistInput();
 }
 
 function _removeWall(wall) {
@@ -549,6 +606,14 @@ function activate() {
   document.getElementById('wp-cancel')?.addEventListener('click', () => { _clearAll(); deactivate(); });
   document.getElementById('wp-wall-height')?.addEventListener('input', e => {
     _wallHeight = parseFloat(e.target.value) || 2.5;
+  });
+
+  // Input de distancia directa
+  document.getElementById('wp-dist-ok')?.addEventListener('click', _confirmDistInput);
+  document.getElementById('wp-dist-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _confirmDistInput(); }
+    if (e.key === 'Escape') { _hideDistInput(); _cancelDrawing(); }
+    e.stopPropagation(); // evitar que Esc cancele el dibujo por duplicado
   });
 
   // Menú contextual

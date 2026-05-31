@@ -1654,6 +1654,14 @@
   <!-- Tooltip dinámico de medidas -->
   <div id="wall-painter-tooltip" style="pointer-events:none;position:absolute;background:rgba(10,10,11,0.82);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:6px;white-space:nowrap;display:none"></div>
 
+  <!-- Input de distancia directa (estilo AutoCAD) -->
+  <div id="wp-dist-input-wrap" style="pointer-events:auto;display:none;position:absolute;transform:translate(-50%,-200%);background:#fff;border:1.5px solid var(--brand-primary,#2563eb);border-radius:8px;box-shadow:0 4px 16px -6px rgba(0,0,0,0.25);padding:6px 8px;display:none;align-items:center;gap:6px;min-width:140px">
+    <input id="wp-dist-input" type="number" min="0.01" step="0.01" placeholder="metros…"
+      style="width:80px;border:none;outline:none;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);background:transparent">
+    <span style="font-size:11px;color:var(--muted)">m</span>
+    <button id="wp-dist-ok" style="background:var(--brand-primary,#2563eb);color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer">↵</button>
+  </div>
+
 </div>
 
 <!-- Menú contextual de pared (fuera del overlay, siempre disponible) -->
