@@ -405,7 +405,7 @@ function _doorSideFromCursor(seg, tBisagra, tLibre) {
   const dx = hB.x - hA.x, dy = hB.y - hA.y;
   const cx = _cursorScreen.x - hA.x, cy = _cursorScreen.y - hA.y;
   const cross = dx * cy - dy * cx;
-  return cross >= 0 ? -1 : 1;
+  return cross >= 0 ? 1 : -1;
 }
 
 function _doorClick(wx, wz) {
