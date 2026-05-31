@@ -10,6 +10,7 @@
  */
 
 import { SceneManager } from '../scene/SceneManager.js';
+import { AppState }     from '../core/AppState.js';
 
 /* ─── Constantes ──────────────────────────────────────────────────────────── */
 const WALL_THICKNESS  = 0.10;
@@ -625,6 +626,17 @@ function activate() {
   document.getElementById('wp-wall-height')?.addEventListener('input', e => {
     _wallHeight = parseFloat(e.target.value) || 2.5;
   });
+
+  const cotasBtn = document.getElementById('wp-toggle-cotas');
+  if (cotasBtn) {
+    // Sync estado inicial
+    cotasBtn.classList.toggle('wp-tool-active', Boolean(AppState.showCotas));
+    cotasBtn.addEventListener('click', () => {
+      AppState.showCotas = !AppState.showCotas;
+      SceneManager.drawCotas();
+      cotasBtn.classList.toggle('wp-tool-active', AppState.showCotas);
+    });
+  }
 
   const colorInput   = document.getElementById('wp-wall-color');
   const colorPreview = document.getElementById('wp-color-preview');
