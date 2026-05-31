@@ -28,7 +28,11 @@ function init() {
   });
   document.getElementById('plan-drop-search')?.addEventListener('click', () => {
     closePlanDropdown();
-    if (!SubscriptionManager.ensureFeature('planSearch')) return;
+    const code = SubscriptionManager.currentPlanCode();
+    if (code !== 'pro' && code !== 'premium') {
+      SubscriptionManager.ensureFeature('planSearch');
+      return;
+    }
     openSearchModal();
   });
   // 'Compartir con empresa' reemplazado por el flujo automático post-calibración
