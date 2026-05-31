@@ -31,7 +31,8 @@ let _cvs, _ctx;
 let _drawing   = false;
 let _p1        = null;         // {wx, wz} — mundo THREE
 let _p1Screen  = null;         // {x, y}   — pantalla
-let _walls     = [];           // [{mesh3d, labelEl, p1, p2, labelVisible}]
+let _walls     = [];           // [{mesh3d, labelEl, p1, p2, len, height, labelVisible}]
+let _doors     = [];           // [{p1, p2, width, angle}] — huecos de puerta (canvas 2D)
 let _ctxWall   = null;         // pared con menú abierto
 
 /* ─── Contenedor de etiquetas HTML (persistente, fuera del overlay) ─────── */
@@ -67,6 +68,11 @@ function _startLabelLoop() {
         wall.labelEl.style.left = `${(v.x + 1) / 2 * w}px`;
         wall.labelEl.style.top  = `${(-v.y + 1) / 2 * h}px`;
       });
+    }
+    // Redibujar puertas solo cuando no hay trazo activo (la guía gestiona su propio canvas)
+    if (_cvs && _ctx && _doors.length && !_drawing) {
+      _ctx.clearRect(0, 0, _cvs.width, _cvs.height);
+      _drawDoors();
     }
     _rafId = requestAnimationFrame(tick);
   }
@@ -172,6 +178,7 @@ function _resizeCanvas() {
 function _clearGuide() {
   if (!_ctx) return;
   _ctx.clearRect(0, 0, _cvs.width, _cvs.height);
+  if (_doors.length) _drawDoors();
 }
 
 function _drawGuide(p1s, p2s, isRect, snapPoint = null) {
@@ -293,6 +300,104 @@ function _buildRect(p1w, p2w) {
     const b = corners[(i + 1) % 4];
     _buildWall(a, { x: b.wx, z: b.wz });
   }
+}
+
+/* ─── Puertas ────────────────────────────────────────────────────────────── */
+function _addDoor(wall, widthM) {
+  const w = Math.max(0.5, Math.min(3, widthM));
+  if (w >= wall.len) return; // puerta más grande que la pared → ignorar
+
+  const mx = (wall.p1.x + wall.p2.x) / 2;
+  const mz = (wall.p1.z + wall.p2.z) / 2;
+  const dx = wall.p2.x - wall.p1.x;
+  const dz = wall.p2.z - wall.p1.z;
+  const wallAngle = Math.atan2(dz, dx);
+
+  // Dirección unitaria a lo largo de la pared
+  const ux = Math.cos(wallAngle);
+  const uz = Math.sin(wallAngle);
+  const half = w / 2;
+
+  // Los dos puntos del hueco (centrado en la pared)
+  const doorP1 = { x: mx - ux * half, z: mz - uz * half };
+  const doorP2 = { x: mx + ux * half, z: mz + uz * half };
+
+  // Angulo de apertura del arco (perpendicular a la pared, 90°)
+  const arcAngle = wallAngle + Math.PI / 2;
+
+  _doors.push({ p1: doorP1, p2: doorP2, width: w, arcAngle, wallAngle });
+
+  // Partir la pared en dos segmentos (eliminar original, crear dos trozos)
+  _removeWall(wall);
+  _walls = _walls.filter(ww => ww !== wall);
+
+  const seg1Len = wall.len / 2 - half;
+  const seg2Len = wall.len / 2 - half;
+
+  if (seg1Len > 0.05) {
+    _buildWall(
+      { wx: wall.p1.x, wz: wall.p1.z },
+      { x: doorP1.x, z: doorP1.z }
+    );
+  }
+  if (seg2Len > 0.05) {
+    _buildWall(
+      { wx: doorP2.x, wz: doorP2.z },
+      { x: wall.p2.x, z: wall.p2.z }
+    );
+  }
+}
+
+function _drawDoors() {
+  if (!_ctx || !_doors.length) return;
+  const cam = SceneManager.activeCam;
+  if (!cam) return;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  function project(wx, wz) {
+    const v = new THREE.Vector3(wx, 0, wz).project(cam);
+    return { x: (v.x + 1) / 2 * W, y: (-v.y + 1) / 2 * H };
+  }
+
+  _ctx.save();
+  _ctx.strokeStyle = '#1a1a2c';
+  _ctx.lineWidth = 1.5;
+  _ctx.setLineDash([]);
+  _ctx.lineCap = 'round';
+
+  for (const door of _doors) {
+    const s1 = project(door.p1.x, door.p1.z);
+    const s2 = project(door.p2.x, door.p2.z);
+
+    // Línea de umbral (hueco de la puerta)
+    _ctx.save();
+    _ctx.setLineDash([3, 3]);
+    _ctx.beginPath();
+    _ctx.moveTo(s1.x, s1.y);
+    _ctx.lineTo(s2.x, s2.y);
+    _ctx.stroke();
+    _ctx.restore();
+
+    // Arco de apertura desde p1 — radio = ancho puerta proyectado en pantalla
+    const radiusPx = Math.hypot(s2.x - s1.x, s2.y - s1.y);
+    if (radiusPx < 4) continue;
+
+    // Ángulo de inicio: dirección de s1 → s2 en pantalla
+    const screenAngle = Math.atan2(s2.y - s1.y, s2.x - s1.x);
+
+    _ctx.beginPath();
+    _ctx.moveTo(s1.x, s1.y);
+    // Línea de la hoja de la puerta (perpendicular al arco)
+    _ctx.lineTo(
+      s1.x + Math.cos(screenAngle - Math.PI / 2) * radiusPx,
+      s1.y + Math.sin(screenAngle - Math.PI / 2) * radiusPx
+    );
+    // Arco de 90°
+    _ctx.arc(s1.x, s1.y, radiusPx, screenAngle - Math.PI / 2, screenAngle, false);
+    _ctx.stroke();
+  }
+  _ctx.restore();
 }
 
 /* ─── Menú contextual ────────────────────────────────────────────────────── */
@@ -577,6 +682,7 @@ function _undoLast() {
 function _clearAll() {
   [..._walls].forEach(_removeWall);
   _walls = [];
+  _doors = [];
   _cancelDrawing();
 }
 
@@ -662,6 +768,12 @@ function activate() {
     _ctxWall.labelVisible = !_ctxWall.labelVisible;
     if (_ctxWall.labelObj) _ctxWall.labelObj.visible = _ctxWall.labelVisible;
     else _ctxWall.labelEl.style.display = _ctxWall.labelVisible ? '' : 'none';
+    _closeCtxMenu();
+  });
+  document.getElementById('wall-ctx-add-door')?.addEventListener('click', () => {
+    if (!_ctxWall) return;
+    const w = parseFloat(document.getElementById('wall-ctx-door-width')?.value) || 0.9;
+    _addDoor(_ctxWall, w);
     _closeCtxMenu();
   });
   document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {

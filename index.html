@@ -1828,6 +1828,15 @@
   </label>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item" id="wall-ctx-toggle-label">Ocultar medida</button>
+  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
+  <div style="display:flex;align-items:center;gap:6px;padding:6px 12px">
+    <span style="font-size:12px;color:var(--ink)">Puerta</span>
+    <input id="wall-ctx-door-width" type="number" min="0.5" max="3" step="0.05" value="0.9"
+      style="width:52px;font-size:11px;border:1px solid rgba(0,0,0,0.15);border-radius:5px;padding:2px 5px;text-align:center"/>
+    <span style="font-size:11px;color:var(--muted)">m</span>
+    <button id="wall-ctx-add-door" style="background:var(--ink);color:var(--paper);border:none;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer">+ Añadir</button>
+  </div>
+  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item wall-ctx-danger" id="wall-ctx-delete">Eliminar pared</button>
 </div>
 
