@@ -331,19 +331,35 @@ function _onKeyUp(e) {
 }
 
 // Guardamos posición del pointerdown para distinguir click de drag
-let _downPos = null;
+let _downPos  = null;
+let _isDragging = false;
+
+function _forwardToScene(e) {
+  const scene = document.getElementById('scene-canvas');
+  if (!scene) return;
+  scene.dispatchEvent(new PointerEvent(e.type, e));
+}
 
 function _onPointerDown(e) {
   if (!_active) return;
-  e.stopPropagation();
-  if (e.button === 2) return; // el contextmenu lo maneja _onContextMenu
-  _downPos = { x: e.clientX, y: e.clientY };
+  if (e.button === 2) return;
+  _downPos    = { x: e.clientX, y: e.clientY };
+  _isDragging = false;
+  // Reenviar al OrbitControls para que pueda iniciar pan si resulta ser drag
+  _forwardToScene(e);
 }
 
 function _onPointerUp(e) {
   if (!_active) return;
-  e.stopPropagation();
-  if (e.button === 2) return; // el contextmenu lo maneja _onContextMenu
+  if (e.button === 2) return;
+
+  // Si fue drag, reenviar el pointerup al scene para que OrbitControls lo cierre
+  if (_isDragging) {
+    _forwardToScene(e);
+    _downPos    = null;
+    _isDragging = false;
+    return;
+  }
 
   // Ignorar si fue un drag (movió más de 5px)
   if (!_downPos) return;
@@ -390,6 +406,17 @@ function _onDblClick(e) {
 
 function _onPointerMove(e) {
   if (!_active) return;
+
+  // Detectar drag y reenviar al OrbitControls si es navegación
+  if (_downPos && !_drawing) {
+    const moved = Math.abs(e.clientX - _downPos.x) + Math.abs(e.clientY - _downPos.y);
+    if (moved > 4) {
+      _isDragging = true;
+      _forwardToScene(e);
+      return;
+    }
+  }
+
   // Cursor siempre muestra el snap de extremo aunque no estemos dibujando
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
@@ -501,10 +528,9 @@ function activate() {
   _startLabelLoop();
   _ensureGlobalContextMenu();
 
-  // Desactivar OrbitControls para que no compitan con el dibujo
-  SceneManager.setControlsEnabled(false);
+  // Controles habilitados para pan/zoom; el canvas overlay reenvía drags
+  SceneManager.setControlsEnabled(true);
 
-  // Listeners
   _cvs?.addEventListener('pointerdown', _onPointerDown);
   _cvs?.addEventListener('pointerup',   _onPointerUp);
   _cvs?.addEventListener('pointermove', _onPointerMove);
