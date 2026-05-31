@@ -562,6 +562,23 @@ body.has-items #empty-hint { display: none; }
   pointer-events: none;
 }
 
+.wp-toolbar-glow {
+  position: relative;
+}
+.wp-toolbar-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: conic-gradient(from var(--collab-angle), #ff0055, #00ffcc, #0055ff, #ff00ff, #ff0055);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: collabSpin 1.2s linear infinite;
+  pointer-events: none;
+}
+
 #wp-shortcuts-panel.wp-shortcuts-glow {
   position: relative;
 }
