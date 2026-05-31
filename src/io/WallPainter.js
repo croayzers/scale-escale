@@ -498,6 +498,11 @@ function _onPointerMove(e) {
   }
 }
 
+function _onWheel(e) {
+  if (!_active) return;
+  document.getElementById('scene-canvas')?.dispatchEvent(new WheelEvent('wheel', e));
+}
+
 function _onContextMenu(e) {
   if (!_active) return;
   e.preventDefault(); e.stopPropagation();
@@ -701,6 +706,7 @@ function activate() {
   _cvs?.addEventListener('pointerup',   _onPointerUp);
   _cvs?.addEventListener('pointermove', _onPointerMove);
   _cvs?.addEventListener('contextmenu', _onContextMenu);
+  _cvs?.addEventListener('wheel',       _onWheel, { passive: false });
   document.addEventListener('keydown',  _onKeyDown);
   document.addEventListener('keyup',    _onKeyUp);
   window.addEventListener('resize',     _resizeCanvas);
@@ -719,6 +725,7 @@ function deactivate() {
   _cvs?.removeEventListener('pointerup',   _onPointerUp);
   _cvs?.removeEventListener('pointermove', _onPointerMove);
   _cvs?.removeEventListener('contextmenu', _onContextMenu);
+  _cvs?.removeEventListener('wheel',       _onWheel);
   document.removeEventListener('keydown',  _onKeyDown);
   document.removeEventListener('keyup',    _onKeyUp);
   window.removeEventListener('resize',     _resizeCanvas);
