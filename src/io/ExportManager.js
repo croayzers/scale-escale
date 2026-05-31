@@ -604,7 +604,7 @@ async function composePrintCanvas(imageDataUrl, view) {
   const headerH = 116;
   const footerH = 70;
   const brandPrimary = company.colorPrimary || '#2563EB';
-  const brandSecondary = company.colorSecondary || '#64748B';
+  const brandSecondary = '#000000';
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, out.width, headerH);
@@ -796,7 +796,7 @@ async function buildPdfBlob(imageDataUrl, modeLabel) {
   const company = AppState.company;
   const eventName = document.getElementById('inventory-event-name')?.value?.trim() || '';
   const brandPrimary = parseColor(company.colorPrimary, [37, 99, 235]);
-  const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
+  const brandSecondary = [0, 0, 0];
 
   let headX = margin;
   if (company.logo) {
@@ -1141,7 +1141,7 @@ async function _addPdfPage(pdf, imageDataUrl, viewLabel, cameraLabel, modeLabel,
   const company = AppState.company || {};
   const eventName = document.getElementById('inventory-event-name')?.value?.trim() || '';
   const brandPrimary   = parseColor(company.colorPrimary,   [37, 99, 235]);
-  const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
+  const brandSecondary = [0, 0, 0];
 
   let headX = margin;
   if (company.logo) {
@@ -1238,7 +1238,7 @@ function _addInventoryPage(pdf, modeLabel, pageNum, totalPages) {
   const company    = AppState.company || {};
   const eventName  = document.getElementById('inventory-event-name')?.value?.trim() || '';
   const brandPrimary   = parseColor(company.colorPrimary,   [37, 99, 235]);
-  const brandSecondary = parseColor(company.colorSecondary, [120, 120, 120]);
+  const brandSecondary = [0, 0, 0];
 
   // Header
   let headX = margin;
