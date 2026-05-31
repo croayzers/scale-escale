@@ -10,7 +10,6 @@
  */
 
 import { SceneManager } from '../scene/SceneManager.js';
-import { AppState }      from '../core/AppState.js';
 
 /* ─── Constantes ──────────────────────────────────────────────────────────── */
 const WALL_THICKNESS  = 0.10;
