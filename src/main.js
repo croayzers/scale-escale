@@ -458,13 +458,6 @@ async function bootstrap() {
 
   document.getElementById('cal-demo-start')?.addEventListener('click', () => {
     closeCalibrationDemo();
-    const guide = document.getElementById('plan-guide');
-    if (guide && !guide.classList.contains('hidden')) {
-      guide.classList.remove('guide-panel-pulse');
-      void guide.offsetWidth;
-      guide.classList.add('guide-panel-pulse');
-      setTimeout(() => guide.classList.remove('guide-panel-pulse'), 15000);
-    }
     showCalBanner(CAL_BANNER_MSGS.start);
     state.planGuideDismissed = false;
     setTopCamera();
