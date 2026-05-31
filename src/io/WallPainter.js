@@ -43,11 +43,10 @@ let _doors  = [];  // [{segIdx, t1, t2}]  — hueco sobre el segmento
 let _meshes = [];  // THREE.Mesh[] creados al transformar
 let _labels = [];  // {el, seg} para etiquetas
 
-// Modo puerta: estado de los 3 clics
-let _doorPt1     = null;  // {x,z} — 1er punto sobre el segmento
-let _doorSeg     = null;  // índice segmento
-let _doorT1      = null;
-let _doorPending = null;  // {segIdx,t1,t2,pA,pB,seg} — esperando 3er clic para elegir lado
+// Modo puerta: estado de los 2 clics
+let _doorPt1 = null;  // {x,z} — bisagra (1er clic)
+let _doorSeg = null;  // índice segmento
+let _doorT1  = null;
 
 // Menú contextual (click en seg)
 let _ctxSeg   = null;
@@ -194,15 +193,6 @@ function _redrawCanvas() {
     _ctx.arc(s.x, s.y, 6, 0, Math.PI*2);
     _ctx.fill();
     _ctx.restore();
-  }
-
-  // Preview ambos arcos cuando se espera el 3er clic de puerta
-  if (_doorPending) {
-    const d = _doorPending;
-    const s1 = _worldToScreen(d.seg.p1.x, d.seg.p1.z);
-    const s2 = _worldToScreen(d.seg.p2.x, d.seg.p2.z);
-    _drawDoorArcPreview(s1, s2, d,  1); // izquierda
-    _drawDoorArcPreview(s1, s2, d, -1); // derecha
   }
 
   // Guía de trazo activa
@@ -405,40 +395,31 @@ function _addSeg(p1, p2) {
   _labels.push({ el: labelEl, seg });
 }
 
-/* ─── Añadir puerta (3 clics) ────────────────────────────────────────────── */
-function _doorClick(wx, wz) {
-  // Estado 3: elegir lado — producto cruzado 2D en pantalla (bisagra→libre vs bisagra→cursor)
-  if (_doorPending) {
-    const d = _doorPending;
-    const s1 = _worldToScreen(d.seg.p1.x, d.seg.p1.z);
-    const s2 = _worldToScreen(d.seg.p2.x, d.seg.p2.z);
-    // hA = bisagra, hB = libre (en pantalla)
-    const hA = _lerpScreen(s1, s2, d.tBisagra);
-    const hB = _lerpScreen(s1, s2, d.tBisagra === d.t1 ? d.t2 : d.t1);
-    // Vector bisagra→libre en pantalla
-    const dx = hB.x - hA.x, dy = hB.y - hA.y;
-    // Vector bisagra→cursor en pantalla
-    const cx = _cursorScreen.x - hA.x, cy = _cursorScreen.y - hA.y;
-    // Producto cruzado 2D: >0 cursor a la izquierda del vector (side=1), <0 derecha (side=-1)
-    const cross = dx * cy - dy * cx;
-    const side = cross >= 0 ? -1 : 1;
-    _doors.push({ segIdx: d.segIdx, t1: d.t1, t2: d.t2, tBisagra: d.tBisagra, side });
-    _doorPending = null;
-    _hideTooltip();
-    return;
-  }
+/* ─── Añadir puerta (2 clics, lado por posición del cursor) ─────────────── */
+// Calcula el side (1/-1) según en qué lado del hueco está el cursor en pantalla
+function _doorSideFromCursor(seg, tBisagra, tLibre) {
+  const s1 = _worldToScreen(seg.p1.x, seg.p1.z);
+  const s2 = _worldToScreen(seg.p2.x, seg.p2.z);
+  const hA = _lerpScreen(s1, s2, tBisagra);
+  const hB = _lerpScreen(s1, s2, tLibre);
+  const dx = hB.x - hA.x, dy = hB.y - hA.y;
+  const cx = _cursorScreen.x - hA.x, cy = _cursorScreen.y - hA.y;
+  const cross = dx * cy - dy * cx;
+  return cross >= 0 ? -1 : 1;
+}
 
+function _doorClick(wx, wz) {
   const hit = _findClosestSegPoint(wx, wz);
   if (!hit) return;
 
   if (!_doorPt1) {
-    // Estado 1: primer punto sobre el segmento
+    // 1er clic: fijar bisagra
     _doorPt1 = hit.pt;
     _doorSeg  = hit.segIdx;
     _doorT1   = hit.t;
-    _showTooltip('2° punto: marca el otro extremo del hueco', _cursorScreen.x, _cursorScreen.y);
+    _showTooltip('2° clic: extremo libre — el lado se elige por posición del cursor', _cursorScreen.x, _cursorScreen.y);
   } else {
-    // Estado 2: segundo punto → validar y pasar a elegir lado
+    // 2do clic: confirmar con el lado actual del cursor
     if (hit.segIdx !== _doorSeg) {
       _doorPt1 = hit.pt; _doorSeg = hit.segIdx; _doorT1 = hit.t;
       return;
@@ -452,12 +433,10 @@ function _doorClick(wx, wz) {
       _doorPt1 = null; _doorSeg = null; _doorT1 = null;
       return;
     }
-    // pA = bisagra (primer clic), pB = extremo libre (segundo clic)
-    const pA = _segPt(seg, tBisagra);
-    const pB = _segPt(seg, tLibre);
-    _doorPending = { segIdx: _doorSeg, t1, t2, tBisagra, pA, pB, seg };
+    const side = _doorSideFromCursor(seg, tBisagra, tLibre);
+    _doors.push({ segIdx: _doorSeg, t1, t2, tBisagra, side });
     _doorPt1 = null; _doorSeg = null; _doorT1 = null;
-    _showTooltip('3er clic: elige el lado de apertura', _cursorScreen.x, _cursorScreen.y);
+    _hideTooltip();
   }
 }
 
@@ -771,25 +750,20 @@ function _onPointerMove(e) {
       _ctx.restore();
 
       if (_doorPt1 && _doorSeg === hit.segIdx) {
-        const seg = _segs[_doorSeg];
-        const t2  = hit.t;
-        const gapLen = seg.len * Math.abs(t2 - _doorT1);
-        // Línea preview entre los dos puntos del hueco
-        const s1 = _worldToScreen(_doorPt1.x, _doorPt1.z);
-        _ctx.save();
-        _ctx.strokeStyle = '#f59e0b';
-        _ctx.lineWidth = 1.5;
-        _ctx.setLineDash([4, 3]);
-        _ctx.beginPath();
-        _ctx.moveTo(s1.x, s1.y);
-        _ctx.lineTo(s.x, s.y);
-        _ctx.stroke();
-        _ctx.restore();
+        const seg  = _segs[_doorSeg];
+        const tBis = _doorT1, tLib = hit.t;
+        const gapLen = seg.len * Math.abs(tLib - tBis);
+        const side = _doorSideFromCursor(seg, tBis, tLib);
+        // Preview arco dinámico en el lado actual del cursor
+        const ss1 = _worldToScreen(seg.p1.x, seg.p1.z);
+        const ss2 = _worldToScreen(seg.p2.x, seg.p2.z);
+        const fakeD = { t1: Math.min(tBis,tLib), t2: Math.max(tBis,tLib), tBisagra: tBis, side };
+        _drawDoorArcPreview(ss1, ss2, fakeD, side);
         _showTooltip(`Puerta: ${gapLen.toFixed(2)} m`, e.clientX, e.clientY);
       } else if (_doorPt1) {
         _showTooltip('Mismo segmento', e.clientX, e.clientY);
       } else {
-        _showTooltip('1er punto', e.clientX, e.clientY);
+        _showTooltip('1er punto: bisagra', e.clientX, e.clientY);
       }
     } else {
       _hideTooltip();
@@ -860,7 +834,7 @@ function _cancelDrawing() {
   _drawing  = false;
   _p1 = null; _p1Screen = null;
   _guideState = null;
-  _doorPt1 = null; _doorSeg = null; _doorT1 = null; _doorPending = null;
+  _doorPt1 = null; _doorSeg = null; _doorT1 = null;
   _hideTooltip(); _hideDistInput();
 }
 
