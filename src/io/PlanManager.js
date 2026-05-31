@@ -290,6 +290,7 @@ async function loadOrgPlan(id, name) {
   if (plan.length_m) AppState.plan.lengthM = plan.length_m;
   if (plan.opacity !== undefined) AppState.plan.opacity = plan.opacity;
   SceneManager.updatePlanSize?.();
+  window._skipCalibrationDemo = true;
   applyImageToPlan(plan.image_data_url, name);
   // Notificar para abrir Zonas automáticamente
   document.dispatchEvent(new CustomEvent('escale:org-plan-loaded', { detail: { name } }));
@@ -523,6 +524,7 @@ async function loadCommunityPlan(id, name) {
     if (plan.length_m) AppState.plan.lengthM = plan.length_m;
     if (plan.opacity !== undefined) AppState.plan.opacity = plan.opacity;
     SceneManager.updatePlanSize?.();
+    window._skipCalibrationDemo = true;
     applyImageToPlan(plan.image_data_url, name ?? 'Comunidad');
     document.dispatchEvent(new CustomEvent('escale:org-plan-loaded', { detail: { name } }));
   } catch (err) {

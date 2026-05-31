@@ -330,8 +330,11 @@ async function bootstrap() {
     document.getElementById('guide-calibration-point-2').textContent = 'Pendiente';
     document.getElementById('guide-calibration-result').textContent = 'Sin calibrar';
     updatePlanGuide();
-    // Auto-lanzar calibración tras cargar un plano local
-    setTimeout(() => openCalibrationDemo(), 500);
+    // Auto-lanzar calibración solo si el plano no viene con dimensiones ya calibradas
+    setTimeout(() => {
+      if (window._skipCalibrationDemo) { window._skipCalibrationDemo = false; return; }
+      openCalibrationDemo();
+    }, 500);
   };
 
   document.addEventListener('escale:zoom-changed', event => {
