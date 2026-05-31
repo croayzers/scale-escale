@@ -394,12 +394,32 @@ function _addSeg(p1, p2) {
 
 /* ─── Añadir puerta (3 clics) ────────────────────────────────────────────── */
 function _doorClick(wx, wz) {
-  // Estado 3: elegir lado (clic libre en la escena)
+  // Estado 3: elegir lado — comparar distancia en pantalla al centro de cada arco
   if (_doorPending) {
     const d = _doorPending;
-    // Determinar de qué lado del segmento está el clic
-    const side = _sideOfSeg(d.seg, wx, wz); // 1 = izquierda, -1 = derecha
-    _doors.push({ segIdx: d.segIdx, t1: d.t1, t2: d.t2, side });
+    const seg = d.seg;
+    const wallDx = seg.p2.x - seg.p1.x, wallDz = seg.p2.z - seg.p1.z;
+    const wallLen = Math.sqrt(wallDx*wallDx + wallDz*wallDz);
+    const ux = wallDx / wallLen, uz = wallDz / wallLen;
+    const doorWidth = Math.hypot(d.pB.x - d.pA.x, d.pB.z - d.pA.z);
+    const midT = (d.t1 + d.t2) / 2;
+    const midPt = _segPt(seg, midT);
+
+    // Centro aproximado de cada arco (a 0.6*r de pA en la perpendicular + a lo largo)
+    const sides = [1, -1];
+    let bestSide = 1, bestDist = Infinity;
+    for (const s of sides) {
+      const nx = uz * s, nz = -ux * s;
+      // Centro del arco en mundo: pA + perp*r*0.6 + along*r*0.4
+      const cx = d.pA.x + nx * doorWidth * 0.6 + ux * doorWidth * 0.4;
+      const cz = d.pA.z + nz * doorWidth * 0.6 + uz * doorWidth * 0.4;
+      // Proyectar a pantalla y medir distancia al clic
+      const cs = _worldToScreen(cx, cz);
+      const clickS = _worldToScreen(wx, wz);
+      const dist = Math.hypot(cs.x - clickS.x, cs.y - clickS.y);
+      if (dist < bestDist) { bestDist = dist; bestSide = s; }
+    }
+    _doors.push({ segIdx: d.segIdx, t1: d.t1, t2: d.t2, side: bestSide });
     _doorPending = null;
     _hideTooltip();
     return;
@@ -436,12 +456,6 @@ function _doorClick(wx, wz) {
   }
 }
 
-// Devuelve 1 si el punto (wx,wz) está a la izquierda del segmento (p1→p2), -1 a la derecha
-function _sideOfSeg(seg, wx, wz) {
-  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
-  const cross = dx * (wz - seg.p1.z) - dz * (wx - seg.p1.x);
-  return cross >= 0 ? 1 : -1;
-}
 
 /* ─── Transformar: generar 3D ────────────────────────────────────────────── */
 function _transform() {
