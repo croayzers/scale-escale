@@ -13,10 +13,10 @@ import { SceneManager } from '../scene/SceneManager.js';
 import { AppState }      from '../core/AppState.js';
 
 /* ─── Constantes ──────────────────────────────────────────────────────────── */
-const WALL_THICKNESS = 0.10;   // 10 cm
-const WALL_COLOR     = 0x1a1a2c;
-const SNAP_ANGLE_DEG = 45;
-const SNAP_THRESHOLD = 12;     // px — distancia mínima al punto origen para snap
+const WALL_THICKNESS  = 0.10;
+const WALL_COLOR      = 0x1a1a2c;
+const ANGLE_SNAP_RAD  = Math.PI / 12;  // 15° — Shift lo deshabilita
+const ENDPOINT_SNAP_M = 0.35;          // metros — radio de snap de extremos de pared
 
 /* ─── Estado interno ──────────────────────────────────────────────────────── */
 let _active    = false;
@@ -93,17 +93,29 @@ function _worldToScreen(wx, wz) {
   };
 }
 
-/* ─── Snap a ángulos 45° ─────────────────────────────────────────────────── */
-function _snapAngle(p1w, rawW, shiftDown) {
-  if (!shiftDown) return rawW;
-  const dx = rawW.x - p1w.wx;
-  const dz = rawW.z - p1w.wz;
+/* ─── Snap angular 15° (Shift = libre) ──────────────────────────────────── */
+function _applyAngleSnap(p1w, p2w) {
+  const dx  = p2w.x - p1w.wx;
+  const dz  = p2w.z - p1w.wz;
   const len = Math.sqrt(dx * dx + dz * dz);
-  if (len < 0.01) return rawW;
-  const angleDeg = Math.atan2(dz, dx) * 180 / Math.PI;
-  const snapped  = Math.round(angleDeg / SNAP_ANGLE_DEG) * SNAP_ANGLE_DEG;
-  const rad      = snapped * Math.PI / 180;
-  return { x: p1w.wx + len * Math.cos(rad), z: p1w.wz + len * Math.sin(rad) };
+  if (len < 0.01) return p2w;
+  // Sin Shift → snap a múltiplos de 15°; con Shift → libre
+  let angle = Math.atan2(dz, dx);
+  if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
+  return { x: p1w.wx + len * Math.cos(angle), z: p1w.wz + len * Math.sin(angle) };
+}
+
+/* ─── Snap de extremos de pared (Alt lo deshabilita) ────────────────────── */
+function _applyEndpointSnap(p2w) {
+  if (_altDown) return p2w;
+  let best = null, bestDist = ENDPOINT_SNAP_M;
+  for (const wall of _walls) {
+    for (const ep of [wall.p1, wall.p2]) {
+      const d = Math.hypot(p2w.x - ep.x, p2w.z - ep.z);
+      if (d < bestDist) { bestDist = d; best = ep; }
+    }
+  }
+  return best ? { x: best.x, z: best.z } : p2w;
 }
 
 /* ─── Canvas 2D overlay ──────────────────────────────────────────────────── */
@@ -273,10 +285,12 @@ function _pickWall(sx, sy) {
 
 /* ─── Handlers de input ──────────────────────────────────────────────────── */
 let _shiftDown = false;
+let _altDown   = false;
 
 function _onKeyDown(e) {
   if (!_active) return;
   if (e.key === 'Shift') { _shiftDown = true; return; }
+  if (e.key === 'Alt')   { _altDown   = true; return; }
   if (e.key === 'Escape') { _cancelDrawing(); return; }
   if (e.key === 'l' || e.key === 'L') _setTool('line');
   if (e.key === 'r' || e.key === 'R') _setTool('rect');
@@ -287,6 +301,7 @@ function _onKeyDown(e) {
 }
 function _onKeyUp(e) {
   if (e.key === 'Shift') _shiftDown = false;
+  if (e.key === 'Alt')   _altDown   = false;
 }
 
 // Guardamos posición del pointerdown para distinguir click de drag
@@ -316,14 +331,15 @@ function _onPointerUp(e) {
   if (!worldPos) return;
 
   if (!_drawing) {
-    // Primer clic: fijar origen
+    // Primer clic: fijar origen (con snap de extremo)
+    let p1w = _applyEndpointSnap({ x: worldPos.x, z: worldPos.z });
     _drawing  = true;
-    _p1       = { wx: worldPos.x, wz: worldPos.z };
+    _p1       = { wx: p1w.x, wz: p1w.z };
     _p1Screen = { x: e.clientX, y: e.clientY };
   } else {
-    // Segundo clic: confirmar segmento
-    let p2w = { x: worldPos.x, z: worldPos.z };
-    if (_shiftDown) p2w = _snapAngle(_p1, p2w, true);
+    // Segundo clic: aplicar snaps y confirmar
+    let p2w = _applyAngleSnap(_p1, { x: worldPos.x, z: worldPos.z });
+    p2w = _applyEndpointSnap(p2w);
 
     if (_tool === 'rect') {
       _buildRect(_p1, p2w);
@@ -347,15 +363,28 @@ function _onDblClick(e) {
 }
 
 function _onPointerMove(e) {
-  if (!_active || !_drawing || !_p1) return;
-
+  if (!_active) return;
+  // Cursor siempre muestra el snap de extremo aunque no estemos dibujando
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
 
-  let p2w = { x: worldPos.x, z: worldPos.z };
-  if (_shiftDown && _tool === 'line') p2w = _snapAngle(_p1, p2w, true);
+  const raw = { x: worldPos.x, z: worldPos.z };
+  const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
+  const isSnapped = snappedEp !== raw && (snappedEp.x !== raw.x || snappedEp.z !== raw.z);
 
-  const p2s = { x: e.clientX, y: e.clientY };
+  // Cambiar cursor para indicar snap de extremo
+  if (_cvs) _cvs.style.cursor = isSnapped ? 'cell' : 'crosshair';
+
+  if (!_drawing || !_p1) { _hideTooltip(); return; }
+
+  // Aplicar snaps al p2 del preview
+  let p2w = _applyAngleSnap(_p1, snappedEp);
+
+  // Calcular posición en pantalla del p2 snapeado (proyección inversa)
+  const p2s = isSnapped
+    ? _worldToScreen(p2w.x, p2w.z)
+    : { x: e.clientX, y: e.clientY };
+
   _drawGuide(_p1Screen, p2s, _tool === 'rect');
 
   // Tooltip con medidas
@@ -363,9 +392,10 @@ function _onPointerMove(e) {
   const dz = p2w.z - _p1.wz;
   if (_tool === 'line') {
     const len = Math.sqrt(dx * dx + dz * dz);
-    _showTooltip(`${len.toFixed(2)} m`, e.clientX, e.clientY);
+    const snapHint = isSnapped ? ' · 🔗' : '';
+    _showTooltip(`${len.toFixed(2)} m${snapHint}`, e.clientX, e.clientY);
   } else {
-    _showTooltip(`Ancho: ${Math.abs(dx).toFixed(2)} m | Alto: ${Math.abs(dz).toFixed(2)} m`, e.clientX, e.clientY);
+    _showTooltip(`Ancho: ${Math.abs(dx).toFixed(2)} m | Fondo: ${Math.abs(dz).toFixed(2)} m`, e.clientX, e.clientY);
   }
 }
 
@@ -373,6 +403,14 @@ function _onContextMenu(e) {
   if (!_active) return;
   e.preventDefault();
   e.stopPropagation();
+
+  // Si estamos dibujando, clic derecho cancela el segmento en curso
+  if (_drawing) {
+    _cancelDrawing();
+    return;
+  }
+
+  // Si no dibujamos, abrir menú contextual de pared
   const wall = _pickWall(e.clientX, e.clientY);
   if (wall) _openCtxMenu(wall, e.clientX, e.clientY);
   else      _closeCtxMenu();
