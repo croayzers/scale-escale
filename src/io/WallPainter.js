@@ -481,13 +481,6 @@ function _onPointerUp(e) {
   }
 }
 
-function _onDblClick(e) {
-  if (!_active || !_drawing) return;
-  e.stopPropagation();
-  // El dblclick dispara 2x pointerup antes — la última pared ya fue creada,
-  // solo cancelamos el modo encadenado
-  _cancelDrawing();
-}
 
 function _onPointerMove(e) {
   if (!_active) return;
@@ -616,7 +609,7 @@ function activate() {
   _cvs?.addEventListener('pointerdown', _onPointerDown);
   _cvs?.addEventListener('pointerup',   _onPointerUp);
   _cvs?.addEventListener('pointermove', _onPointerMove);
-  _cvs?.addEventListener('dblclick',    _onDblClick);
+
   _cvs?.addEventListener('contextmenu', _onContextMenu);
   document.addEventListener('keydown',  _onKeyDown);
   document.addEventListener('keyup',    _onKeyUp);
@@ -674,7 +667,6 @@ function deactivate() {
   _cvs?.removeEventListener('pointerdown', _onPointerDown);
   _cvs?.removeEventListener('pointerup',   _onPointerUp);
   _cvs?.removeEventListener('pointermove', _onPointerMove);
-  _cvs?.removeEventListener('dblclick',    _onDblClick);
   _cvs?.removeEventListener('contextmenu', _onContextMenu);
   document.removeEventListener('keydown',  _onKeyDown);
   document.removeEventListener('keyup',    _onKeyUp);

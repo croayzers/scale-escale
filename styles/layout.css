@@ -129,6 +129,21 @@
 .cal-demo-run .cd-br2     { animation: calAppear 0.15s ease 1.65s both; }
 .cal-demo-run .cd-lbl     { animation: calAppear 0.25s ease 1.7s both; }
 
+/* ============== DEMO WALLPAINTER (triángulo) ============== */
+@keyframes wpDraw   { to { stroke-dashoffset: 0; } }
+@keyframes wpAppear { from { opacity:0; } to { opacity:1; } }
+@keyframes wpPop    { from { opacity:0; transform:scale(0.3); } to { opacity:1; transform:scale(1); } }
+
+#wp-demo-stage.wp-demo-run .wp-dot-a  { animation: wpPop    0.2s cubic-bezier(0.2,0.8,0.2,1) 0.1s  both; }
+#wp-demo-stage.wp-demo-run .wp-seg-ab { animation: wpDraw   0.5s ease                         0.3s  both; }
+#wp-demo-stage.wp-demo-run .wp-dot-b  { animation: wpPop    0.2s cubic-bezier(0.2,0.8,0.2,1) 0.85s both; }
+#wp-demo-stage.wp-demo-run .wp-lbl-ab { animation: wpAppear 0.2s ease                         0.9s  both; }
+#wp-demo-stage.wp-demo-run .wp-seg-bc { animation: wpDraw   0.4s ease                         1.2s  both; }
+#wp-demo-stage.wp-demo-run .wp-dot-c  { animation: wpPop    0.2s cubic-bezier(0.2,0.8,0.2,1) 1.65s both; }
+#wp-demo-stage.wp-demo-run .wp-lbl-bc { animation: wpAppear 0.2s ease                         1.7s  both; }
+#wp-demo-stage.wp-demo-run .wp-seg-ca { animation: wpDraw   0.4s ease                         2.0s  both; }
+#wp-demo-stage.wp-demo-run .wp-lbl-ca { animation: wpAppear 0.2s ease                         2.45s both; }
+
 /* ============== MODO MEDICIÓN ============== */
 body.cursor-measure,
 body.cursor-measure * { cursor: crosshair !important; }

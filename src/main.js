@@ -118,11 +118,37 @@ async function bootstrap() {
     }
   }
 
+  function _runWpDemoAnim() {
+    const stage = document.getElementById('wp-demo-stage');
+    if (!stage) return;
+    stage.classList.remove('wp-demo-run');
+    void stage.offsetWidth;
+    stage.classList.add('wp-demo-run');
+
+    // Animar cursor a lo largo de los tres lados del triángulo
+    const cursor = stage.querySelector('.wp-cursor');
+    if (!cursor) return;
+    const steps = [
+      { delay: 100,  x: 60,  y: 110, dur: 500  },  // A
+      { delay: 600,  x: 220, y: 110, dur: 400  },  // → B
+      { delay: 1200, x: 140, y: 34,  dur: 400  },  // → C
+      { delay: 2000, x: 60,  y: 110, dur: 400  },  // → A (cierre)
+    ];
+    steps.forEach(({ delay, x, y, dur }) => {
+      setTimeout(() => {
+        cursor.style.transition = `transform ${dur}ms ease`;
+        cursor.style.transform  = `translate(${x}px,${y}px)`;
+        cursor.style.opacity    = '1';
+      }, delay);
+    });
+  }
+
   document.addEventListener('escale:wallpainter-requested', () => {
     if (!AppState.showDemos) { _activateWallPainter(); return; }
     const overlay = document.getElementById('wp-demo');
     if (!overlay) { _activateWallPainter(); return; }
     overlay.classList.add('visible');
+    _runWpDemoAnim();
   });
 
   document.getElementById('wp-demo-cancel')?.addEventListener('click', () => {
