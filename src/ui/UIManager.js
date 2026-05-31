@@ -1703,7 +1703,7 @@ export const UIManager = {
     document.addEventListener('escale:camera-changed', _syncMobCam);
   },
   refresh,
-  showTooltip, hideTooltip, updateTooltipPosition,
+  hideTooltip, updateTooltipPosition,
   showDetail, showMultiDetail, hideDetail,
   refreshUndoBadge,
   updateCarpaPostsCount
