@@ -113,6 +113,7 @@ function profileFromCompany(company = AppState.company) {
     domain: extractDomain(email),
     name: cleanText(company.name),
     venue: cleanText(company.venue),
+    venueName: cleanText(company.venueName),
     logo: typeof company.logo === 'string' ? company.logo : null,
     colorPrimary: colorFor(company, 'colorPrimary'),
     colorSecondary: colorFor(company, 'colorSecondary'),
@@ -557,6 +558,7 @@ function syncModalUI() {
       : '';
   }
   document.getElementById('company-venue').value = pending.venue || '';
+  document.getElementById('company-venue-name').value = pending.venueName || '';
 
   const primary = colorFor(pending, 'colorPrimary');
   const secondary = colorFor(pending, 'colorSecondary');
@@ -765,6 +767,7 @@ async function savePending() {
   if (missingBanner) missingBanner.classList.add('hidden');
   pending.cliente = cleanText(document.getElementById('company-cliente')?.value || pending.cliente);
   pending.venue = cleanText(document.getElementById('company-venue')?.value || pending.venue);
+  pending.venueName = cleanText(document.getElementById('company-venue-name')?.value || pending.venueName);
 
   if (pending.logo && !SubscriptionManager.hasFeature('ownLogo')) {
     SubscriptionManager.ensureFeature('ownLogo');
@@ -897,6 +900,9 @@ function init() {
   });
   document.getElementById('company-venue')?.addEventListener('input', event => {
     if (pending) pending.venue = event.target.value.trim();
+  });
+  document.getElementById('company-venue-name')?.addEventListener('input', event => {
+    if (pending) pending.venueName = event.target.value.trim();
   });
 
   document.getElementById('company-logo-load')?.addEventListener('click', () => {
