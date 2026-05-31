@@ -182,9 +182,9 @@ function _redrawCanvas() {
     _drawDot(_worldToScreen(seg.p2.x, seg.p2.z), seg.color);
   }
 
-  // Primer punto de puerta marcado (feedback)
-  if (_tool === 'door' && _doorPt1) {
-    const s = _worldToScreen(_doorPt1.x, _doorPt1.z);
+  // Bisagra fijada (feedback punto naranja)
+  if (_tool === 'door' && _doorBisagra) {
+    const s = _worldToScreen(_doorBisagra.pt.x, _doorBisagra.pt.z);
     _ctx.save();
     _ctx.fillStyle = '#f59e0b';
     _ctx.beginPath();
