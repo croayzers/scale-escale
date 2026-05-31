@@ -421,7 +421,7 @@ function _doorClick(wx, wz) {
     const cx = _cursorScreen.x - hA.x, cy = _cursorScreen.y - hA.y;
     // Producto cruzado 2D: >0 cursor a la izquierda del vector (side=1), <0 derecha (side=-1)
     const cross = dx * cy - dy * cx;
-    const side = cross >= 0 ? 1 : -1;
+    const side = cross >= 0 ? -1 : 1;
     _doors.push({ segIdx: d.segIdx, t1: d.t1, t2: d.t2, tBisagra: d.tBisagra, side });
     _doorPending = null;
     _hideTooltip();
