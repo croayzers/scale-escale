@@ -582,7 +582,7 @@ function _onPointerMove(e) {
   const worldPos = _screenToWorld(e.clientX, e.clientY);
   if (!worldPos) return;
 
-  // Modo puerta: mostrar snap al segmento
+  // Modo puerta: mostrar snap al segmento + medida si ya hay primer punto
   if (_tool === 'door') {
     const hit = _findClosestSegPoint(worldPos.x, worldPos.z);
     if (hit) {
@@ -595,6 +595,30 @@ function _onPointerMove(e) {
       _ctx.arc(s.x, s.y, 7, 0, Math.PI*2);
       _ctx.stroke();
       _ctx.restore();
+
+      if (_doorPt1 && _doorSeg === hit.segIdx) {
+        const seg = _segs[_doorSeg];
+        const t2  = hit.t;
+        const gapLen = seg.len * Math.abs(t2 - _doorT1);
+        // Línea preview entre los dos puntos del hueco
+        const s1 = _worldToScreen(_doorPt1.x, _doorPt1.z);
+        _ctx.save();
+        _ctx.strokeStyle = '#f59e0b';
+        _ctx.lineWidth = 1.5;
+        _ctx.setLineDash([4, 3]);
+        _ctx.beginPath();
+        _ctx.moveTo(s1.x, s1.y);
+        _ctx.lineTo(s.x, s.y);
+        _ctx.stroke();
+        _ctx.restore();
+        _showTooltip(`Puerta: ${gapLen.toFixed(2)} m`, e.clientX, e.clientY);
+      } else if (_doorPt1) {
+        _showTooltip('Mismo segmento', e.clientX, e.clientY);
+      } else {
+        _showTooltip('1er punto', e.clientX, e.clientY);
+      }
+    } else {
+      _hideTooltip();
     }
     return;
   }
