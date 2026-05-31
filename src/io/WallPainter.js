@@ -388,6 +388,8 @@ function _forwardToScene(e) {
 function _onPointerDown(e) {
   if (!_active) return;
   if (e.button === 2) return;
+  // Ignorar clicks en botones/inputs de la toolbar
+  if (e.target !== _cvs) return;
   _downPos = { x: e.clientX, y: e.clientY };
   _isDragging = false;
   _forwardToScene(e);
@@ -396,6 +398,7 @@ function _onPointerDown(e) {
 function _onPointerUp(e) {
   if (!_active) return;
   if (e.button === 2) return;
+  if (e.target !== _cvs) return;
 
   if (_isDragging) {
     _forwardToScene(e);
