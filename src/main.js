@@ -322,19 +322,24 @@ async function bootstrap() {
   SceneManager.setPlanTexture = texture => {
     originalSetPlanTexture(texture);
     onboardPulse.stop('btn-upload-plan');
-    onboardPulse.start('btn-calibrate', 15000);
     state.steps.planLoaded = true;
-    state.steps.calibrated = false;
     state.planGuideDismissed = false;
-    document.getElementById('guide-calibration-point-1').textContent = 'Pendiente';
-    document.getElementById('guide-calibration-point-2').textContent = 'Pendiente';
-    document.getElementById('guide-calibration-result').textContent = 'Sin calibrar';
-    updatePlanGuide();
-    // Auto-lanzar calibración solo si el plano no viene con dimensiones ya calibradas
-    setTimeout(() => {
-      if (window._skipCalibrationDemo) { window._skipCalibrationDemo = false; return; }
-      openCalibrationDemo();
-    }, 500);
+
+    if (window._skipCalibrationDemo) {
+      // Plano desde búsqueda: ya viene calibrado, saltar directamente a Zonas
+      window._skipCalibrationDemo = false;
+      state.steps.calibrated = true;
+      updatePlanGuide();
+    } else {
+      // Plano local: pedir calibración
+      state.steps.calibrated = false;
+      onboardPulse.start('btn-calibrate', 15000);
+      document.getElementById('guide-calibration-point-1').textContent = 'Pendiente';
+      document.getElementById('guide-calibration-point-2').textContent = 'Pendiente';
+      document.getElementById('guide-calibration-result').textContent = 'Sin calibrar';
+      updatePlanGuide();
+      setTimeout(() => openCalibrationDemo(), 500);
+    }
   };
 
   document.addEventListener('escale:zoom-changed', event => {
