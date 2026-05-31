@@ -539,8 +539,10 @@ function _buildDoorArcMesh(pA, pB, seg, side = 1) {
   if (wallLen < 0.01) return;
   const ux = wallDx / wallLen, uz = wallDz / wallLen;
 
-  // Perpendicular: side=1 → izquierda (uz,-ux), side=-1 → derecha (-uz,ux)
-  const nx = uz * side, nz = -ux * side;
+  // Perpendicular en mundo 3D correspondiente al lado visual 2D.
+  // En canvas Y va hacia abajo, en Three.js Z va hacia arriba en vista TOP,
+  // por lo que girar 90° horario en pantalla (side=1) = (-uz, ux) en XZ.
+  const nx = -uz * side, nz = ux * side;
 
   const doorWidth = Math.hypot(pB.x - pA.x, pB.z - pA.z);
   const ARC_SEGS  = 32;
