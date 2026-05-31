@@ -72,20 +72,37 @@ function _startLabelLoop() {
 }
 
 /* ─── Menú contextual de pared (persistente en scene-canvas) ────────────── */
+let _globalDownPos = null;
+
 function _ensureGlobalContextMenu() {
   if (_globalContextMenuBound) return;
   _globalContextMenuBound = true;
   const canvas = document.getElementById('scene-canvas');
   if (!canvas) return;
-  // Shift + clic izquierdo sobre pared → abrir menú de propiedades
+
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    _globalDownPos = { x: e.clientX, y: e.clientY };
+  });
+
   canvas.addEventListener('pointerup', e => {
     if (_active) return;
     if (!_walls.length) return;
-    if (e.button !== 0 || !e.shiftKey) return;
+    if (e.button !== 0) return;
+    const down = _globalDownPos;
+    _globalDownPos = null;
+    if (!down) return;
+    if (Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 5) return;
     const wall = _pickWall(e.clientX, e.clientY);
-    if (!wall) return;
+    if (!wall) { _closeCtxMenu(); return; }
     e.stopPropagation();
     _openCtxMenu(wall, e.clientX, e.clientY);
+  });
+
+  // Cerrar menú al clicar fuera (permanente, no depende de si WallPainter está activo)
+  document.addEventListener('pointerdown', e => {
+    const menu = document.getElementById('wall-ctx-menu');
+    if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) _closeCtxMenu();
   });
 }
 
@@ -620,8 +637,6 @@ function activate() {
     _closeCtxMenu();
   });
 
-  document.addEventListener('pointerdown', _onDocPointerDown);
-
   if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('wall-painter-toolbar')] });
 }
 
@@ -644,12 +659,6 @@ function deactivate() {
   document.removeEventListener('keydown',  _onKeyDown);
   document.removeEventListener('keyup',    _onKeyUp);
   window.removeEventListener('resize',     _resizeCanvas);
-  document.removeEventListener('pointerdown', _onDocPointerDown);
-}
-
-function _onDocPointerDown(e) {
-  const menu = document.getElementById('wall-ctx-menu');
-  if (menu && !menu.contains(e.target)) _closeCtxMenu();
 }
 
 /* ─── API pública ────────────────────────────────────────────────────────── */
