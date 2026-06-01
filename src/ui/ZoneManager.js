@@ -46,6 +46,21 @@ function hideZoneTip() {
   }
 }
 
+function showZoneBanner(text) {
+  const b = document.getElementById('zone-build-banner');
+  const t = document.getElementById('zone-build-banner-text');
+  if (t && text) t.textContent = text;
+  if (b) b.style.display = 'flex';
+}
+function updateZoneBanner(text) {
+  const t = document.getElementById('zone-build-banner-text');
+  if (t) t.textContent = text;
+}
+function hideZoneBanner() {
+  const b = document.getElementById('zone-build-banner');
+  if (b) b.style.display = 'none';
+}
+
 function getZones() {
   return AppState.items.filter(item => item?.type === 'zone');
 }
@@ -173,6 +188,7 @@ function startZonePlacement(freeform = false) {
   showZoneTip(freeform
     ? `✦ ${zonePlacement.name} · Marca los vértices · doble clic o Enter para cerrar`
     : `✦ ${zonePlacement.name} · Clic en el primer punto`);
+  if (freeform) showZoneBanner('Marca los vértices · doble clic para terminar la zona');
   setPlacementStatus();
 }
 
@@ -187,6 +203,7 @@ function finishFreeformZone() {
   zonePlacement = null;
   clearPreview();
   hideZoneTip();
+  hideZoneBanner();
   renderZoneMenu();
   emitZoneUiChange('zone-created');
   const zoneName = placed.labelText || `Zona ${placed.id}`;
@@ -201,6 +218,7 @@ function cancelPlacement() {
   zonePlacement = null;
   clearPreview();
   hideZoneTip();
+  hideZoneBanner();
   setPlacementStatus();
   return true;
 }
@@ -211,8 +229,10 @@ function isPlacementActive() {
 
 function getPlacementLabel() {
   if (!zonePlacement) return '';
-  if (!zonePlacement.anchor) return `${zonePlacement.name} · primer punto`;
-  return `${zonePlacement.name} · segundo punto`;
+  const n = zonePlacement.vertices?.length || 0;
+  return n < 3
+    ? `${zonePlacement.name} · marca vértices (${n})`
+    : `${zonePlacement.name} · ${n} vértices · doble clic para cerrar`;
 }
 
 function handleCanvasPointerDown(point) {
@@ -233,6 +253,9 @@ function handleCanvasPointerDown(point) {
     updateZoneTip(verts.length < 3
       ? `✦ ${zonePlacement.name} · ${verts.length} vértice(s) · sigue marcando`
       : `✦ ${zonePlacement.name} · ${verts.length} vértices · doble clic o clic en el inicio para cerrar`);
+    updateZoneBanner(verts.length < 3
+      ? 'Marca los vértices · doble clic para terminar la zona'
+      : 'Doble clic, Enter o clic en el inicio para terminar la zona');
     updatePreview();
     setPlacementStatus();
     return true;
@@ -588,11 +611,12 @@ function renderZoneMenu() {
   }
 
   if (note) {
+    const nVerts = zonePlacement?.vertices?.length || 0;
     note.textContent = !zonePlacement
-      ? 'Pulsa Añadir zona y marca dos esquinas opuestas sobre el plano.'
-      : !zonePlacement.anchor
-        ? `Zona activa: ${zonePlacement.name}. Marca el primer punto sobre el plano.`
-        : `Zona activa: ${zonePlacement.name}. Marca la esquina opuesta para cerrar la zona.`;
+      ? 'Pulsa Añadir zona y marca los vértices del área del evento. Doble clic o Enter para cerrar.'
+      : nVerts < 3
+        ? `Zona activa: ${zonePlacement.name}. Marca los vértices (${nVerts} hasta ahora).`
+        : `Zona activa: ${zonePlacement.name}. ${nVerts} vértices · doble clic, Enter o clic en el inicio para cerrar.`;
     note.classList.toggle('is-upsell', false);
   }
 
@@ -681,13 +705,11 @@ function refreshGridMenu() {
 }
 
 function init() {
-  // Delegación: sobrevive a re-renders y garantiza el enlace de ambos botones.
+  // Delegación: sobrevive a re-renders. La zona ahora siempre es poligonal libre.
   document.addEventListener('click', e => {
-    const rectBtn = e.target.closest?.('#zone-add-btn');
-    const freeBtn = e.target.closest?.('#zone-add-free-btn');
-    if (!rectBtn && !freeBtn) return;
+    if (!e.target.closest?.('#zone-add-btn')) return;
     if (zonePlacement) { cancelPlacement(); return; }
-    startZonePlacement(Boolean(freeBtn));
+    startZonePlacement(true);
   });
   document.addEventListener('keydown', e => {
     if (zonePlacement?.freeform && e.key === 'Enter') {
@@ -695,6 +717,7 @@ function init() {
       finishFreeformZone();
     }
   });
+  document.getElementById('zone-build-cancel')?.addEventListener('click', () => cancelPlacement());
 
   document.getElementById('grid-main-size')?.addEventListener('change', event => {
     applyGridMainSize(event.target.value);
