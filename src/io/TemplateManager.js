@@ -180,30 +180,101 @@ async function refreshFolderState() {
 
 function renderFolderPath() {
   const el = document.getElementById('template-folder-path');
-  if (el) el.textContent = dirHandle ? dirHandle.name : 'Sin carpeta · clic para seleccionar';
+  if (el) el.textContent = dirHandle ? dirHandle.name : 'Vincular carpeta local (opcional)';
 }
 
 /* ═══════════════════════════════════════════════════════
    LISTAS — Renderizado y filtrado
    ═══════════════════════════════════════════════════════ */
-function renderTemplateList(kind, filter = '') {
+function _hasOrganization() {
+  return Boolean(AppState.company?.organizationId);
+}
+
+// Botón para añadir plantillas desde una carpeta local (cuando no hay nube).
+function _localFallbackButton(listEl, kind, message) {
+  listEl.innerHTML = '';
+  const note = document.createElement('div');
+  note.className = 'tpl-empty';
+  note.textContent = message;
+  listEl.appendChild(note);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn ghost menu-full-btn';
+  btn.style.cssText = 'margin-top:8px;width:100%;justify-content:center';
+  btn.innerHTML = '<i data-lucide="folder-plus" class="w-3.5 h-3.5"></i> Añadir desde carpeta local';
+  btn.addEventListener('click', async e => {
+    e.stopPropagation();
+    await pickFolder();
+    if (dirHandle) renderTemplateList(kind);
+  });
+  listEl.appendChild(btn);
+  if (window.lucide) lucide.createIcons({ nodes: [btn] });
+}
+
+// Fuente principal: organización en Supabase. Si no hay org o no hay plantillas,
+// se informa al usuario y se ofrece añadir desde carpeta local.
+async function renderTemplateList(kind, filter = '') {
   const listEl = document.getElementById(`tpl-${kind}-list`);
   if (!listEl) return;
-  if (!dirHandle) { listEl.innerHTML = '<div class="tpl-empty">Selecciona una carpeta primero</div>'; return; }
-
-  const all    = cachedTemplates[kind] || [];
   const needle = filter.trim().toLowerCase();
-  const items  = needle ? all.filter(t => t.name.toLowerCase().includes(needle)) : all;
 
-  if (!items.length) {
-    listEl.innerHTML = needle
-      ? `<div class="tpl-empty">Sin resultados para "${filter}"</div>`
-      : `<div class="tpl-empty">No hay plantillas ${kind === 'base' ? 'base' : 'planning'} aquí</div>`;
+  // ── 1) Intentar cargar de la organización en la nube ──
+  if (OrgContentManager.canSync()) {
+    if (!_hasOrganization()) {
+      _localFallbackButton(listEl, kind, 'No se encontró ninguna organización para tu cuenta en la nube.');
+      return;
+    }
+    listEl.innerHTML = '<div class="tpl-empty">Cargando plantillas de la empresa…</div>';
+    let cloud = [];
+    try { cloud = await OrgContentManager.listTemplates(kind); }
+    catch { cloud = []; }
+    const cloudItems = needle ? cloud.filter(r => (r.name || '').toLowerCase().includes(needle)) : cloud;
+
+    if (!cloudItems.length) {
+      _localFallbackButton(listEl, kind,
+        needle ? `Sin resultados de empresa para "${filter}"`
+               : `No hay plantillas ${kind === 'base' ? 'base' : 'planning'} en tu organización todavía.`);
+      // Si además hay carpeta local con plantillas, mostrarlas debajo.
+      if (dirHandle) _appendLocalItems(listEl, kind, needle);
+      return;
+    }
+
+    listEl.innerHTML = '';
+    cloudItems.forEach(row => {
+      const date = row.created_at ? new Date(row.created_at).toLocaleDateString('es') : '';
+      const div = document.createElement('div');
+      div.className = 'tpl-item';
+      div.innerHTML = `<span class="tpl-item-name" title="${_esc(row.name)}">${_esc(row.name)}</span><span class="tpl-item-date">${_esc(row.created_by_display_name || '')} ${date}</span>`;
+      div.addEventListener('click', () => _applyCloudTemplate(row.id, row.name, row.kind));
+      listEl.appendChild(div);
+    });
+    // Plantillas locales adicionales debajo (si hay carpeta).
+    if (dirHandle) _appendLocalItems(listEl, kind, needle, true);
     return;
   }
 
-  const active = kind === 'base' ? currentBaseMeta.filename : currentPlanningMeta.filename;
+  // ── 2) Sin sesión en la nube: solo local ──
+  if (!dirHandle) {
+    _localFallbackButton(listEl, kind, 'Inicia sesión para ver las plantillas de tu organización, o añade desde una carpeta local.');
+    return;
+  }
   listEl.innerHTML = '';
+  _appendLocalItems(listEl, kind, needle);
+}
+
+// Añade los items de la carpeta local al listado (opcionalmente bajo una cabecera).
+function _appendLocalItems(listEl, kind, needle, withHeader = false) {
+  const all = cachedTemplates[kind] || [];
+  const items = needle ? all.filter(t => t.name.toLowerCase().includes(needle)) : all;
+  if (!items.length) return;
+  if (withHeader) {
+    const h = document.createElement('div');
+    h.className = 'tpl-org-header';
+    h.innerHTML = '<i data-lucide="folder" style="width:11px;height:11px;opacity:.5"></i><span>Local</span>';
+    listEl.appendChild(h);
+    if (window.lucide) lucide.createIcons({ nodes: [h] });
+  }
+  const active = kind === 'base' ? currentBaseMeta.filename : currentPlanningMeta.filename;
   items.forEach(entry => {
     const div = document.createElement('div');
     div.className = 'tpl-item' + (entry.filename === active ? ' is-active' : '');
@@ -565,46 +636,11 @@ async function _syncTemplateToCloud(kind, name, data) {
       showToast(`Ya existe "${name}" en la biblioteca de empresa (omitido)`);
     } else if (result) {
       showToast(`"${name}" compartido con la empresa`);
-      // Refrescar panel para que aparezca inmediatamente
-      await _renderOrgTemplateSection(kind);
+      renderTemplateList(kind);   // refrescar para que aparezca de inmediato
     }
   } catch (err) {
     console.warn('[TemplateManager] No se pudo sincronizar en nube:', err.message);
   }
-}
-
-async function _renderOrgTemplateSection(kind) {
-  const listEl = document.getElementById(`tpl-${kind}-list`);
-  if (!listEl) return;
-
-  const cloudItems = await OrgContentManager.listTemplates(kind);
-  if (!cloudItems.length) return;
-
-  // Eliminar sección previa si existe
-  listEl.querySelector('.tpl-org-section')?.remove();
-
-  const section = document.createElement('div');
-  section.className = 'tpl-org-section';
-  section.innerHTML = `<div class="tpl-org-header">
-    <i data-lucide="building-2" style="width:11px;height:11px;opacity:.5"></i>
-    <span>Empresa</span>
-  </div>`;
-
-  cloudItems.forEach(row => {
-    const date = row.created_at ? new Date(row.created_at).toLocaleDateString('es') : '';
-    const btn = document.createElement('button');
-    btn.className = 'tpl-item';
-    btn.type = 'button';
-    btn.innerHTML = `
-      <span class="tpl-item-name">${_esc(row.name)}</span>
-      <span class="tpl-item-meta">${_esc(row.created_by_display_name || '')} ${date}</span>
-    `;
-    btn.addEventListener('click', () => _applyCloudTemplate(row.id, row.name, row.kind));
-    section.appendChild(btn);
-  });
-
-  listEl.prepend(section);
-  if (window.lucide) lucide.createIcons({ nodes: [section] });
 }
 
 async function _applyCloudTemplate(id, name, kind) {
@@ -827,8 +863,7 @@ function togglePillPanel(kind) {
   oPanel?.classList.add('hidden'); oBtn?.classList.remove('open');
   panel?.classList.toggle('hidden', isOpen); btn?.classList.toggle('open', !isOpen);
   if (!isOpen) {
-    renderTemplateList(kind);
-    _renderOrgTemplateSection(kind); // cargar plantillas de empresa
+    renderTemplateList(kind);   // nube (org) primero, luego local
     requestAnimationFrame(() => document.getElementById(`tpl-${kind}-filter`)?.focus());
   }
 }
@@ -868,15 +903,13 @@ async function init() {
     await pickFolder();
   });
 
-  // Pills — auto-pick folder if none selected yet
-  document.getElementById('tpl-base-btn')?.addEventListener('click', async e => {
+  // Pills — abren el panel y cargan de la nube (org) primero; NO abren carpeta auto.
+  document.getElementById('tpl-base-btn')?.addEventListener('click', e => {
     e.stopPropagation();
-    if (!dirHandle) { await pickFolder(); if (!dirHandle) return; }
     togglePillPanel('base');
   });
-  document.getElementById('tpl-planning-btn')?.addEventListener('click', async e => {
+  document.getElementById('tpl-planning-btn')?.addEventListener('click', e => {
     e.stopPropagation();
-    if (!dirHandle) { await pickFolder(); if (!dirHandle) return; }
     togglePillPanel('planning');
   });
   document.getElementById('tpl-base-filter')?.addEventListener('input', e => renderTemplateList('base', e.target.value));
