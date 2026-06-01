@@ -118,7 +118,8 @@ PROJECT STRUCTURE
 │   │   ├── PlanningRegistry.js
 │   │   ├── ShareManager.js
 │   │   ├── TemplateManager.js
-│   │   └── WallPainter.js
+│   │   ├── WallPainter.js
+│   │   └── WallPainter.js.tmp.22356.0a5e44c223ab
 │   ├── main.js
 │   ├── models/
 │   │   ├── arbusto.js

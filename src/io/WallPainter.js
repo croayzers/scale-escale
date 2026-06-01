@@ -10,6 +10,7 @@ const WALL_THICKNESS  = 0.10;
 const ANGLE_SNAP_RAD  = Math.PI / 12;
 const ENDPOINT_SNAP_M = 0.35;
 const LENGTH_SNAP_M   = 0.10;   // snap de longitud → múltiplos de 10 cm
+const GUIDE_SNAP_M    = 0.18;   // tolerancia de alineación con extremos (smart guide)
 const DOOR_HEIGHT_M   = 2.05;   // alto del hueco de puerta
 
 /* ─── Estado ─────────────────────────────────────────────────────────────── */
@@ -130,6 +131,38 @@ function _snapRectCorner(p1w, p2w) {
   return { x: snapAxis(p1w.wx, p2w.x), z: snapAxis(p1w.wz, p2w.z) };
 }
 
+/* Reúne todos los extremos de pared como puntos candidatos de alineación.
+   No incluye _p1: alinear con el propio inicio ya lo cubre el snap angular y
+   dibujaría una guía solapada sobre la línea en curso. */
+function _collectGuideAnchors() {
+  const anchors = [];
+  for (const s of _segs) { anchors.push(s.p1, s.p2); }
+  return anchors;
+}
+
+/* Smart guide: si el punto se alinea (eje X o Z) con el extremo de una pared
+   existente dentro de la tolerancia, engancha esa coordenada y devuelve las
+   guías a dibujar. Devuelve { x, z, guides:[{axis,coord,anchor}] }. */
+function _applySmartGuide(p) {
+  if (_altDown) return { x: p.x, z: p.z, guides: [] };
+  const anchors = _collectGuideAnchors();
+  if (!anchors.length) return { x: p.x, z: p.z, guides: [] };
+
+  let bestX = null, bestXd = GUIDE_SNAP_M;
+  let bestZ = null, bestZd = GUIDE_SNAP_M;
+  for (const a of anchors) {
+    const dX = Math.abs(p.x - a.x);
+    if (dX < bestXd) { bestXd = dX; bestX = a; }
+    const dZ = Math.abs(p.z - a.z);
+    if (dZ < bestZd) { bestZd = dZ; bestZ = a; }
+  }
+
+  const out = { x: p.x, z: p.z, guides: [] };
+  if (bestX) { out.x = bestX.x; out.guides.push({ axis: 'x', coord: bestX.x, anchor: bestX }); }
+  if (bestZ) { out.z = bestZ.z; out.guides.push({ axis: 'z', coord: bestZ.z, anchor: bestZ }); }
+  return out;
+}
+
 /* ─── Canvas 2D ──────────────────────────────────────────────────────────── */
 function _redrawCanvas() {
   if (!_ctx || !_cvs) return;
@@ -147,9 +180,34 @@ function _redrawCanvas() {
   }
 
   if (_guideState) {
-    const { p1s, p2s, isRect, snapPt } = _guideState;
+    const { p1s, p2s, isRect, snapPt, guides } = _guideState;
+    _drawSmartGuides(guides, p2s);
     _drawGuide(p1s, p2s, isRect, snapPt);
   }
+}
+
+/* Dibuja las líneas de alineación (smart guides) tipo Figma/AutoCAD: una línea
+   magenta punteada que va del extremo de referencia al punto en curso. */
+function _drawSmartGuides(guides, p2s) {
+  if (!guides || !guides.length || !p2s) return;
+  _ctx.save();
+  _ctx.strokeStyle = '#e0218a';
+  _ctx.fillStyle   = '#e0218a';
+  _ctx.lineWidth   = 1.25;
+  _ctx.setLineDash([5, 4]);
+  for (const g of guides) {
+    const a = g.anchorS;
+    if (!a) continue;
+    _ctx.beginPath();
+    _ctx.moveTo(a.x, a.y);
+    _ctx.lineTo(p2s.x, p2s.y);
+    _ctx.stroke();
+    // Marcador en el extremo de referencia
+    _ctx.setLineDash([]);
+    _ctx.beginPath(); _ctx.arc(a.x, a.y, 3.5, 0, Math.PI*2); _ctx.fill();
+    _ctx.setLineDash([5, 4]);
+  }
+  _ctx.restore();
 }
 
 function _drawSegLine(s1, s2, color, lineWidth = 2.5) {
@@ -575,9 +633,14 @@ function _onPointerUp(e) {
     if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
     const raw2     = { x: worldPos.x, z: worldPos.z };
-    const snapped2 = _tool === 'rect' ? _snapRectCorner(_p1, raw2) : _applyEndpointSnap(raw2);
-    const hasSnap2 = snapped2.x !== raw2.x || snapped2.z !== raw2.z;
-    const p2w      = _tool === 'rect' ? snapped2 : (hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2));
+    let p2w;
+    if (_tool === 'rect') {
+      const r = _snapRectCorner(_p1, raw2);
+      const g = _applySmartGuide(r);
+      p2w = { x: g.x, z: g.z };
+    } else {
+      p2w = _resolveLinePoint(raw2).point;
+    }
 
     if (_tool === 'rect') {
       _addSeg({ x: _p1.wx, z: _p1.wz }, { x: p2w.x,  z: _p1.wz });
@@ -628,19 +691,27 @@ function _onPointerMove(e) {
   _p1Screen = _worldToScreen(_p1.wx, _p1.wz);
 
   const raw       = { x: worldPos.x, z: worldPos.z };
-  let p2w, p2s, isSnapped;
+  let p2w, p2s, isSnapped, guides = [];
   if (_tool === 'rect') {
-    p2w = _snapRectCorner(_p1, raw);
+    const r = _snapRectCorner(_p1, raw);
+    const g = _applySmartGuide(r);
+    p2w = { x: g.x, z: g.z };
+    guides = g.guides;
     isSnapped = !_altDown;
     p2s = _worldToScreen(p2w.x, p2w.z);
   } else {
-    const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
-    isSnapped = snappedEp.x !== raw.x || snappedEp.z !== raw.z;
-    p2w = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
+    const resolved = _resolveLinePoint(raw);
+    p2w = resolved.point;
+    guides = resolved.guides;
+    isSnapped = resolved.snapped;
     p2s = isSnapped ? _worldToScreen(p2w.x, p2w.z) : { x: e.clientX, y: e.clientY };
   }
 
-  _guideState = { p1s: _p1Screen, p2s, isRect: _tool === 'rect', snapPt: isSnapped ? p2s : null };
+  _guideState = {
+    p1s: _p1Screen, p2s, isRect: _tool === 'rect',
+    snapPt: isSnapped ? p2s : null,
+    guides: _guidesToScreen(guides)
+  };
 
   const dx = p2w.x - _p1.wx, dz = p2w.z - _p1.wz;
   if (_tool === 'line') {
@@ -648,6 +719,40 @@ function _onPointerMove(e) {
   } else {
     _showTooltip(`Ancho: ${Math.abs(dx).toFixed(2)} m | Fondo: ${Math.abs(dz).toFixed(2)} m`, e.clientX, e.clientY);
   }
+}
+
+/* Resuelve el segundo punto de una línea: snap a extremo exacto > smart guide de
+   alineación > snap angular+longitud. Devuelve { point, guides, snapped }. */
+function _resolveLinePoint(raw) {
+  // 1) Snap a extremo exacto (engancha al vértice). Tiene prioridad.
+  const ep = !_altDown ? _applyEndpointSnap(raw) : raw;
+  if (ep.x !== raw.x || ep.z !== raw.z) {
+    return { point: ep, guides: [], snapped: true };
+  }
+  // 2) Smart guide de alineación con extremos (eje X / Z).
+  const sg = _applySmartGuide(raw);
+  if (sg.guides.length) {
+    const hasX = sg.guides.some(g => g.axis === 'x');
+    const hasZ = sg.guides.some(g => g.axis === 'z');
+    // Eje alineado → coordenada del extremo. Eje libre → cursor con snap de longitud.
+    const snapLen = v => (_altDown ? v : Math.round(v / LENGTH_SNAP_M) * LENGTH_SNAP_M);
+    const point = {
+      x: hasX ? sg.x : snapLen(raw.x),
+      z: hasZ ? sg.z : snapLen(raw.z)
+    };
+    return { point, guides: sg.guides, snapped: true };
+  }
+  // 3) Snap angular + longitud clásico.
+  return { point: _applyAngleSnap(_p1, raw), guides: [], snapped: false };
+}
+
+/* Convierte guías (mundo) a coordenadas de pantalla para dibujarlas. */
+function _guidesToScreen(guides) {
+  if (!guides || !guides.length) return [];
+  return guides.map(g => ({
+    axis: g.axis,
+    anchorS: _worldToScreen(g.anchor.x, g.anchor.z)
+  }));
 }
 
 function _onWheel(e) {
