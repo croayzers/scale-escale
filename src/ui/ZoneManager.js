@@ -7,6 +7,7 @@ const ZONE_DEFAULT_COLOR = '#9ca3af';   // gris por defecto
 
 let zonePlacement = null;
 let activeGridZoneId = null;
+let editingZoneId = null;   // zona cuyo panel de ajustes está abierto (aunque esté deshabilitada)
 
 /* ── Tooltip de cursor ─────────────────────────────────── */
 let _tipEl = null;
@@ -68,6 +69,11 @@ function getZones() {
 }
 
 function selectedZone() {
+  // Zona en edición explícita (chip pulsado), aunque esté deshabilitada/bloqueada.
+  if (editingZoneId !== null) {
+    const editing = AppState.items.find(item => item.id === editingZoneId && item.type === 'zone');
+    if (editing) return editing;
+  }
   if (AppState.selectedId !== null) {
     const selected = AppState.items.find(item => item.id === AppState.selectedId && item.type === 'zone');
     if (selected) return selected;
@@ -653,7 +659,11 @@ function renderZoneMenu() {
       : '<div class="menu-empty-copy">Todavia no hay zonas en el plano.</div>';
     list.querySelectorAll('[data-zone-id]').forEach(button => {
       button.addEventListener('click', () => {
-        AppState.select(Number(button.dataset.zoneId));
+        const id = Number(button.dataset.zoneId);
+        editingZoneId = id;
+        const zone = AppState.items.find(z => z.id === id && z.type === 'zone');
+        if (zone && !zone.disabled) AppState.select(id);   // si está activa, también seleccionar en escena
+        renderZoneMenu();   // refresca y abre el panel lateral
       });
     });
     list.querySelectorAll('[data-zone-disable]').forEach(btn => {
@@ -675,13 +685,15 @@ function renderZoneMenu() {
     });
   }
 
-  // El editor vive en un panel lateral que se abre junto al menú de zonas.
+  // El editor vive en un panel lateral que se abre al pulsar una zona de la lista.
   const panel = document.getElementById('zone-editor-panel');
   if (editor && panel) {
-    const hasSelectedZone = Boolean(activeZone) && !zonePlacement;
-    if (hasSelectedZone) {
-      editor.innerHTML = zoneEditorMarkup(activeZone);
-      bindZoneEditor(activeZone);
+    const editZone = editingZoneId !== null
+      ? AppState.items.find(z => z.id === editingZoneId && z.type === 'zone')
+      : null;
+    if (editZone && !zonePlacement) {
+      editor.innerHTML = zoneEditorMarkup(editZone);
+      bindZoneEditor(editZone);
       _openZoneEditorPanel();
     } else {
       _closeZoneEditorPanel();
@@ -809,16 +821,17 @@ function init() {
 
   // Cerrar el panel lateral: botón, o cuando se abre otro overlay / se cierra el menú.
   document.getElementById('zone-editor-close')?.addEventListener('click', () => {
-    AppState.deselect();
+    editingZoneId = null;
     _closeZoneEditorPanel();
+    renderZoneMenu();
   });
   document.addEventListener('escale:scene-overlay-open', e => {
-    if (e.detail?.key !== 'zones') _closeZoneEditorPanel();
+    if (e.detail?.key !== 'zones') { editingZoneId = null; _closeZoneEditorPanel(); }
   });
   const _zonesMenu = document.getElementById('zones-menu');
   if (_zonesMenu) {
     new MutationObserver(() => {
-      if (_zonesMenu.classList.contains('hidden')) _closeZoneEditorPanel();
+      if (_zonesMenu.classList.contains('hidden')) { editingZoneId = null; _closeZoneEditorPanel(); }
       else _positionZoneEditorPanel();
     }).observe(_zonesMenu, { attributes: true, attributeFilter: ['class'] });
   }
