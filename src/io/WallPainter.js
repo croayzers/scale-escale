@@ -570,11 +570,21 @@ function _clearSegSelection() {
    de control está a 2*curve, de modo que el medio del arco queda exactamente a
    `curve` de la recta. */
 function _isCurved(seg) {
-  return seg && typeof seg.curve === 'number' && Math.abs(seg.curve) > 0.01;
+  if (!seg) return false;
+  if (typeof seg.cpx === 'number' && typeof seg.cpz === 'number') {
+    const mid = _curveMidPoint(seg);
+    const mx = (seg.p1.x + seg.p2.x) / 2, mz = (seg.p1.z + seg.p2.z) / 2;
+    return Math.hypot(mid.x - mx, mid.z - mz) > 0.01;
+  }
+  return typeof seg.curve === 'number' && Math.abs(seg.curve) > 0.01;
 }
 
 // Punto de control (mundo) de la Bézier cuadrática del segmento curvo.
+// Soporta punto de control libre (cpx/cpz) o desviación perpendicular (curve).
 function _curveControlPoint(seg) {
+  if (typeof seg.cpx === 'number' && typeof seg.cpz === 'number') {
+    return { x: seg.cpx, z: seg.cpz };
+  }
   const mx = (seg.p1.x + seg.p2.x) / 2, mz = (seg.p1.z + seg.p2.z) / 2;
   const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
   const len = Math.hypot(dx, dz) || 1;
@@ -584,12 +594,11 @@ function _curveControlPoint(seg) {
 }
 
 // Punto medio del arco (mundo) — donde se dibuja el tirador.
+// El punto del arco en t=0.5 está a media distancia entre la recta y el control.
 function _curveMidPoint(seg) {
   const mx = (seg.p1.x + seg.p2.x) / 2, mz = (seg.p1.z + seg.p2.z) / 2;
-  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
-  const len = Math.hypot(dx, dz) || 1;
-  const nx = -dz / len, nz = dx / len;
-  return { x: mx + nx * (seg.curve || 0), z: mz + nz * (seg.curve || 0) };
+  const c = _curveControlPoint(seg);
+  return { x: (mx + c.x) / 2, z: (mz + c.z) / 2 };
 }
 
 // Muestra `n+1` puntos del arco cuadrático en coordenadas de mundo.
@@ -725,14 +734,18 @@ function _hitCurveHandle(sx, sy) {
 }
 
 // Recalcula seg.curve a partir de la posición del cursor (proyección sobre la normal).
+// El tirador (punto medio del arco) sigue al cursor en ambos ejes.
+// Como el arco en t=0.5 = (recta_medio + control)/2, el control = 2*tirador - recta_medio.
 function _updateCurveFromCursor(seg, wx, wz) {
   const mx = (seg.p1.x + seg.p2.x) / 2, mz = (seg.p1.z + seg.p2.z) / 2;
-  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
-  const len = Math.hypot(dx, dz) || 1;
-  const nx = -dz / len, nz = dx / len;
-  let curve = (wx - mx) * nx + (wz - mz) * nz;   // proyección sobre la normal
-  if (!_altDown) curve = Math.round(curve / 0.1) * 0.1;  // snap 10 cm (Alt = libre)
-  seg.curve = curve;
+  let hx = wx, hz = wz;
+  if (!_altDown) {                              // snap 10 cm (Alt = libre)
+    hx = Math.round(hx / 0.1) * 0.1;
+    hz = Math.round(hz / 0.1) * 0.1;
+  }
+  seg.cpx = 2 * hx - mx;
+  seg.cpz = 2 * hz - mz;
+  delete seg.curve;
 }
 
 /* ─── Canvas resize ──────────────────────────────────────────────────────── */
@@ -878,7 +891,7 @@ function _onPointerMove(e) {
     if (wp && seg) {
       _updateCurveFromCursor(seg, wp.x, wp.z);
       _redrawCanvas();
-      _showTooltip(`Curva: ${(seg.curve || 0).toFixed(2)} m`, e.clientX, e.clientY);
+      _showTooltip(`Arco: ${_arcLength(seg).toFixed(2)} m`, e.clientX, e.clientY);
     }
     if (_cvs) _cvs.style.cursor = 'grabbing';
     return;
@@ -1121,16 +1134,16 @@ function _initListeners() {
     _closeSegMenu();
   });
   document.getElementById('wp-seg-curve')?.addEventListener('click', () => {
-    _showConfirmToast(`[debug] curva click · seg=${_ctxSegIdx}`);
     if (_ctxSegIdx < 0) return;
     const idx = _ctxSegIdx;
     const seg = _segs[idx];
     if (_isCurved(seg)) {
-      seg.curve = 0;                 // volver a recta
+      delete seg.curve; delete seg.cpx; delete seg.cpz;   // volver a recta
       _showConfirmToast('Pared recta');
     } else {
-      seg.curve = Math.max(0.4, seg.len * 0.25);  // curvatura inicial visible
-      _showConfirmToast('Arrastra el tirador para ajustar la curva');
+      seg.curve = Math.max(0.4, seg.len * 0.25);  // curvatura perpendicular inicial
+      delete seg.cpx; delete seg.cpz;
+      _showConfirmToast('Arrastra el tirador para deformar la curva');
     }
     _rebuildSegMeshes(idx);
     _closeSegMenu();               // conserva la selección → el tirador queda visible
