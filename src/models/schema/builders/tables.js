@@ -124,11 +124,11 @@ export function buildChairLine(item, view) {
   return group;
 }
 
-function makeChair() {
+function makeChair(view = 'iso') {
   return buildChair({
     subtype: 'plegable',
     dims: { width: 0.44, depth: 0.44, seatHeight: 0.45, totalHeight: 0.92 }
-  }, 'iso');
+  }, view);
 }
 
 export function buildMesaPresi(item, view) {
@@ -138,12 +138,30 @@ export function buildMesaPresi(item, view) {
   const H     = 0.74;
   const color = item.color || '#4a4744';
 
+  const CHAIR_HALF_DEPTH = 0.21;
+  const chairGap   = item.chairOffset ?? 0.10;
+  const sideChairs = 4;
+  const offsetZ    = W / 2 + CHAIR_HALF_DEPTH + chairGap;
+  const endOffsetX = L / 2 + CHAIR_HALF_DEPTH + chairGap;
+
   if (view === 'top') {
     const fill = new THREE.Mesh(new THREE.PlaneGeometry(L, W), makeTopFill(color, 0.18));
     fill.rotation.x = -Math.PI / 2;
     fill.position.y = 0.04;
     markMain(fill, color);
     group.add(fill);
+    for (let i = 0; i < sideChairs; i++) {
+      const t = (i + 0.5) / sideChairs;
+      const x = -L / 2 + t * L;
+      const cf = makeChair('top'); cf.position.set(x, 0,  offsetZ); cf.rotation.y = 0;       group.add(cf);
+      const cb = makeChair('top'); cb.position.set(x, 0, -offsetZ); cb.rotation.y = Math.PI; group.add(cb);
+    }
+    if (item.endHead !== false) {
+      const ch = makeChair('top'); ch.position.set( endOffsetX, 0, 0); ch.rotation.y =  Math.PI / 2; group.add(ch);
+    }
+    if (item.endFoot !== false) {
+      const cf = makeChair('top'); cf.position.set(-endOffsetX, 0, 0); cf.rotation.y = -Math.PI / 2; group.add(cf);
+    }
     addTopLabel(group, item.labelText);
     return group;
   }
@@ -160,10 +178,6 @@ export function buildMesaPresi(item, view) {
   cloth.castShadow = true;
   group.add(cloth);
 
-  const CHAIR_HALF_DEPTH = 0.21;
-  const chairGap   = item.chairOffset ?? 0.10;
-  const sideChairs = 4;
-  const offsetZ    = W / 2 + CHAIR_HALF_DEPTH + chairGap;
   for (let i = 0; i < sideChairs; i++) {
     const t = (i + 0.5) / sideChairs;
     const x = -L / 2 + t * L;
@@ -171,7 +185,6 @@ export function buildMesaPresi(item, view) {
     const cb = makeChair(); cb.position.set(x, 0, -offsetZ); cb.rotation.y = Math.PI;      group.add(cb);
   }
 
-  const endOffsetX = L / 2 + CHAIR_HALF_DEPTH + chairGap;
   if (item.endHead !== false) {
     const ch = makeChair(); ch.position.set( endOffsetX, 0, 0); ch.rotation.y =  Math.PI / 2; group.add(ch);
   }
@@ -196,6 +209,7 @@ export function buildMesaRect(item, view) {
     fill.position.y = 0.04;
     markMain(fill, color);
     group.add(fill);
+    placeRectChairs(group, item, L, W, 'top');
     addTopLabel(group, item.labelText);
     return group;
   }
@@ -221,7 +235,7 @@ export function buildMesaRect(item, view) {
    Si item.chairs está definido, respeta exactamente ese total repartiéndolo
    entre lados largos (eje X) y cortos (eje Z) de forma proporcional y simétrica.
    Si no, recae en el comportamiento clásico: sillas solo en los lados largos. */
-function placeRectChairs(group, item, L, W) {
+function placeRectChairs(group, item, L, W, view = 'iso') {
   const CHAIR_HALF_DEPTH = 0.21;
   const gap     = item.chairOffset ?? 0.10;
   const offsetZ = W / 2 + CHAIR_HALF_DEPTH + gap;
@@ -230,7 +244,7 @@ function placeRectChairs(group, item, L, W) {
   const addRow = (n, axis, sidePos, rotY) => {
     for (let i = 0; i < n; i++) {
       const t = (i + 0.5) / n;
-      const c = makeChair();
+      const c = makeChair(view);
       if (axis === 'x') c.position.set(-L / 2 + t * L, 0, sidePos);
       else              c.position.set(sidePos, 0, -W / 2 + t * W);
       c.rotation.y = rotY;
@@ -346,6 +360,19 @@ export function buildMesaCurva(item, view) {
   const rOut  = rIn + anc;
   const ang   = angD * Math.PI / 180;
 
+  const arcLen = (rIn + rOut) / 2 * ang;
+  const nChairs = Math.max(1, Math.floor(arcLen / sep));
+  const placeChairs = (radius, faceOut, chairView = 'iso') => {
+    for (let i = 0; i < nChairs; i++) {
+      const t = (i + 0.5) / nChairs;
+      const a = -ang / 2 + t * ang;
+      const chair = makeChair(chairView);
+      chair.position.set(Math.cos(a) * radius, 0, Math.sin(a) * radius);
+      chair.rotation.y = faceOut ? (Math.PI / 2 - a) : (-Math.PI / 2 - a);
+      group.add(chair);
+    }
+  };
+
   if (view === 'top') {
     const shape = annularSectorShape(rIn, rOut, ang);
     const fill  = new THREE.Mesh(new THREE.ShapeGeometry(shape), makeTopFill(color, 0.18));
@@ -353,6 +380,8 @@ export function buildMesaCurva(item, view) {
     fill.position.y = 0.04;
     markMain(fill, color);
     group.add(fill);
+    if (dist === 'externa' || dist === 'ambas') placeChairs(rOut + 0.1, true, 'top');
+    if (dist === 'interna' || dist === 'ambas') placeChairs(Math.max(0.1, rIn - 0.1), false, 'top');
     addTopLabel(group, item.labelText);
     return group;
   }
@@ -370,18 +399,6 @@ export function buildMesaCurva(item, view) {
   skirt.castShadow = true;
   group.add(skirt);
 
-  const arcLen = (rIn + rOut) / 2 * ang;
-  const nChairs = Math.max(1, Math.floor(arcLen / sep));
-  const placeChairs = (radius, faceOut) => {
-    for (let i = 0; i < nChairs; i++) {
-      const t = (i + 0.5) / nChairs;
-      const a = -ang / 2 + t * ang;
-      const chair = makeChair();
-      chair.position.set(Math.cos(a) * radius, 0, Math.sin(a) * radius);
-      chair.rotation.y = faceOut ? (Math.PI / 2 - a) : (-Math.PI / 2 - a);
-      group.add(chair);
-    }
-  };
   if (dist === 'externa' || dist === 'ambas') placeChairs(rOut + 0.1, true);
   if (dist === 'interna' || dist === 'ambas') placeChairs(Math.max(0.1, rIn - 0.1), false);
 

@@ -1203,8 +1203,8 @@ function drawCotas() {
       }
       case 'mesa':
         label = item.subtype === 'presi'
-          ? `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`
-          : `Ø ${item.dims.diameter.toFixed(2)}m · ${item.chairs}p`;
+          ? `${item.chairs}p`
+          : `${item.chairs}p`;
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'arbusto':
@@ -1238,16 +1238,16 @@ function drawCotas() {
       }
       case 'mesaRect':
       case 'mesaImperial':
-        label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}m · ${item.chairs}p`;
+        label = `${item.chairs}p`;
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'mesaCocktail':
-        label = `Ø ${item.dims.diameter.toFixed(2)}m · alta`;
+        label = `cocktail`;
         kind = 'mesa'; yOffset = (item.dims.height || 1.1) + 0.3;
         break;
       case 'mesaCurva':
       case 'mesaSerpentina':
-        label = `R ${item.dims.radioInt}m · ${item.dims.anguloDeg}° · ${item.chairs}p`;
+        label = `${item.chairs}p`;
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'poste':

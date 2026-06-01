@@ -29,8 +29,11 @@ function init() {
     });
   });
   document.addEventListener('keydown', e => {
-    if (e.key?.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
+    if (e.key?.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (document.activeElement?.tagName === 'INPUT') return;
+      if (document.activeElement?.tagName === 'TEXTAREA') return;
+      // En 2D con selección activa, 'S' mueve el elemento (WASD), no togglea snap.
+      if (AppState.camera === 'top' && AppState.selectedIds?.size > 0) return;
       setEnabled(!AppState.snap.enabled);
     }
   });

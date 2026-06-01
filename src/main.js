@@ -736,6 +736,10 @@ async function bootstrap() {
     document.getElementById('plan-guide')?.classList.add('hidden');
     CatalogModal.open('tables');
   });
+  document.getElementById('guide-export-btn')?.addEventListener('click', () => {
+    document.getElementById('plan-guide')?.classList.add('hidden');
+    document.getElementById('btn-print-menu')?.click();
+  });
 
   document.getElementById('grid-extent-x')?.addEventListener('change', e => {
     AppState.grid.extentX = Math.max(10, parseFloat(e.target.value) || 60);

@@ -168,7 +168,6 @@ export const CollabInviteModal = {
     });
 
     q('create-link-btn')?.addEventListener('click', async () => {
-      if (!SubscriptionManager.ensureFeature('collabHost')) return;
       const btn = q('create-link-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
 

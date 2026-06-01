@@ -30,6 +30,7 @@ let boxSelecting = null;      // { startX, startY, additive }
 let rKeyDown = false;
 let bKeyDown = false;
 let shiftDown = false;
+let altDown = false;
 const wasdKeys = { w: false, a: false, s: false, d: false };
 let placementIndicator = null;
 let copiedItemTemplate = null;
@@ -103,7 +104,7 @@ function init() {
   });
   syncPlacementCursor();
 
-  // ── WASD camera pan loop ────────────────────────────────────────────────────
+  // ── WASD loop: mueve el elemento seleccionado en 2D, o desplaza la cámara ─────
   (function tickWASD() {
     requestAnimationFrame(tickWASD);
     if (!wasdKeys.w && !wasdKeys.a && !wasdKeys.s && !wasdKeys.d) return;
@@ -114,6 +115,25 @@ function init() {
     if (!controls || !cam) return;
     const fwd = (wasdKeys.w ? 1 : 0) - (wasdKeys.s ? 1 : 0);
     const str = (wasdKeys.d ? 1 : 0) - (wasdKeys.a ? 1 : 0);
+
+    // En vista 2D con elementos seleccionados (no bloqueados) → WASD mueve los items.
+    if (AppState.camera === 'top' && AppState.selectedIds.size > 0 && !isViewer()) {
+      const ids = [...AppState.selectedIds].filter(id => {
+        const it = AppState.items.find(x => x.id === id);
+        return it && !it.locked && it.type !== 'zone';
+      });
+      if (ids.length) {
+        const step = 0.02 / Math.max(0.3, cam.zoom ?? 1);
+        const dxItem = str * step;
+        const dzItem = -fwd * step;
+        ids.forEach(id => {
+          const it = AppState.items.find(x => x.id === id);
+          if (it) SceneManager.moveItem(id, it.x + dxItem, it.z + dzItem);
+        });
+        return;
+      }
+    }
+
     let delta;
     if (AppState.camera === 'top') {
       const speed = 0.05 / Math.max(0.3, cam.zoom ?? 1);
@@ -220,7 +240,7 @@ function getSnapConfigForPoint(x, z) {
 function applySnap(point) {
   if (!point) return null;
   const next = point.clone();
-  if (AppState.snap.enabled) {
+  if (AppState.snap.enabled && !altDown) {
     const { stepX, stepZ, originX, originZ } = getSnapConfigForPoint(next.x, next.z);
     next.x = originX + Math.round((next.x - originX) / stepX) * stepX;
     next.z = originZ + Math.round((next.z - originZ) / stepZ) * stepZ;
@@ -685,7 +705,7 @@ function onPointerMove(e) {
     dragging.ids.forEach(id => {
       const off = dragging.offsets[id];
       let nx = point.x + off.x, nz = point.z + off.z;
-      if (AppState.snap.enabled) {
+      if (AppState.snap.enabled && !altDown) {
         const { stepX, stepZ, originX, originZ } = getSnapConfigForPoint(nx, nz);
         nx = originX + Math.round((nx - originX) / stepX) * stepX;
         nz = originZ + Math.round((nz - originZ) / stepZ) * stepZ;
@@ -814,7 +834,7 @@ function showContextMenu(x, y, item) {
     });
   });
   // Sync dual color inputs (swatch ↔ hex text) for all color fields
-  ['color', 'roofColor'].forEach(fieldName => {
+  ['color', 'roofColor', 'accentColor', 'lightColor'].forEach(fieldName => {
     const swatch = menu.querySelector(`input[type="color"][data-field="${fieldName}"]`);
     const hex = menu.querySelector(`input.ctx-color-hex[data-field="${fieldName}"]`);
     if (swatch && hex) {
@@ -1113,6 +1133,14 @@ function presetValue(patch) {
 }
 
 function getQuickPresets(item) {
+  if (item.type === 'text2d') {
+    return [
+      { label: 'Pequeño', patch: { dims: { height: 0.4 } } },
+      { label: 'Normal',  patch: { dims: { height: 0.6 } } },
+      { label: 'Grande',  patch: { dims: { height: 1.0 } } },
+      { label: 'Enorme',  patch: { dims: { height: 1.6 } } }
+    ];
+  }
   switch (item.type) {
     case 'mesa':
       if (item.subtype === 'presi') {
@@ -1239,8 +1267,127 @@ function getQuickPresets(item) {
         { label: '2.4 m', patch: { dims: { height: 2.4 } } }
       ];
     default:
-      return [];
+      return getQuickPresetsByCategory(item);
   }
+}
+
+function getQuickPresetsByCategory(item) {
+  const cat = item.category || '';
+  const dims = item.dims || {};
+
+  // Sillas / asientos
+  if (cat === 'chairs' || item.type === 'schemaSofa') {
+    if (typeof dims.width === 'number' && typeof dims.length === 'number') {
+      return [
+        { label: 'S  0.5m', patch: { dims: { width: 0.5, length: 0.9 } } },
+        { label: 'M  0.7m', patch: { dims: { width: 0.7, length: 0.9 } } },
+        { label: 'L  0.9m', patch: { dims: { width: 0.9, length: 0.9 } } }
+      ];
+    }
+    return [];
+  }
+
+  // Mesas del catálogo (hospitality, scenography…)
+  if (cat === 'hospitality') {
+    if (typeof dims.length === 'number') {
+      return [
+        { label: '2 m', patch: { dims: { length: 2 } } },
+        { label: '3 m', patch: { dims: { length: 3 } } },
+        { label: '4 m', patch: { dims: { length: 4 } } }
+      ];
+    }
+    if (typeof dims.diameter === 'number') {
+      return [
+        { label: '0.5 m', patch: { dims: { diameter: 0.5 } } },
+        { label: '0.8 m', patch: { dims: { diameter: 0.8 } } },
+        { label: '1.2 m', patch: { dims: { diameter: 1.2 } } }
+      ];
+    }
+    return [];
+  }
+
+  // Escenografía
+  if (cat === 'scenography') {
+    if (typeof dims.width === 'number' && typeof dims.length === 'number') {
+      return [
+        { label: '3 x 2 m', patch: { dims: { width: 3, length: 2 } } },
+        { label: '6 x 4 m', patch: { dims: { width: 6, length: 4 } } },
+        { label: '8 x 6 m', patch: { dims: { width: 8, length: 6 } } }
+      ];
+    }
+    if (typeof dims.height === 'number') {
+      return [
+        { label: '1 m', patch: { dims: { height: 1 } } },
+        { label: '2.5 m', patch: { dims: { height: 2.5 } } },
+        { label: '4 m', patch: { dims: { height: 4 } } }
+      ];
+    }
+    return [];
+  }
+
+  // Estructuras
+  if (cat === 'structures') {
+    if (typeof dims.length === 'number' && typeof dims.width === 'number') {
+      return [
+        { label: '4 x 2 m', patch: { dims: { length: 4, width: 2 } } },
+        { label: '8 x 4 m', patch: { dims: { length: 8, width: 4 } } },
+        { label: '12 x 6 m', patch: { dims: { length: 12, width: 6 } } }
+      ];
+    }
+    return [];
+  }
+
+  // Servicios
+  if (cat === 'services') {
+    return [];
+  }
+
+  // Iluminación
+  if (cat === 'lighting' || item.type === 'schemaLight') {
+    return [
+      { label: '1 m', patch: { dims: { height: 1 } } },
+      { label: '2.5 m', patch: { dims: { height: 2.5 } } },
+      { label: '5 m', patch: { dims: { height: 5 } } }
+    ];
+  }
+
+  // Superficies
+  if (item.type === 'schemaSurface') {
+    return [
+      { label: '3 x 3 m', patch: { dims: { width: 3, length: 3 } } },
+      { label: '5 x 5 m', patch: { dims: { width: 5, length: 5 } } },
+      { label: '8 x 8 m', patch: { dims: { width: 8, length: 8 } } }
+    ];
+  }
+
+  // Decoración
+  if (cat === 'decoration') {
+    if (typeof dims.height === 'number') {
+      return [
+        { label: '1.5 m', patch: { dims: { height: 1.5 } } },
+        { label: '2 m', patch: { dims: { height: 2 } } },
+        { label: '3 m', patch: { dims: { height: 3 } } }
+      ];
+    }
+    return [];
+  }
+
+  // Ambiente / genérico
+  if (typeof dims.height === 'number') {
+    return [
+      { label: '1 m', patch: { dims: { height: 1 } } },
+      { label: '1.5 m', patch: { dims: { height: 1.5 } } },
+      { label: '2 m', patch: { dims: { height: 2 } } }
+    ];
+  }
+  if (typeof dims.length === 'number') {
+    return [
+      { label: '1 m', patch: { dims: { length: 1 } } },
+      { label: '2 m', patch: { dims: { length: 2 } } },
+      { label: '3 m', patch: { dims: { length: 3 } } }
+    ];
+  }
+  return [];
 }
 
 function quickPresetsHTML(item) {
@@ -1283,6 +1430,13 @@ function colorFieldHTML(item) {
 
 function labelFieldHTML(item) {
   if (['zone', 'sillaCatering', 'sillaLineal'].includes(item.type)) return '';
+  if (item.type === 'text2d') {
+    return `
+      <label class="ctx-field ctx-field-full">
+        <span>Texto</span>
+        <input type="text" data-field="labelText" value="${escapeAttr(item.labelText || '')}" class="ctx-input" placeholder="Escribe aquí..."/>
+      </label>`;
+  }
   return `
     <label class="ctx-field ctx-field-full">
       <span>Rótulo</span>
@@ -1325,8 +1479,115 @@ function chairOffsetHTML(item) {
   return `<div class="ctx-field-grid">${numberFieldHTML('chairOffset', 'Gap silla-borde (m)', val)}</div>`;
 }
 
+function categorySpecificHTML(item) {
+  const cat = item.category || '';
+  const type = item.type || '';
+
+  // Sillas / sofás
+  if (cat === 'chairs' || type === 'sillaCatering' || type === 'sillaLineal' || type === 'schemaSofa') {
+    const colorAccent = item.accentColor || item.color || '#C7A25F';
+    const safeAccent = /^#[0-9a-fA-F]{6}$/.test(colorAccent) ? colorAccent : '#C7A25F';
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Silla</div>
+        <div class="ctx-color-wrap">
+          <span class="ctx-color-label">Acento</span>
+          <input type="color" data-field="accentColor" value="${escapeAttr(safeAccent)}" class="ctx-color-swatch"/>
+          <input type="text" data-field="accentColor" value="${escapeAttr(safeAccent)}" maxlength="7" class="ctx-color-hex" placeholder="#RRGGBB"/>
+        </div>
+      </div>`;
+  }
+
+  // Mesas (ya cubierto por tableAssignmentHTML, añadir endHead/endFoot si es presi)
+  if (type === 'mesa' && item.subtype === 'presi') {
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Extremos mesa presidencia</div>
+        ${checkboxFieldHTML('endHead', 'Silla cabecera (+X)', item.endHead !== false)}
+        ${checkboxFieldHTML('endFoot', 'Silla pie (−X)', item.endFoot !== false)}
+      </div>`;
+  }
+
+  // Mesa curva
+  if (type === 'mesaCurva' || type === 'mesaSerpentina') {
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Distribución sillas</div>
+        <label class="ctx-field ctx-field-full">
+          <span>Posición</span>
+          <select data-field="distrib" class="ctx-input">
+            <option value="externa" ${(item.distrib || 'externa') === 'externa' ? 'selected' : ''}>Externa</option>
+            <option value="interna" ${item.distrib === 'interna' ? 'selected' : ''}>Interna</option>
+            <option value="ambas" ${item.distrib === 'ambas' ? 'selected' : ''}>Ambas</option>
+          </select>
+        </label>
+      </div>`;
+  }
+
+  // Hospitality: barras y elementos de bebida
+  if (cat === 'hospitality') {
+    const cubiteras = item.cubiteras;
+    return typeof cubiteras === 'number' ? `
+      <div class="ctx-block">
+        <div class="ctx-label">Configuración barra</div>
+        <div class="ctx-field-grid">
+          ${numberFieldHTML('cubiteras', 'Cubiteras', cubiteras)}
+          ${typeof item.cubSep === 'number' ? numberFieldHTML('cubSep', 'Sep. cubiteras', item.cubSep) : ''}
+        </div>
+      </div>` : '';
+  }
+
+  // Iluminación
+  if (cat === 'lighting' || type === 'schemaLight') {
+    const lightColor = item.lightColor || '#FFE8A3';
+    const safeLightColor = /^#[0-9a-fA-F]{6}$/.test(lightColor) ? lightColor : '#FFE8A3';
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Luz</div>
+        <div class="ctx-color-wrap">
+          <span class="ctx-color-label">Color luz</span>
+          <input type="color" data-field="lightColor" value="${escapeAttr(safeLightColor)}" class="ctx-color-swatch"/>
+          <input type="text" data-field="lightColor" value="${escapeAttr(safeLightColor)}" maxlength="7" class="ctx-color-hex" placeholder="#RRGGBB"/>
+        </div>
+      </div>`;
+  }
+
+  // Staff / personas
+  if (cat === 'staff' || type === 'schemaPerson') {
+    const accentColor = item.accentColor || '#F5F3EE';
+    const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#F5F3EE';
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Persona</div>
+        <div class="ctx-color-wrap">
+          <span class="ctx-color-label">Acento</span>
+          <input type="color" data-field="accentColor" value="${escapeAttr(safeAccent)}" class="ctx-color-swatch"/>
+          <input type="text" data-field="accentColor" value="${escapeAttr(safeAccent)}" maxlength="7" class="ctx-color-hex" placeholder="#RRGGBB"/>
+        </div>
+      </div>`;
+  }
+
+  // Decoración con color de foco/acento
+  if (cat === 'decoration' && item.accentColor) {
+    const accentColor = item.accentColor;
+    const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : '#D4AF37';
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Decoracion</div>
+        <div class="ctx-color-wrap">
+          <span class="ctx-color-label">Acento</span>
+          <input type="color" data-field="accentColor" value="${escapeAttr(safeAccent)}" class="ctx-color-swatch"/>
+          <input type="text" data-field="accentColor" value="${escapeAttr(safeAccent)}" maxlength="7" class="ctx-color-hex" placeholder="#RRGGBB"/>
+        </div>
+      </div>`;
+  }
+
+  return '';
+}
+
 function buildUnifiedContextMenuHTML(item) {
   const hasSeats = isSeatEditable(item);
+  const specificHTML = categorySpecificHTML(item);
   return `
     <div class="ctx-section ctx-editor">
       <div class="ctx-title-row">
@@ -1361,6 +1622,8 @@ function buildUnifiedContextMenuHTML(item) {
           <div class="ctx-label">Sillas</div>
           ${numberFieldHTML('chairs', 'Cantidad', item.chairs ?? 0)}
         </div>` : ''}
+
+      ${specificHTML ? specificHTML : ''}
 
       ${tableAssignmentHTML(item)}
 
@@ -1619,11 +1882,26 @@ function handleContextField(field, value, id) {
     return;
   }
 
-  if (field === 'color' || field === 'roofColor') {
+  if (field === 'color' || field === 'roofColor' || field === 'accentColor' || field === 'lightColor') {
     const val = String(value || '').trim();
     if (/^#[0-9a-fA-F]{3,6}$/.test(val)) {
       applyContextPatch(id, { [field]: val }, false);
     }
+    return;
+  }
+
+  if (field === 'distrib') {
+    applyContextPatch(id, { distrib: String(value) });
+    return;
+  }
+
+  if (field === 'endHead' || field === 'endFoot') {
+    const newVal = Boolean(value);
+    const other = field === 'endHead' ? item.endFoot : item.endHead;
+    const base = 8;
+    const chairs = base + (field === 'endHead' ? (newVal ? 1 : 0) : (other !== false ? 1 : 0))
+                        + (field === 'endFoot' ? (newVal ? 1 : 0) : (other !== false ? 1 : 0));
+    applyContextPatch(id, { [field]: newVal, chairs });
     return;
   }
 
@@ -1810,6 +2088,7 @@ function toggleFormatMode(active) {
 
 function onKeyDown(e) {
   if (e.key === 'Shift') shiftDown = true;
+  if (e.key === 'Alt') { altDown = true; e.preventDefault(); }
 
   // ── Bloquear atajos de navegador que pueden causar pérdida de datos ──
   const ctrl = e.ctrlKey || e.metaKey;
@@ -1879,9 +2158,18 @@ function onKeyDown(e) {
     return;
   }
 
-  // ── WASD: navegación de cámara ──
+  // ── WASD: mueve la selección en 2D, o navega la cámara ──
   const kk = e.key?.toLowerCase();
   if (!e.ctrlKey && !e.metaKey && !e.altKey && (kk === 'w' || kk === 'a' || kk === 's' || kk === 'd')) {
+    // Primer keydown del grupo WASD con selección en 2D → un único pushHistory (para deshacer).
+    const wasIdle = !wasdKeys.w && !wasdKeys.a && !wasdKeys.s && !wasdKeys.d;
+    if (wasIdle && AppState.camera === 'top' && AppState.selectedIds.size > 0 && !isViewer()) {
+      const hasMovable = [...AppState.selectedIds].some(id => {
+        const it = AppState.items.find(x => x.id === id);
+        return it && !it.locked && it.type !== 'zone';
+      });
+      if (hasMovable) AppState.pushHistory();
+    }
     wasdKeys[kk] = true;
     e.preventDefault();
     return;
@@ -1955,6 +2243,7 @@ function onKeyDown(e) {
 
 function onKeyUp(e) {
   if (e.key === 'Shift') shiftDown = false;
+  if (e.key === 'Alt') altDown = false;
   if (e.key?.toLowerCase() === 'b') bKeyDown = false;
   if (e.key?.toLowerCase() === 'r') rKeyDown = false;
   const kk = e.key?.toLowerCase();

@@ -17,7 +17,7 @@ import { buildSurface, buildArrow,
 import { buildPerson }                                      from './builders/persons.js';
 import { buildSofa }                                        from './builders/seating.js';
 import { buildPergola, buildArbol, buildPoste, buildPlanta } from './builders/nature.js';
-import { buildGenericRect, buildGenericRound }              from './builders/generic.js';
+import { buildGenericRect, buildGenericRound, buildText2D }  from './builders/generic.js';
 import { buildRoom }                                        from './builders/walls.js';
 import { buildCarpa, buildCarpaCuadrada, buildCarpaStar,
          buildCarpaPabellon, buildCarpaSailcloth,
@@ -45,6 +45,7 @@ export const SCHEMA_BUILDERS = {
   // ── generic props ───────────────────────────────────────
   genericRectProp:   buildGenericRect,
   genericRoundProp:  buildGenericRound,
+  text2d:            buildText2D,
   // ── surfaces / ambient ──────────────────────────────────
   genericSurface:    buildSurface,
   alfombra:          buildAlfombra,

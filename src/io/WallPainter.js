@@ -9,6 +9,7 @@ import { AppState }     from '../core/AppState.js';
 const WALL_THICKNESS  = 0.10;
 const ANGLE_SNAP_RAD  = Math.PI / 12;
 const ENDPOINT_SNAP_M = 0.35;
+const LENGTH_SNAP_M   = 0.10;   // snap de longitud → múltiplos de 10 cm
 const DOOR_HEIGHT_M   = 2.05;   // alto del hueco de puerta
 
 /* ─── Estado ─────────────────────────────────────────────────────────────── */
@@ -101,10 +102,12 @@ function _worldToScreen(wx, wz) {
 /* ─── Snaps ──────────────────────────────────────────────────────────────── */
 function _applyAngleSnap(p1w, p2w) {
   const dx = p2w.x - p1w.wx, dz = p2w.z - p1w.wz;
-  const len = Math.sqrt(dx*dx + dz*dz);
+  let len = Math.sqrt(dx*dx + dz*dz);
   if (len < 0.01) return p2w;
   let angle = Math.atan2(dz, dx);
   if (!_shiftDown) angle = Math.round(angle / ANGLE_SNAP_RAD) * ANGLE_SNAP_RAD;
+  // Snap de longitud a múltiplos de 10 cm (Alt lo desactiva, igual que el snap de extremos).
+  if (!_altDown) len = Math.max(LENGTH_SNAP_M, Math.round(len / LENGTH_SNAP_M) * LENGTH_SNAP_M);
   return { x: p1w.wx + len * Math.cos(angle), z: p1w.wz + len * Math.sin(angle) };
 }
 
@@ -118,6 +121,13 @@ function _applyEndpointSnap(p) {
     }
   }
   return best ? { x: best.x, z: best.z } : p;
+}
+
+/* Rectángulo: redondea ancho y fondo (cada eje desde p1) a múltiplos de 10 cm. */
+function _snapRectCorner(p1w, p2w) {
+  if (_altDown) return p2w;
+  const snapAxis = (from, to) => from + Math.round((to - from) / LENGTH_SNAP_M) * LENGTH_SNAP_M;
+  return { x: snapAxis(p1w.wx, p2w.x), z: snapAxis(p1w.wz, p2w.z) };
 }
 
 /* ─── Canvas 2D ──────────────────────────────────────────────────────────── */
@@ -565,9 +575,9 @@ function _onPointerUp(e) {
     if (_tool === 'line') _showDistInput(e.clientX, e.clientY);
   } else {
     const raw2     = { x: worldPos.x, z: worldPos.z };
-    const snapped2 = _tool === 'rect' ? raw2 : _applyEndpointSnap(raw2);
+    const snapped2 = _tool === 'rect' ? _snapRectCorner(_p1, raw2) : _applyEndpointSnap(raw2);
     const hasSnap2 = snapped2.x !== raw2.x || snapped2.z !== raw2.z;
-    const p2w      = hasSnap2 ? snapped2 : (_tool === 'rect' ? raw2 : _applyAngleSnap(_p1, raw2));
+    const p2w      = _tool === 'rect' ? snapped2 : (hasSnap2 ? snapped2 : _applyAngleSnap(_p1, raw2));
 
     if (_tool === 'rect') {
       _addSeg({ x: _p1.wx, z: _p1.wz }, { x: p2w.x,  z: _p1.wz });
@@ -618,10 +628,17 @@ function _onPointerMove(e) {
   _p1Screen = _worldToScreen(_p1.wx, _p1.wz);
 
   const raw       = { x: worldPos.x, z: worldPos.z };
-  const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
-  const isSnapped = snappedEp.x !== raw.x || snappedEp.z !== raw.z;
-  const p2w       = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
-  const p2s       = isSnapped ? _worldToScreen(p2w.x, p2w.z) : { x: e.clientX, y: e.clientY };
+  let p2w, p2s, isSnapped;
+  if (_tool === 'rect') {
+    p2w = _snapRectCorner(_p1, raw);
+    isSnapped = !_altDown;
+    p2s = _worldToScreen(p2w.x, p2w.z);
+  } else {
+    const snappedEp = !_altDown ? _applyEndpointSnap(raw) : raw;
+    isSnapped = snappedEp.x !== raw.x || snappedEp.z !== raw.z;
+    p2w = isSnapped ? snappedEp : _applyAngleSnap(_p1, snappedEp);
+    p2s = isSnapped ? _worldToScreen(p2w.x, p2w.z) : { x: e.clientX, y: e.clientY };
+  }
 
   _guideState = { p1s: _p1Screen, p2s, isRect: _tool === 'rect', snapPt: isSnapped ? p2s : null };
 

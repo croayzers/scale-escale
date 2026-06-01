@@ -3,9 +3,11 @@
    ───────────────────────────────────────────────────────── */
 import { createArbusto }        from './arbusto.js';
 import { SchemaModelFactory }   from './schema/SchemaModelFactory.js';
+import { buildText2D }          from './schema/builders/generic.js';
 
 const builders = {
-  arbusto: createArbusto,
+  arbusto:  createArbusto,
+  text2d:   buildText2D,
 };
 
 export const ModelFactory = {

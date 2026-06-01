@@ -207,7 +207,13 @@ const SCHEMA_CATALOG = {
     rectItem('podium', 'Podium', 'scenography', { width: 0.7, length: 0.7, height: 1.15, color: '#D4C89A', icon: 'presentation' }),
     rectItem('pasarela', 'Pasarela', 'scenography', { width: 1.6, length: 8, height: 0.25, color: '#4B5563', icon: 'move-horizontal' }),
     rectItem('cabina_tecnica', 'Cabina tecnica', 'scenography', { width: 2.4, length: 2.4, height: 2.2, color: '#374151', icon: 'cpu' }),
-    rectItem('cabina_traduccion', 'Cabina traduccion', 'scenography', { width: 2.4, length: 2, height: 2.2, color: '#D1D5DB', icon: 'languages' })
+    rectItem('cabina_traduccion', 'Cabina traduccion', 'scenography', { width: 2.4, length: 2, height: 2.2, color: '#D1D5DB', icon: 'languages' }),
+    rectItem('mesa_dj', 'Mesa DJ', 'scenography', { width: 0.9, length: 2.2, height: 1.05, color: '#111827', icon: 'disc-3' }),
+    rectItem('altavoz_grande', 'Altavoz grande', 'scenography', { width: 0.7, length: 0.7, height: 1.6, color: '#111827', icon: 'speaker' }),
+    rectItem('microfono_pie', 'Microfono con pie', 'scenography', { width: 0.35, length: 0.35, height: 1.6, color: '#0F172A', icon: 'mic-2' }),
+    rectItem('bateria', 'Bateria', 'scenography', { width: 1.8, length: 2.2, height: 1.2, color: '#991B1B', icon: 'drum' }),
+    rectItem('musica_stand', 'Atril musica', 'scenography', { width: 0.5, length: 0.5, height: 1.4, color: '#7C3AED', icon: 'music-4' }),
+    surfaceItem('alfombra_escenario', 'Alfombra escenario', 'scenography', { width: 3, length: 4, color: '#7C2D12', borderColor: '#D4AF37', icon: 'carpet' }),
   ],
   structures: [
     surfaceItem('carretera_base_350', 'Carretera 3,50m base', 'structures', { width: 3.5, length: 12, color: '#4B5563', borderColor: '#9CA3AF', icon: 'road' }),
@@ -236,32 +242,10 @@ const SCHEMA_CATALOG = {
     rectItem('avioneta', 'Avioneta', 'ambient', { width: 8, length: 7.5, height: 2.6, color: '#E5E7EB', icon: 'plane' }),
     rectItem('helicoptero', 'Helicoptero', 'ambient', { width: 2.4, length: 7, height: 2.8, color: '#334155', icon: 'helicopter' }),
     rectItem('barco', 'Barco', 'ambient', { width: 3, length: 8, height: 2.8, color: '#1D4ED8', icon: 'ship' }),
-    lightItem('lampara_ambiente', 'Lampara', { height: 1.8, category: 'ambient', icon: 'lamp-desk' }),
-    rectItem('musica', 'Musica', 'ambient', { width: 0.8, length: 0.8, height: 1.4, color: '#7C3AED', icon: 'music-4' }),
-    rectItem('mesa_dj', 'Mesa DJ', 'ambient', { width: 0.9, length: 2.2, height: 1.05, color: '#111827', icon: 'disc-3' }),
-    rectItem('altavoz_grande', 'Altavoz grande', 'ambient', { width: 0.7, length: 0.7, height: 1.6, color: '#111827', icon: 'speaker' }),
-    rectItem('microfono_pie', 'Microfono con pie', 'ambient', { width: 0.35, length: 0.35, height: 1.6, color: '#0F172A', icon: 'mic-2' }),
-    rectItem('bateria', 'Bateria', 'ambient', { width: 1.8, length: 2.2, height: 1.2, color: '#991B1B', icon: 'drum' }),
-    {
-      id: 'maceton_decorativo',
-      name: 'Macetón',
-      category: 'ambient',
-      type: 'ambiente',
-      subtype: 'planta',
-      dims: { height: 1.55 },
-      color: '#2f6a3f',
-      potColor: '#7a4a28',
-      icon: 'flower-2',
-      chairs: 0,
-      defaultRotation: 0
-    },
-    roundItem('maceta_ambiente', 'Macetas', 'ambient', { diameter: 0.8, height: 1, color: '#8B5E3C', icon: 'flower-2' }),
     arrowItem('flecha_arriba', 'Flecha arriba', 90),
     arrowItem('flecha_abajo', 'Flecha abajo', -90),
     arrowItem('flecha_derecha', 'Flecha derecha', 0),
     arrowItem('flecha_izquierda', 'Flecha izquierda', 180),
-    rectItem('letrero_tumbado', 'Letrero / Texto libre tumbado', 'ambient', { width: 0.05, length: 2.4, height: 1, color: '#F8FAFC', icon: 'type' }),
-    surfaceItem('alfombra_musicos', 'Alfombra musicos', 'ambient', { width: 3, length: 4, color: '#7C2D12', borderColor: '#D4AF37', icon: 'carpet' })
   ],
   services: [
     rectItem('bano_portatil', 'Bano portatil', 'services', { width: 1.1, length: 1.2, height: 2.2, color: '#1D4ED8', icon: 'bath' }),
@@ -320,14 +304,41 @@ const SCHEMA_CATALOG = {
     rectItem('panel_floral', 'Panel floral', 'decoration', { width: 0.3, length: 2.4, height: 2.4, color: '#16A34A', icon: 'flower-2' }),
     rectItem('panel_led_deco', 'Panel LED', 'decoration', { width: 0.2, length: 2.2, height: 2.6, color: '#111827', icon: 'monitor-play' }),
     rectItem('photocall', 'Photocall', 'decoration', { width: 0.2, length: 3.5, height: 2.6, color: '#F8FAFC', icon: 'image' }),
-    lightItem('cortina_luces', 'Cortina de luces', { height: 2.8, category: 'decoration', icon: 'lights' }),
     rectItem('arco_decorativo', 'Arco decorativo', 'decoration', { width: 0.5, length: 2.8, height: 2.6, color: '#D4AF37', icon: 'archway' }),
     roundItem('jarron_alto', 'Jarron alto', 'decoration', { diameter: 0.45, height: 1.2, color: '#E5E7EB', icon: 'vase' }),
     roundItem('centro_mesa', 'Centro de mesa', 'decoration', { diameter: 0.35, height: 0.45, color: '#F472B6', icon: 'flower-2' }),
     roundItem('candelabro', 'Candelabro', 'decoration', { diameter: 0.35, height: 0.65, color: '#D4AF37', icon: 'candlestick-big' }),
     rectItem('letras_gigantes', 'Letras gigantes', 'decoration', { width: 0.4, length: 3.2, height: 1.8, color: '#F8FAFC', icon: 'type' }),
     rectItem('neon_personalizado', 'Neon personalizado', 'decoration', { width: 0.08, length: 2, height: 0.8, color: '#22D3EE', icon: 'sparkles' }),
-    roundItem('peana_decorativa', 'Peana decorativa', 'decoration', { diameter: 0.5, height: 1.1, color: '#D1D5DB', icon: 'gallery-vertical-end' })
+    roundItem('peana_decorativa', 'Peana decorativa', 'decoration', { diameter: 0.5, height: 1.1, color: '#D1D5DB', icon: 'gallery-vertical-end' }),
+    rectItem('letrero_texto', 'Letrero / Texto libre', 'decoration', { width: 0.05, length: 2.4, height: 1, color: '#F8FAFC', icon: 'type' }),
+    surfaceItem('alfombra_deco', 'Alfombra decorativa', 'decoration', { width: 2, length: 3, color: '#7C2D12', borderColor: '#D4AF37', icon: 'carpet' }),
+    {
+      id: 'maceton_decorativo',
+      name: 'Macetón',
+      category: 'decoration',
+      type: 'ambiente',
+      subtype: 'planta',
+      dims: { height: 1.55 },
+      color: '#2f6a3f',
+      potColor: '#7a4a28',
+      icon: 'flower-2',
+      chairs: 0,
+      defaultRotation: 0
+    },
+    roundItem('maceta_deco', 'Maceta', 'decoration', { diameter: 0.8, height: 1, color: '#8B5E3C', icon: 'flower-2' }),
+    {
+      id: 'texto_2d',
+      name: 'Texto en plano',
+      category: 'decoration',
+      type: 'text2d',
+      schemaId: null,
+      dims: { height: 0.6 },
+      color: '#111827',
+      icon: 'type',
+      labelText: 'Texto',
+      defaultRotation: 0
+    },
   ],
   lighting: [
     lightItem('foco_led', 'Foco LED', { height: 0.9, icon: 'lamp-floor' }),
@@ -339,7 +350,9 @@ const SCHEMA_CATALOG = {
     lightItem('cabeza_movil', 'Cabeza movil', { height: 1.6, lightColor: '#93C5FD', icon: 'move-3d' }),
     lightItem('laser_evento', 'Laser evento', { height: 1.2, lightColor: '#22C55E', icon: 'scan-line' }),
     lightItem('proyector_logo', 'Proyector logo', { height: 1.6, lightColor: '#F8FAFC', icon: 'projector' }),
-    lightItem('baliza_exterior', 'Baliza exterior', { height: 0.8, lightColor: '#F59E0B', icon: 'land-plot' })
+    lightItem('baliza_exterior', 'Baliza exterior', { height: 0.8, lightColor: '#F59E0B', icon: 'land-plot' }),
+    lightItem('lampara_pie', 'Lampara de pie', { height: 1.8, lightColor: '#FEF9C3', icon: 'lamp-desk' }),
+    lightItem('cortina_luces', 'Cortina de luces', { height: 2.8, lightColor: '#FCD34D', icon: 'sparkles' }),
   ]
 };
 
@@ -386,12 +399,17 @@ function moveFreeBarsToHospitality(data) {
   ]);
 }
 
+const DEPRECATED_IDS = new Set([
+  'mesa_serpentina', 'maceta_ambiente', 'letrero_tumbado', 'alfombra_musicos',
+  'musica', 'lampara_ambiente'
+]);
+
 function removeDeprecatedDefinitions(data) {
   CATEGORY_KEYS.forEach(key => {
     data[key] = (data[key] || []).filter(item => (
       item.type !== 'mesaSerpentina'
-      && item.id !== 'mesa_serpentina'
       && !String(item.id || '').toLowerCase().includes('serpentina')
+      && !DEPRECATED_IDS.has(item.id)
     ));
   });
 }

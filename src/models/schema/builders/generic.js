@@ -309,3 +309,46 @@ export function buildGenericRound(item, view) {
   addLabel(group, item.labelText, height + 0.45);
   return group;
 }
+
+export function buildText2D(item) {
+  const group = new THREE.Group();
+  const text = item.labelText || item.name || 'Texto';
+  const fontSize = item.dims?.height ?? 0.6;
+  const color = item.color || '#111827';
+
+  // Canvas texture para el texto
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const px = Math.max(24, Math.round(fontSize * 80));
+  canvas.height = px * 2;
+  ctx.font = `bold ${px}px "JetBrains Mono", monospace`;
+  const measured = ctx.measureText(text);
+  canvas.width = Math.max(64, measured.width + px * 0.6);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = `bold ${px}px "JetBrains Mono", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const aspect = canvas.width / canvas.height;
+  const worldH = fontSize;
+  const worldW = worldH * aspect;
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldH), mat);
+  plane.rotation.x = -Math.PI / 2;
+  plane.position.y = 0.06;
+  plane.renderOrder = 80;
+  plane.userData.skipTopStroke = true;
+  markMain(plane, color);
+  group.add(plane);
+  return group;
+}

@@ -410,6 +410,7 @@ function thumbSVG(def) {
   if (defId === 'mesa_dj')         return svgMesaDJ();
   if (defId === 'agua_piscina')    return svgAgua();
   if (defId.startsWith('flecha_')) return svgFlecha(def.color || '#111827');
+  if (def.type === 'text2d') return svgText2D(def.color || '#111827');
   if (def.schemaId) return svgSchemaThumb(def);
   return svgPlaceholder();
 }
@@ -787,6 +788,13 @@ function svgSpot() {
 function svgPlaceholder() {
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <rect x="20" y="20" width="60" height="60" fill="#e6e2da" stroke="rgba(0,0,0,0.15)" stroke-width="0.8" rx="6"/>
+  </svg>`;
+}
+
+function svgText2D(c) {
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="36" width="80" height="28" rx="6" fill="rgba(245,243,238,0.9)" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+    <text x="50" y="57" text-anchor="middle" font-size="22" font-weight="bold" font-family="JetBrains Mono, monospace" fill="${c}">Aa</text>
   </svg>`;
 }
 
