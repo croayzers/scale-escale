@@ -1623,6 +1623,45 @@ function updatePlacementPreview(x, z, y = null) {
   }
 }
 
+// Preview de zona en construcción: solo polilínea punto a punto + marcadores,
+// sin relleno ni cuadrícula (para no sugerir que la forma deba ser rectangular).
+function setZoneDraftPreview(points, color = '#22c55e') {
+  if (!scene) return;
+  clearPlacementPreview();
+  if (!points || points.length < 1) return;
+
+  const group = new THREE.Group();
+  const hex = parseHex(color);
+  const y = 0.05;
+
+  if (points.length >= 2) {
+    const verts = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      verts.push(points[i].x, y, points[i].z, points[i + 1].x, y, points[i + 1].z);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    const line = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.95, depthTest: false }));
+    line.renderOrder = 60;
+    group.add(line);
+  }
+
+  // Marcadores en cada vértice ya fijado (no en el cursor).
+  points.forEach((p, i) => {
+    if (i === points.length - 1 && points._cursorLast) return;
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.12, 20), makeFlatMaterial(color, 0.95));
+    dot.rotation.x = -Math.PI / 2;
+    dot.position.set(p.x, y + 0.005, p.z);
+    dot.renderOrder = 61;
+    group.add(dot);
+  });
+
+  group.userData.isPlacementPreview = true;
+  placementPreview = group;
+  placementPreviewItem = { type: 'zone-draft' };
+  scene.add(group);
+}
+
 function clearPlacementPreview() {
   if (!placementPreview) return;
   scene.remove(placementPreview);
@@ -1747,6 +1786,7 @@ export const SceneManager = {
   screenToPlacement,
   focusPoint,
   setPlacementPreview,
+  setZoneDraftPreview,
   updatePlacementPreview,
   clearPlacementPreview,
   setMultiPlacementPreview,

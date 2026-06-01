@@ -147,14 +147,14 @@ function clearPreview() {
 function updatePreview() {
   if (zonePlacement?.freeform) {
     const verts = zonePlacement.vertices || [];
-    const all = zonePlacement.current ? [...verts, zonePlacement.current] : verts;
-    if (all.length < 2) { clearPreview(); return; }
-    if (all.length === 2) {
-      // Solo una arista: previsualizar como línea fina (rectángulo degenerado)
-      SceneManager.setPlacementPreview(buildZoneItem(all[0], all[1]));
-      return;
+    if (!verts.length) { clearPreview(); return; }
+    // Contorno punto a punto (vértices fijados + segmento hacia el cursor).
+    const pts = [...verts];
+    if (zonePlacement.current) {
+      pts.push(zonePlacement.current);
+      pts._cursorLast = true;   // no dibujar marcador sobre el cursor
     }
-    SceneManager.setPlacementPreview(buildPolyZoneItem(all));
+    SceneManager.setZoneDraftPreview(pts, zonePlacement.color || '#22c55e');
     return;
   }
   if (!zonePlacement?.anchor || !zonePlacement?.current) {
