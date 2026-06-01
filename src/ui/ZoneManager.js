@@ -185,6 +185,10 @@ function startZonePlacement(freeform = false) {
     vertices: []
   };
   document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', { detail: { kind: 'zone-placement' } }));
+  // Vista cenital 2D para dibujar el contorno con precisión.
+  SceneManager.setCamera('top');
+  document.getElementById('cam-top')?.classList.add('active');
+  document.getElementById('cam-iso')?.classList.remove('active');
   showZoneTip(freeform
     ? `✦ ${zonePlacement.name} · Marca los vértices · doble clic o Enter para cerrar`
     : `✦ ${zonePlacement.name} · Clic en el primer punto`);
