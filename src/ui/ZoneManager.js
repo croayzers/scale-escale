@@ -681,19 +681,13 @@ function refreshGridMenu() {
 }
 
 function init() {
-  document.getElementById('zone-add-btn')?.addEventListener('click', () => {
-    if (zonePlacement) {
-      cancelPlacement();
-      return;
-    }
-    startZonePlacement(false);
-  });
-  document.getElementById('zone-add-free-btn')?.addEventListener('click', () => {
-    if (zonePlacement) {
-      cancelPlacement();
-      return;
-    }
-    startZonePlacement(true);
+  // Delegación: sobrevive a re-renders y garantiza el enlace de ambos botones.
+  document.addEventListener('click', e => {
+    const rectBtn = e.target.closest?.('#zone-add-btn');
+    const freeBtn = e.target.closest?.('#zone-add-free-btn');
+    if (!rectBtn && !freeBtn) return;
+    if (zonePlacement) { cancelPlacement(); return; }
+    startZonePlacement(Boolean(freeBtn));
   });
   document.addEventListener('keydown', e => {
     if (zonePlacement?.freeform && e.key === 'Enter') {
