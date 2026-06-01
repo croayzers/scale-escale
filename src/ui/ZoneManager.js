@@ -440,42 +440,59 @@ function zoneEditorMarkup(zone) {
         <input id="zone-edit-width" class="input-field" type="number" min="0.5" max="120" step="0.1" value="${(zone.dims?.width || 4).toFixed(1)}"/>
       </label>`;
   return `
-    <div class="menu-section-label">Propiedades de zona</div>
+    <div class="menu-section-label">Zona seleccionada</div>
     <div class="menu-field-grid">
       <label class="menu-field menu-field-full">
-        <span>Nombre de zona</span>
+        <span>Nombre</span>
         <input id="zone-edit-name" class="input-field" type="text" value="${zone.labelText || ''}"/>
       </label>
       ${sizeFields}
-      <label class="menu-field">
-        <span>Color borde</span>
-        <input id="zone-edit-border" class="input-field color-input-field" type="color" value="${zone.borderColor || '#22c55e'}"/>
-      </label>
-      <label class="menu-field">
-        <span>Color relleno</span>
-        <input id="zone-edit-fill" class="input-field color-input-field" type="color" value="${zone.color || '#22c55e'}"/>
-      </label>
-      <label class="menu-field menu-field-full">
-        <span>Visibilidad del fondo</span>
-        <div class="menu-slider-row">
-          <input id="zone-edit-opacity" type="range" min="5" max="60" step="1" value="${opacityPct}"/>
-          <strong>${opacityPct}%</strong>
+    </div>
+
+    <details class="zone-acc">
+      <summary class="zone-acc-summary">Apariencia</summary>
+      <div class="zone-acc-body">
+        <div class="menu-field-grid">
+          <label class="menu-field">
+            <span>Color borde</span>
+            <input id="zone-edit-border" class="input-field color-input-field" type="color" value="${zone.borderColor || '#22c55e'}"/>
+          </label>
+          <label class="menu-field">
+            <span>Color relleno</span>
+            <input id="zone-edit-fill" class="input-field color-input-field" type="color" value="${zone.color || '#22c55e'}"/>
+          </label>
+          <label class="menu-field menu-field-full">
+            <span>Visibilidad del fondo</span>
+            <div class="menu-slider-row">
+              <input id="zone-edit-opacity" type="range" min="5" max="60" step="1" value="${opacityPct}"/>
+              <strong>${opacityPct}%</strong>
+            </div>
+          </label>
         </div>
+        <label class="menu-check">
+          <input id="zone-edit-fill-disabled" type="checkbox" ${zone.fillEnabled === false ? 'checked' : ''}/>
+          <span>Desactivar color fondo</span>
+        </label>
+      </div>
+    </details>
+
+    <details class="zone-acc">
+      <summary class="zone-acc-summary">Rejilla y snap</summary>
+      <div class="zone-acc-body">
+        ${zoneGridEditorMarkup(zone)}
+      </div>
+    </details>
+
+    <div class="zone-edit-footer">
+      <label class="menu-check" style="margin:0">
+        <input id="zone-edit-lock" type="checkbox" ${zone.locked ? 'checked' : ''}/>
+        <span>Bloquear</span>
       </label>
+      <div class="menu-inline-actions" style="margin:0">
+        <button id="zone-edit-select" class="btn ghost" type="button">Seleccionar</button>
+        <button id="zone-edit-delete" class="btn ghost danger" type="button">Eliminar</button>
+      </div>
     </div>
-    <label class="menu-check">
-      <input id="zone-edit-fill-disabled" type="checkbox" ${zone.fillEnabled === false ? 'checked' : ''}/>
-      <span>Desactivar color fondo</span>
-    </label>
-    <label class="menu-check">
-      <input id="zone-edit-lock" type="checkbox" ${zone.locked ? 'checked' : ''}/>
-      <span>Bloquear zona</span>
-    </label>
-    <div class="menu-inline-actions">
-      <button id="zone-edit-select" class="btn ghost" type="button">Seleccionar</button>
-      <button id="zone-edit-delete" class="btn ghost danger" type="button">Eliminar</button>
-    </div>
-    ${zoneGridEditorMarkup(zone)}
   `;
 }
 
@@ -516,7 +533,6 @@ function zoneGridEditorMarkup(zone) {
   const cfg = { ...defaultGridConfig(), ...(zone.gridConfig || {}) };
   const snapOn = cfg.snapEnabled !== false;
   return `
-    <div class="menu-section-label">Grid · ${zone.labelText || `Zona ${zone.id}`}</div>
     <div class="menu-field-grid">
       <label class="menu-field">
         <span>Medida grid (m)</span>
