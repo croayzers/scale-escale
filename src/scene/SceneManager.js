@@ -780,8 +780,8 @@ function pointInPoly(x, z, pts) {
 
 function createZoneSymbol(item) {
   const group = new THREE.Group();
-  const borderColor = parseHex(item.borderColor || item.color || '#22c55e');
-  const fillColor = parseHex(item.color || '#22c55e');
+  const borderColor = parseHex(item.borderColor || item.color || '#9ca3af');
+  const fillColor = parseHex(item.color || '#9ca3af');
   const fillOpacity = item.fillEnabled === false
     ? 0.001
     : Math.max(0.05, Math.min(item.visual?.opacity ?? item.fillOpacity ?? 0.18, 0.6));
@@ -800,7 +800,7 @@ function createZoneSymbol(item) {
   if (item.labelText && item.showLabel !== false) {
     group.add(makeZoneLabelSprite(
       item.labelText,
-      item.borderColor || item.color || '#22c55e',
+      item.borderColor || item.color || '#9ca3af',
       { fontSize: item.fontSize ?? 120, textColor: item.textColor || '#000000' }
     ));
   }
@@ -1625,7 +1625,7 @@ function updatePlacementPreview(x, z, y = null) {
 
 // Preview de zona en construcción: solo polilínea punto a punto + marcadores,
 // sin relleno ni cuadrícula (para no sugerir que la forma deba ser rectangular).
-function setZoneDraftPreview(points, color = '#22c55e') {
+function setZoneDraftPreview(points, color = '#9ca3af') {
   if (!scene) return;
   clearPlacementPreview();
   if (!points || points.length < 1) return;

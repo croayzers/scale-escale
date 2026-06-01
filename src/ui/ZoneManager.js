@@ -3,6 +3,8 @@ import { SceneManager } from '../scene/SceneManager.js';
 import { SnapManager } from '../scene/SnapManager.js';
 import { CatalogModal } from './CatalogModal.js';
 
+const ZONE_DEFAULT_COLOR = '#9ca3af';   // gris por defecto
+
 let zonePlacement = null;
 let activeGridZoneId = null;
 
@@ -91,8 +93,8 @@ function zoneCommonProps() {
     type: 'zone',
     rotY: 0,
     labelText: zonePlacement?.name || nextZoneName(),
-    color: zonePlacement?.color || '#22c55e',
-    borderColor: zonePlacement?.borderColor || '#22c55e',
+    color: zonePlacement?.color || ZONE_DEFAULT_COLOR,
+    borderColor: zonePlacement?.borderColor || ZONE_DEFAULT_COLOR,
     fillEnabled: zonePlacement?.fillEnabled !== false,
     fillOpacity: zonePlacement?.fillOpacity ?? 0.18,
     visual: {
@@ -154,7 +156,7 @@ function updatePreview() {
       pts.push(zonePlacement.current);
       pts._cursorLast = true;   // no dibujar marcador sobre el cursor
     }
-    SceneManager.setZoneDraftPreview(pts, zonePlacement.color || '#22c55e');
+    SceneManager.setZoneDraftPreview(pts, zonePlacement.color || ZONE_DEFAULT_COLOR);
     return;
   }
   if (!zonePlacement?.anchor || !zonePlacement?.current) {
@@ -175,8 +177,8 @@ function startZonePlacement(freeform = false) {
   const nameInput = document.getElementById('zone-new-name');
   zonePlacement = {
     name: sanitizeZoneName(nameInput?.value),
-    borderColor: '#22c55e',
-    color: '#22c55e',
+    borderColor: ZONE_DEFAULT_COLOR,
+    color: ZONE_DEFAULT_COLOR,
     fillEnabled: true,
     fillOpacity: 0.18,
     anchor: null,
@@ -455,11 +457,11 @@ function zoneEditorMarkup(zone) {
         <div class="menu-field-grid">
           <label class="menu-field">
             <span>Color borde</span>
-            <input id="zone-edit-border" class="input-field color-input-field" type="color" value="${zone.borderColor || '#22c55e'}"/>
+            <input id="zone-edit-border" class="input-field color-input-field" type="color" value="${zone.borderColor || ZONE_DEFAULT_COLOR}"/>
           </label>
           <label class="menu-field">
             <span>Color relleno</span>
-            <input id="zone-edit-fill" class="input-field color-input-field" type="color" value="${zone.color || '#22c55e'}"/>
+            <input id="zone-edit-fill" class="input-field color-input-field" type="color" value="${zone.color || ZONE_DEFAULT_COLOR}"/>
           </label>
           <label class="menu-field menu-field-full">
             <span>Visibilidad del fondo</span>
@@ -673,10 +675,52 @@ function renderZoneMenu() {
     });
   }
 
-  if (editor) {
-    editor.innerHTML = zoneEditorMarkup(activeZone);
-    bindZoneEditor(activeZone);
+  // El editor vive en un panel lateral que se abre junto al menú de zonas.
+  const panel = document.getElementById('zone-editor-panel');
+  if (editor && panel) {
+    const hasSelectedZone = Boolean(activeZone) && !zonePlacement;
+    if (hasSelectedZone) {
+      editor.innerHTML = zoneEditorMarkup(activeZone);
+      bindZoneEditor(activeZone);
+      _openZoneEditorPanel();
+    } else {
+      _closeZoneEditorPanel();
+    }
   }
+}
+
+// Posiciona el panel lateral pegado al menú de zonas (a la izquierda, o derecha si no cabe).
+function _positionZoneEditorPanel() {
+  const menu = document.getElementById('zones-menu');
+  const panel = document.getElementById('zone-editor-panel');
+  if (!menu || !panel || menu.classList.contains('hidden')) return;
+  const r = menu.getBoundingClientRect();
+  const gap = 8;
+  const pw = panel.offsetWidth || 320;
+  let left = r.left - pw - gap;
+  if (left < 8) left = Math.min(r.right + gap, window.innerWidth - pw - 8);
+  panel.style.left = `${Math.max(8, left)}px`;
+  panel.style.top = `${r.top}px`;
+  panel.style.maxHeight = `${Math.min(window.innerHeight - r.top - 16, window.innerHeight - 90)}px`;
+}
+
+function _openZoneEditorPanel() {
+  const panel = document.getElementById('zone-editor-panel');
+  const menu = document.getElementById('zones-menu');
+  if (!panel) return;
+  // Solo junto al menú de zonas abierto.
+  if (menu && menu.classList.contains('hidden')) { _closeZoneEditorPanel(); return; }
+  panel.classList.remove('hidden');
+  panel.setAttribute('aria-hidden', 'false');
+  _positionZoneEditorPanel();
+  if (window.lucide) lucide.createIcons({ nodes: [panel] });
+}
+
+function _closeZoneEditorPanel() {
+  const panel = document.getElementById('zone-editor-panel');
+  if (!panel) return;
+  panel.classList.add('hidden');
+  panel.setAttribute('aria-hidden', 'true');
 }
 
 function applyGridMainSize(value) {
@@ -762,6 +806,23 @@ function init() {
     renderZoneMenu();
     refreshGridMenu();
   });
+
+  // Cerrar el panel lateral: botón, o cuando se abre otro overlay / se cierra el menú.
+  document.getElementById('zone-editor-close')?.addEventListener('click', () => {
+    AppState.deselect();
+    _closeZoneEditorPanel();
+  });
+  document.addEventListener('escale:scene-overlay-open', e => {
+    if (e.detail?.key !== 'zones') _closeZoneEditorPanel();
+  });
+  const _zonesMenu = document.getElementById('zones-menu');
+  if (_zonesMenu) {
+    new MutationObserver(() => {
+      if (_zonesMenu.classList.contains('hidden')) _closeZoneEditorPanel();
+      else _positionZoneEditorPanel();
+    }).observe(_zonesMenu, { attributes: true, attributeFilter: ['class'] });
+  }
+  window.addEventListener('resize', () => _positionZoneEditorPanel());
 
   renderZoneMenu();
   refreshGridMenu();
