@@ -679,6 +679,47 @@ input[type=range]::-webkit-slider-thumb {
   color: var(--muted);
   flex-shrink: 0;
 }
+.inventory-line-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.inventory-price-input {
+  width: 56px;
+  padding: 2px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-align: right;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+  outline: none;
+  -moz-appearance: textfield;
+}
+.inventory-price-input::-webkit-outer-spin-button,
+.inventory-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.inventory-price-input:focus {
+  border-color: var(--brand-primary, #2563eb);
+  background: #fff;
+}
+.inventory-price-unit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: var(--muted);
+}
+.inventory-line-subtotal {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink);
+  min-width: 64px;
+  text-align: right;
+}
 
 /* ============== EXPORT PREVIEW ============== */
 .export-preview-shell {

@@ -1972,9 +1972,36 @@
         <span style="color:var(--muted)">Total elementos</span>
         <span id="inv-total-items" class="font-medium">0</span>
       </div>
+      <div class="flex justify-between mono text-[11.5px] mt-2 pt-2 border-t border-black/10">
+        <span style="color:var(--muted)">Subtotal coste</span>
+        <span id="inv-subtotal-price" class="font-medium">—</span>
+      </div>
+
+      <!-- Margen del comercial (privado, ocultable, no se exporta) -->
+      <div id="inv-margin-block">
+        <div class="flex items-center justify-between mono text-[11.5px] mt-1">
+          <div class="flex items-center gap-1.5" style="color:var(--muted)">
+            <span>Margen</span>
+            <button id="inv-margin-eye" title="Ocultar margen (no visible al compartir pantalla)"
+              style="background:none;border:none;cursor:pointer;padding:0;color:var(--muted);display:inline-flex;line-height:0">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div id="inv-margin-row" class="flex items-center gap-1">
+            <input id="inv-margin-input" type="number" min="0" max="500" step="1" placeholder="0"
+              class="input-field" style="font-size:11px;width:52px;text-align:right;padding:2px 6px"/>
+            <span style="color:var(--muted)">%</span>
+          </div>
+        </div>
+        <div class="flex justify-between mono text-[11.5px] mt-1">
+          <span style="color:var(--muted)">Importe margen</span>
+          <span id="inv-margin-amount" class="font-medium">—</span>
+        </div>
+      </div>
+
       <div class="flex justify-between mono text-[12px] mt-2 pt-2 border-t border-black/10">
         <span class="font-semibold">Total precio</span>
-        <span id="inv-total-price" class="font-semibold">â€”</span>
+        <span id="inv-total-price" class="font-semibold">—</span>
       </div>
     </div>
 

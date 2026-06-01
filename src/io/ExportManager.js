@@ -4,6 +4,7 @@ import {
   getInventoryTotalPax,
   groupInventoryLines
 } from '../core/InventoryRules.js';
+import { InventoryPanel } from '../ui/InventoryPanel.js';
 import { DashboardSync } from './DashboardSync.js';
 import { CompanyManager } from './CompanyManager.js';
 import { SceneManager } from '../scene/SceneManager.js';
@@ -1006,18 +1007,27 @@ function buildInventoryCsvDownload(modeLabel) {
     ['Logo', company.logoFileName || company.logoRelativePath || (company.logo ? 'logo_cargado' : 'sin_logo')],
     ['Exportacion', modeLabel],
     [],
-    ['Grupo', 'Elemento', 'Cantidad', 'PAX']
+    ['Grupo', 'Elemento', 'Cantidad', 'PAX', 'Precio unitario (EUR)', 'Subtotal (EUR)']
   ];
 
+  const fmtNum = n => (n > 0 ? n.toFixed(2).replace('.', ',') : '');
   groupInventoryLines(AppState.items).forEach(group => {
     group.lines.forEach(line => {
-      rows.push([group.label, line.label, line.count, line.pax > 0 ? line.pax : '']);
+      const unit = InventoryPanel.getUnitPrice(line.label);
+      const subtotal = unit * line.count;
+      rows.push([
+        group.label, line.label, line.count, line.pax > 0 ? line.pax : '',
+        fmtNum(unit), fmtNum(subtotal)
+      ]);
     });
   });
 
   rows.push([]);
   rows.push(['Total elementos', getInventoryTotalItems(AppState.items)]);
   rows.push(['Total PAX', getInventoryTotalPax(AppState.items)]);
+  // El total de coste base se exporta; el margen comercial NUNCA se incluye.
+  const subtotalCoste = InventoryPanel.getInventorySubtotal(AppState.items);
+  if (subtotalCoste > 0) rows.push(['Total coste (EUR)', subtotalCoste.toFixed(2).replace('.', ',')]);
 
   const csv = `\uFEFF${rows.map(columns => columns.map(csvCell).join(';')).join('\n')}`;
   const safeName = (company.name || 'escale')
