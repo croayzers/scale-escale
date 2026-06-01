@@ -700,18 +700,102 @@ function makeZoneGrid(item) {
   return group;
 }
 
+// Vértices del polígono relativos al centro de la zona (item.x/z). Null si es rectangular.
+function zoneLocalPoints(item) {
+  if (!Array.isArray(item.points) || item.points.length < 3) return null;
+  return item.points.map(p => [p.x - item.x, p.z - item.z]);
+}
+
+function addFlatPolygon(group, pts, color, fillOpacity, borderColor) {
+  const shape = new THREE.Shape();
+  pts.forEach(([x, z], i) => { if (i === 0) shape.moveTo(x, z); else shape.lineTo(x, z); });
+  shape.closePath();
+  const geo = new THREE.ShapeGeometry(shape);
+  const fill = new THREE.Mesh(geo, makeFlatMaterial(color, fillOpacity));
+  fill.rotation.x = Math.PI / 2;   // ShapeGeometry está en XY; girar al plano XZ
+  fill.position.y = 0.032;
+  fill.renderOrder = 20;
+  fill.userData.baseColor = color;
+  fill.userData.baseOpacity = fillOpacity;
+  fill.userData.isMain = true;
+  group.add(fill);
+
+  const outline = pts.map(([x, z]) => [x, z]);
+  outline.push(outline[0]);
+  group.add(makeLine(outline, borderColor));
+}
+
+// Grid recortado al polígono: dibuja líneas de la rejilla solo dentro del contorno.
+function makeZonePolyGrid(item, pts) {
+  const group = new THREE.Group();
+  const cfg = item.gridConfig;
+  if (!cfg || cfg.enabled === false) return group;
+  const step = Math.max(0.1, cfg.majorSize || 0.25);
+  const vis = Math.max(0, Math.min(100, cfg.opacity ?? 55));
+  const opacity = vis / 100;
+  if (opacity <= 0) return group;
+
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  pts.forEach(([x, z]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); });
+
+  const verts = [];
+  const inside = (x, z) => pointInPoly(x, z, pts);
+  const x0 = Math.ceil(minX / step) * step;
+  for (let x = x0; x <= maxX; x += step) {
+    let zStart = null;
+    for (let z = minZ; z <= maxZ; z += step / 2) {
+      if (inside(x, z)) { if (zStart === null) zStart = z; }
+      else if (zStart !== null) { verts.push(x, 0, zStart, x, 0, z); zStart = null; }
+    }
+    if (zStart !== null) verts.push(x, 0, zStart, x, 0, maxZ);
+  }
+  const z0 = Math.ceil(minZ / step) * step;
+  for (let z = z0; z <= maxZ; z += step) {
+    let xStart = null;
+    for (let x = minX; x <= maxX; x += step / 2) {
+      if (inside(x, z)) { if (xStart === null) xStart = x; }
+      else if (xStart !== null) { verts.push(xStart, 0, z, x, 0, z); xStart = null; }
+    }
+    if (xStart !== null) verts.push(xStart, 0, z, maxX, 0, z);
+  }
+  if (!verts.length) return group;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.LineBasicMaterial({ color: 0x1a1a1c, transparent: true, opacity: opacity * 0.55, depthWrite: false });
+  const lines = new THREE.LineSegments(geo, mat);
+  lines.position.y = 0.034;
+  group.add(lines);
+  return group;
+}
+
+// Point-in-polygon (ray casting). pts: array [x,z].
+function pointInPoly(x, z, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i][0], zi = pts[i][1], xj = pts[j][0], zj = pts[j][1];
+    if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
 function createZoneSymbol(item) {
   const group = new THREE.Group();
-  const length = Math.max(0.5, item.dims?.length ?? 4);
-  const width = Math.max(0.5, item.dims?.width ?? 4);
   const borderColor = parseHex(item.borderColor || item.color || '#22c55e');
   const fillColor = parseHex(item.color || '#22c55e');
   const fillOpacity = item.fillEnabled === false
     ? 0.001
     : Math.max(0.05, Math.min(item.visual?.opacity ?? item.fillOpacity ?? 0.18, 0.6));
 
-  addFlatRect(group, length, width, fillColor, fillOpacity, borderColor);
-  group.add(makeZoneGrid(item));
+  const poly = zoneLocalPoints(item);
+  if (poly) {
+    addFlatPolygon(group, poly, fillColor, fillOpacity, borderColor);
+    group.add(makeZonePolyGrid(item, poly));
+  } else {
+    const length = Math.max(0.5, item.dims?.length ?? 4);
+    const width = Math.max(0.5, item.dims?.width ?? 4);
+    addFlatRect(group, length, width, fillColor, fillOpacity, borderColor);
+    group.add(makeZoneGrid(item));
+  }
 
   if (item.labelText && item.showLabel !== false) {
     group.add(makeZoneLabelSprite(
@@ -918,6 +1002,11 @@ function moveItem(id, x, z, y = null) {
   g.position.z = z;
   const item = _appState?.items.find(i => i.id === id);
   if (item) {
+    // Zona poligonal: desplazar los vértices absolutos junto al centro.
+    if (Array.isArray(item.points) && item.points.length) {
+      const dx = x - item.x, dz = z - item.z;
+      item.points = item.points.map(p => ({ x: p.x + dx, z: p.z + dz }));
+    }
     item.x = x;
     item.z = z;
     if (y !== null && y !== undefined) item.y = y;
@@ -1097,12 +1186,28 @@ function addDimensionArrow(group, start, end, label, labelOffset = [0, 0]) {
 
 function createZoneCotasGroup(item) {
   const group = new THREE.Group();
+  group.userData.itemId = item.id;
+  group.userData.isZoneCota = true;
+
+  // Zona poligonal: etiqueta de área en el centroide, sin cotas largo×ancho.
+  const poly = zoneLocalPoints(item);
+  if (poly) {
+    group.position.set(item.x, 0, item.z);
+    let area = 0;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      area += (poly[j][0] + poly[i][0]) * (poly[j][1] - poly[i][1]);
+    }
+    area = Math.abs(area) / 2;
+    const sprite = makeTextSprite(`${area.toFixed(1)} m²`, 'zone');
+    sprite.position.set(0, 0.3, 0);
+    group.add(sprite);
+    return group;
+  }
+
   const length = Math.max(0.5, item.dims?.length ?? 4);
   const width = Math.max(0.5, item.dims?.width ?? 4);
   const offset = 0.46;
 
-  group.userData.itemId = item.id;
-  group.userData.isZoneCota = true;
   group.position.set(item.x, 0, item.z);
   group.rotation.y = item.rotY || 0;
 

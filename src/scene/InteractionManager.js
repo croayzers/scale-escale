@@ -50,6 +50,9 @@ function init() {
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointercancel', onPointerCancel);
   canvas.addEventListener('contextmenu', onContextMenu);
+  canvas.addEventListener('dblclick', () => {
+    if (ZoneManager.isPlacementActive()) ZoneManager.handleCanvasDoubleClick();
+  });
 
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
@@ -209,17 +212,33 @@ function getDragPoint() {
   return point;
 }
 
+function _pointInZonePoly(x, z, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, zi = points[i].z, xj = points[j].x, zj = points[j].z;
+    if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
 function getSnapConfigForPoint(x, z) {
   const zones = AppState.items.filter(item => item.type === 'zone');
   for (const zone of zones) {
     const cfg = zone.gridConfig;
     if (!cfg || cfg.enabled === false || cfg.snapEnabled === false) continue;
+    const step = Math.max(0.05, cfg.majorSize || 0.25);
+    // Zona poligonal: snap si el punto cae dentro del polígono.
+    if (Array.isArray(zone.points) && zone.points.length >= 3) {
+      if (_pointInZonePoly(x, z, zone.points)) {
+        return { stepX: step, stepZ: step, originX: 0, originZ: 0 };
+      }
+      continue;
+    }
     const L = zone.dims?.length || 4;
     const W = zone.dims?.width || 4;
     const halfL = L / 2;
     const halfW = W / 2;
     if (Math.abs(x - zone.x) <= halfL && Math.abs(z - zone.z) <= halfW) {
-      const step = Math.max(0.05, cfg.majorSize || 0.25);
       return {
         stepX: step,
         stepZ: step,

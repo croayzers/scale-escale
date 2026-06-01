@@ -71,17 +71,10 @@ function emitZoneUiChange(reason = 'zones-ui') {
   AppState.emitSceneInsights(reason);
 }
 
-function buildZoneItem(anchor, point) {
-  const minSize = 0.5;
-  const length = Math.max(minSize, Math.abs(point.x - anchor.x));
-  const width = Math.max(minSize, Math.abs(point.z - anchor.z));
-
+function zoneCommonProps() {
   return {
     type: 'zone',
-    x: (anchor.x + point.x) / 2,
-    z: (anchor.z + point.z) / 2,
     rotY: 0,
-    dims: { length, width, height: 0.03 },
     labelText: zonePlacement?.name || nextZoneName(),
     color: zonePlacement?.color || '#22c55e',
     borderColor: zonePlacement?.borderColor || '#22c55e',
@@ -104,11 +97,51 @@ function buildZoneItem(anchor, point) {
   };
 }
 
+function buildZoneItem(anchor, point) {
+  const minSize = 0.5;
+  const length = Math.max(minSize, Math.abs(point.x - anchor.x));
+  const width = Math.max(minSize, Math.abs(point.z - anchor.z));
+
+  return {
+    ...zoneCommonProps(),
+    x: (anchor.x + point.x) / 2,
+    z: (anchor.z + point.z) / 2,
+    dims: { length, width, height: 0.03 }
+  };
+}
+
+// Zona poligonal a partir de una lista de vértices {x,z} absolutos.
+function buildPolyZoneItem(vertices) {
+  const cx = vertices.reduce((s, v) => s + v.x, 0) / vertices.length;
+  const cz = vertices.reduce((s, v) => s + v.z, 0) / vertices.length;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  vertices.forEach(v => { minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z); });
+  return {
+    ...zoneCommonProps(),
+    x: cx,
+    z: cz,
+    points: vertices.map(v => ({ x: v.x, z: v.z })),
+    dims: { length: Math.max(0.5, maxX - minX), width: Math.max(0.5, maxZ - minZ), height: 0.03 }
+  };
+}
+
 function clearPreview() {
   SceneManager.clearPlacementPreview();
 }
 
 function updatePreview() {
+  if (zonePlacement?.freeform) {
+    const verts = zonePlacement.vertices || [];
+    const all = zonePlacement.current ? [...verts, zonePlacement.current] : verts;
+    if (all.length < 2) { clearPreview(); return; }
+    if (all.length === 2) {
+      // Solo una arista: previsualizar como línea fina (rectángulo degenerado)
+      SceneManager.setPlacementPreview(buildZoneItem(all[0], all[1]));
+      return;
+    }
+    SceneManager.setPlacementPreview(buildPolyZoneItem(all));
+    return;
+  }
   if (!zonePlacement?.anchor || !zonePlacement?.current) {
     clearPreview();
     return;
@@ -122,7 +155,7 @@ function setPlacementStatus() {
   emitZoneUiChange(zonePlacement ? 'zone-placement' : 'zone-placement-cancelled');
 }
 
-function startZonePlacement() {
+function startZonePlacement(freeform = false) {
   CatalogModal.clearPendingPlacement();
   const nameInput = document.getElementById('zone-new-name');
   zonePlacement = {
@@ -132,13 +165,35 @@ function startZonePlacement() {
     fillEnabled: true,
     fillOpacity: 0.18,
     anchor: null,
-    current: null
+    current: null,
+    freeform,
+    vertices: []
   };
-  // Cerrar el menú de zonas
   document.dispatchEvent(new CustomEvent('escale:scene-overlay-open', { detail: { kind: 'zone-placement' } }));
-  // Mostrar tooltip junto al cursor
-  showZoneTip(`✦ ${zonePlacement.name} · Clic en el primer punto`);
+  showZoneTip(freeform
+    ? `✦ ${zonePlacement.name} · Marca los vértices · doble clic o Enter para cerrar`
+    : `✦ ${zonePlacement.name} · Clic en el primer punto`);
   setPlacementStatus();
+}
+
+// Cierra la zona libre con los vértices marcados (≥3).
+function finishFreeformZone() {
+  if (!zonePlacement?.freeform) return false;
+  const verts = zonePlacement.vertices || [];
+  if (verts.length < 3) { return false; }
+  const zone = buildPolyZoneItem(verts);
+  const placed = AppState.add(zone);
+  AppState.select(placed.id);
+  zonePlacement = null;
+  clearPreview();
+  hideZoneTip();
+  renderZoneMenu();
+  emitZoneUiChange('zone-created');
+  const zoneName = placed.labelText || `Zona ${placed.id}`;
+  if (confirm(`¿Bloquear ZONA "${zoneName}" para evitar desplazarla durante la edición?\n\nPuedes reactivarla desde el menú Zonas.`)) {
+    AppState.update(placed.id, { disabled: true, locked: true }, { skipDetailRebuild: true });
+  }
+  return true;
 }
 
 function cancelPlacement() {
@@ -162,6 +217,27 @@ function getPlacementLabel() {
 
 function handleCanvasPointerDown(point) {
   if (!zonePlacement) return false;
+
+  if (zonePlacement.freeform) {
+    const verts = zonePlacement.vertices;
+    // Clic cerca del primer vértice → cerrar polígono.
+    if (verts.length >= 3) {
+      const first = verts[0];
+      if (Math.hypot(point.x - first.x, point.z - first.z) < 0.6) {
+        finishFreeformZone();
+        return true;
+      }
+    }
+    verts.push({ x: point.x, z: point.z });
+    zonePlacement.current = { x: point.x, z: point.z };
+    updateZoneTip(verts.length < 3
+      ? `✦ ${zonePlacement.name} · ${verts.length} vértice(s) · sigue marcando`
+      : `✦ ${zonePlacement.name} · ${verts.length} vértices · doble clic o clic en el inicio para cerrar`);
+    updatePreview();
+    setPlacementStatus();
+    return true;
+  }
+
   if (!zonePlacement.anchor) {
     zonePlacement.anchor = { x: point.x, z: point.z };
     zonePlacement.current = { x: point.x, z: point.z };
@@ -190,10 +266,21 @@ function handleCanvasPointerDown(point) {
 }
 
 function handleCanvasPointerMove(point) {
+  if (zonePlacement?.freeform) {
+    if (!zonePlacement.vertices.length) return false;
+    zonePlacement.current = { x: point.x, z: point.z };
+    updatePreview();
+    return true;
+  }
   if (!zonePlacement?.anchor) return false;
   zonePlacement.current = { x: point.x, z: point.z };
   updatePreview();
   return true;
+}
+
+function handleCanvasDoubleClick() {
+  if (zonePlacement?.freeform) return finishFreeformZone();
+  return false;
 }
 
 function updateZoneField(zone, field, value) {
@@ -311,13 +398,12 @@ function zoneEditorMarkup(zone) {
   }
 
   const opacityPct = Math.round((zone.fillOpacity ?? zone.visual?.opacity ?? 0.18) * 100);
-  return `
-    <div class="menu-section-label">Propiedades de zona</div>
-    <div class="menu-field-grid">
-      <label class="menu-field menu-field-full">
-        <span>Nombre de zona</span>
-        <input id="zone-edit-name" class="input-field" type="text" value="${zone.labelText || ''}"/>
-      </label>
+  const isPoly = Array.isArray(zone.points) && zone.points.length >= 3;
+  const sizeFields = isPoly ? `
+      <div class="menu-field menu-field-full">
+        <span>Forma</span>
+        <strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Polígono · ${zone.points.length} vértices</strong>
+      </div>` : `
       <label class="menu-field">
         <span>Largo (m)</span>
         <input id="zone-edit-length" class="input-field" type="number" min="0.5" max="120" step="0.1" value="${(zone.dims?.length || 4).toFixed(1)}"/>
@@ -325,7 +411,15 @@ function zoneEditorMarkup(zone) {
       <label class="menu-field">
         <span>Ancho (m)</span>
         <input id="zone-edit-width" class="input-field" type="number" min="0.5" max="120" step="0.1" value="${(zone.dims?.width || 4).toFixed(1)}"/>
+      </label>`;
+  return `
+    <div class="menu-section-label">Propiedades de zona</div>
+    <div class="menu-field-grid">
+      <label class="menu-field menu-field-full">
+        <span>Nombre de zona</span>
+        <input id="zone-edit-name" class="input-field" type="text" value="${zone.labelText || ''}"/>
       </label>
+      ${sizeFields}
       <label class="menu-field">
         <span>Color borde</span>
         <input id="zone-edit-border" class="input-field color-input-field" type="color" value="${zone.borderColor || '#22c55e'}"/>
@@ -592,7 +686,20 @@ function init() {
       cancelPlacement();
       return;
     }
-    startZonePlacement();
+    startZonePlacement(false);
+  });
+  document.getElementById('zone-add-free-btn')?.addEventListener('click', () => {
+    if (zonePlacement) {
+      cancelPlacement();
+      return;
+    }
+    startZonePlacement(true);
+  });
+  document.addEventListener('keydown', e => {
+    if (zonePlacement?.freeform && e.key === 'Enter') {
+      e.preventDefault();
+      finishFreeformZone();
+    }
   });
 
   document.getElementById('grid-main-size')?.addEventListener('change', event => {
@@ -632,5 +739,6 @@ export const ZoneManager = {
   getPlacementLabel,
   handleCanvasPointerDown,
   handleCanvasPointerMove,
+  handleCanvasDoubleClick,
   cancelPlacement
 };
