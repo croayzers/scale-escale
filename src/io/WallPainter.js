@@ -1121,6 +1121,7 @@ function _initListeners() {
     _closeSegMenu();
   });
   document.getElementById('wp-seg-curve')?.addEventListener('click', () => {
+    _showConfirmToast(`[debug] curva click · seg=${_ctxSegIdx}`);
     if (_ctxSegIdx < 0) return;
     const idx = _ctxSegIdx;
     const seg = _segs[idx];
