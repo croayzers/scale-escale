@@ -1085,6 +1085,7 @@ function _initListeners() {
     _transform();
     _showConfirmToast('Plano generado en 3D');
     deactivate();
+    _applyCameraView('iso');
   });
   document.getElementById('wp-finish-2d')?.addEventListener('click', () => {
     const prev = _wallHeight;
@@ -1093,6 +1094,7 @@ function _initListeners() {
     _wallHeight = prev;
     _showConfirmToast('Plano generado en 2D');
     deactivate();
+    _applyCameraView('top');
   });
   document.getElementById('wp-cancel')?.addEventListener('click', () => deactivate());
 
@@ -1269,6 +1271,20 @@ function activate() {
   window.addEventListener('resize',     _resizeCanvas);
 
   if (window.lucide) lucide.createIcons({ nodes: [document.getElementById('wall-painter-toolbar')] });
+}
+
+// Fija la cámara (iso/top) y resalta su botón con un borde de colores 5 s.
+function _applyCameraView(mode) {
+  SceneManager.setCamera(mode);
+  const isoBtn = document.getElementById('cam-iso');
+  const topBtn = document.getElementById('cam-top');
+  isoBtn?.classList.toggle('active', mode === 'iso');
+  topBtn?.classList.toggle('active', mode === 'top');
+  const hintBtn = mode === 'iso' ? isoBtn : topBtn;
+  if (hintBtn) {
+    hintBtn.classList.add('cam-hint');
+    setTimeout(() => hintBtn.classList.remove('cam-hint'), 5000);
+  }
 }
 
 function deactivate() {
