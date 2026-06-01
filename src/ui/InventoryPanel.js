@@ -90,11 +90,14 @@ function init() {
 
 /** Muestra/oculta los valores del margen (privado al compartir pantalla). */
 function _applyMarginVisibility() {
+  const text = document.getElementById('inv-margin-text');
   const row = document.getElementById('inv-margin-row');
-  const amount = document.getElementById('inv-margin-amount');
+  const amountRow = document.getElementById('inv-margin-amount-row');
   const eye = document.getElementById('inv-margin-eye');
-  if (row) row.style.visibility = _marginHidden ? 'hidden' : 'visible';
-  if (amount) amount.style.visibility = _marginHidden ? 'hidden' : 'visible';
+  // Al ocultar: desaparece todo (texto "Margen", input % e importe), solo queda el ojo.
+  if (text) text.style.display = _marginHidden ? 'none' : '';
+  if (row) row.style.display = _marginHidden ? 'none' : '';
+  if (amountRow) amountRow.style.display = _marginHidden ? 'none' : '';
   if (eye) {
     eye.innerHTML = `<i data-lucide="${_marginHidden ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>`;
     eye.title = _marginHidden

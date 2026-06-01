@@ -891,7 +891,9 @@ const TYPE_LABELS = {
   ambiente: 'Ambiente',
   pergola: 'Pérgola',
   schemaProp: 'Elemento',
-  schemaSurface: 'Superficie'
+  schemaSurface: 'Superficie',
+  ceilingProp: 'Colgante de techo',
+  text2d: 'Texto'
 };
 
 const DIM_LABELS = {
@@ -1139,6 +1141,14 @@ function getQuickPresets(item) {
       { label: 'Normal',  patch: { dims: { height: 0.6 } } },
       { label: 'Grande',  patch: { dims: { height: 1.0 } } },
       { label: 'Enorme',  patch: { dims: { height: 1.6 } } }
+    ];
+  }
+  if (item.type === 'ceilingProp') {
+    return [
+      { label: '2.2 m', patch: { dims: { height: 2.2 } } },
+      { label: '2.6 m', patch: { dims: { height: 2.6 } } },
+      { label: '3.0 m', patch: { dims: { height: 3.0 } } },
+      { label: '4.0 m', patch: { dims: { height: 4.0 } } }
     ];
   }
   switch (item.type) {
@@ -1482,6 +1492,21 @@ function chairOffsetHTML(item) {
 function categorySpecificHTML(item) {
   const cat = item.category || '';
   const type = item.type || '';
+
+  // Colgantes de techo: altura de suspensión destacada
+  if (type === 'ceilingProp') {
+    const h = (item.dims?.height ?? 2.6).toFixed(2);
+    return `
+      <div class="ctx-block">
+        <div class="ctx-label">Altura de colgado</div>
+        <div class="ctx-field-grid">
+          <label class="ctx-field">
+            <span>Altura (m)</span>
+            <input data-field="dims.height" class="ctx-input" type="number" min="0.5" max="12" step="0.1" value="${h}"/>
+          </label>
+        </div>
+      </div>`;
+  }
 
   // Sillas / sofás
   if (cat === 'chairs' || type === 'sillaCatering' || type === 'sillaLineal' || type === 'schemaSofa') {

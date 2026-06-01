@@ -4,10 +4,12 @@
 import { createArbusto }        from './arbusto.js';
 import { SchemaModelFactory }   from './schema/SchemaModelFactory.js';
 import { buildText2D }          from './schema/builders/generic.js';
+import { buildCeilingProp }     from './schema/builders/ceiling.js';
 
 const builders = {
-  arbusto:  createArbusto,
-  text2d:   buildText2D,
+  arbusto:     createArbusto,
+  text2d:      buildText2D,
+  ceilingProp: buildCeilingProp,
 };
 
 export const ModelFactory = {
@@ -22,7 +24,7 @@ export const ModelFactory = {
       console.warn('[ModelFactory] tipo no registrado:', item.type);
       return new THREE.Group();
     }
-    return builder(item);
+    return builder(item, context.view || 'iso');
   },
 
   /** Registra un nuevo builder en runtime (útil para extensiones futuras). */

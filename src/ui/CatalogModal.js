@@ -411,6 +411,7 @@ function thumbSVG(def) {
   if (defId === 'agua_piscina')    return svgAgua();
   if (defId.startsWith('flecha_')) return svgFlecha(def.color || '#111827');
   if (def.type === 'text2d') return svgText2D(def.color || '#111827');
+  if (def.type === 'ceilingProp') return svgCeilingProp(def);
   if (def.schemaId) return svgSchemaThumb(def);
   return svgPlaceholder();
 }
@@ -796,6 +797,60 @@ function svgText2D(c) {
     <rect x="10" y="36" width="80" height="28" rx="6" fill="rgba(245,243,238,0.9)" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
     <text x="50" y="57" text-anchor="middle" font-size="22" font-weight="bold" font-family="JetBrains Mono, monospace" fill="${c}">Aa</text>
   </svg>`;
+}
+
+function svgCeilingProp(def) {
+  const c = def.color || '#C7CBD1';
+  const profile = def.ceilingProfile || '';
+  // Techo + cable + figura según el tipo de colgante
+  const ceiling = `<rect x="14" y="14" width="72" height="5" rx="2" fill="rgba(0,0,0,0.18)"/>`;
+  const cable = `<line x1="50" y1="19" x2="50" y2="40" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/>`;
+  let figure;
+  switch (profile) {
+    case 'disco_ball':
+      figure = `<circle cx="50" cy="56" r="16" fill="${c}"/>
+        <line x1="38" y1="50" x2="62" y2="50" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+        <line x1="36" y1="56" x2="64" y2="56" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+        <line x1="38" y1="62" x2="62" y2="62" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+        <line x1="50" y1="40" x2="50" y2="72" stroke="rgba(0,0,0,0.18)" stroke-width="0.8"/>
+        <line x1="42" y1="42" x2="42" y2="70" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>
+        <line x1="58" y1="42" x2="58" y2="70" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>`;
+      break;
+    case 'chandelier':
+      figure = `<path d="M34 48 Q50 42 66 48" fill="none" stroke="${c}" stroke-width="2"/>
+        <circle cx="34" cy="50" r="4" fill="#FFE8A3"/><circle cx="50" cy="46" r="4" fill="#FFE8A3"/><circle cx="66" cy="50" r="4" fill="#FFE8A3"/>
+        <rect x="47" y="40" width="6" height="14" rx="2" fill="${c}"/>`;
+      break;
+    case 'balloon_cluster':
+    case 'paper_lanterns':
+      figure = `<circle cx="42" cy="54" r="10" fill="${c}"/><circle cx="58" cy="58" r="10" fill="${c}" opacity="0.7"/><circle cx="50" cy="48" r="9" fill="${c}" opacity="0.85"/>`;
+      break;
+    case 'bunting':
+      figure = `<path d="M22 40 Q50 50 78 40" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>
+        <polygon points="28,42 36,42 32,52" fill="#E04F5F"/><polygon points="42,46 50,46 46,56" fill="#F2C94C"/><polygon points="56,46 64,46 60,56" fill="#27AE60"/><polygon points="68,43 76,43 72,53" fill="#4F8FE0"/>`;
+      break;
+    case 'hanging_banner':
+      figure = `<rect x="32" y="40" width="36" height="30" rx="2" fill="${c}"/>`;
+      break;
+    case 'hanging_hoops':
+      figure = `<circle cx="50" cy="56" r="16" fill="none" stroke="${c}" stroke-width="3"/><circle cx="50" cy="56" r="9" fill="none" stroke="${c}" stroke-width="2" opacity="0.6"/>`;
+      break;
+    case 'light_drop':
+      figure = `<rect x="24" y="38" width="52" height="3" rx="1.5" fill="rgba(0,0,0,0.4)"/>
+        ${[28,40,52,64,72].map(x => `<line x1="${x}" y1="41" x2="${x}" y2="68" stroke="rgba(0,0,0,0.2)" stroke-width="0.8"/><circle cx="${x}" cy="68" r="2.5" fill="#FFE8A3"/>`).join('')}`;
+      break;
+    case 'hanging_mobile':
+      figure = `<line x1="36" y1="48" x2="64" y2="48" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+        <polygon points="36,52 40,60 32,60" fill="#F2C94C"/><polygon points="64,52 68,60 60,60" fill="#4F8FE0"/><circle cx="50" cy="60" r="5" fill="#E04F5F"/>`;
+      break;
+    case 'floral_hang':
+      figure = `<rect x="24" y="40" width="52" height="3" rx="1.5" fill="rgba(90,74,53,0.6)"/>
+        ${[30,40,50,60,70].map((x,i) => `<circle cx="${x}" cy="${50+(i%2)*8}" r="6" fill="${c}"/><circle cx="${x}" cy="${48+(i%2)*8}" r="3" fill="#E04F5F"/>`).join('')}`;
+      break;
+    default:
+      figure = `<circle cx="50" cy="56" r="14" fill="${c}"/>`;
+  }
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${ceiling}${cable}${figure}</svg>`;
 }
 
 /* ── Vehículos / transporte ── */

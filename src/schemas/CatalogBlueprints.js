@@ -167,6 +167,30 @@ function stageItem(id, name, { width = 4, length = 6, height = 0.8, icon = 'gall
   };
 }
 
+/* Elemento colgante de techo. dims.height = altura de suspensión (editable). */
+function ceilingItem(id, name, profile, {
+  height = 2.6, diameter, length, color = '#C7CBD1', lightColor, icon = 'sparkles', ...rest
+} = {}) {
+  const dims = { height };
+  if (typeof diameter === 'number') dims.diameter = diameter;
+  if (typeof length === 'number') dims.length = length;
+  return {
+    id,
+    name,
+    category: 'scenography',
+    type: 'ceilingProp',
+    schemaId: null,
+    ceilingProfile: profile,
+    dims,
+    color,
+    ...(lightColor ? { lightColor } : {}),
+    icon,
+    labelText: '',
+    defaultRotation: 0,
+    ...rest
+  };
+}
+
 const SCHEMA_CATALOG = {
   chairs: [
     {
@@ -214,6 +238,17 @@ const SCHEMA_CATALOG = {
     rectItem('bateria', 'Bateria', 'scenography', { width: 1.8, length: 2.2, height: 1.2, color: '#991B1B', icon: 'drum' }),
     rectItem('musica_stand', 'Atril musica', 'scenography', { width: 0.5, length: 0.5, height: 1.4, color: '#7C3AED', icon: 'music-4' }),
     surfaceItem('alfombra_escenario', 'Alfombra escenario', 'scenography', { width: 3, length: 4, color: '#7C2D12', borderColor: '#D4AF37', icon: 'carpet' }),
+    // ── Colgantes de techo ──────────────────────────────────────────────
+    ceilingItem('techo_bola_disco', 'Bola de discoteca', 'disco_ball', { height: 2.8, diameter: 0.5, color: '#C7CBD1', icon: 'disc-3' }),
+    ceilingItem('techo_arana', 'Lampara de araña', 'chandelier', { height: 2.8, diameter: 0.9, color: '#D9C089', lightColor: '#FFE8A3', icon: 'lamp-ceiling' }),
+    ceilingItem('techo_globos', 'Globos colgantes', 'balloon_cluster', { height: 2.6, diameter: 0.6, color: '#E04F5F', icon: 'circle' }),
+    ceilingItem('techo_banderines', 'Banderines', 'bunting', { height: 2.6, length: 3, color: '#F2C94C', icon: 'triangle' }),
+    ceilingItem('techo_farolillos', 'Farolillos papel', 'paper_lanterns', { height: 2.6, diameter: 0.6, color: '#F2C94C', icon: 'lightbulb' }),
+    ceilingItem('techo_pancarta', 'Pancarta colgante', 'hanging_banner', { height: 2.8, length: 2, color: '#B33A3A', icon: 'flag' }),
+    ceilingItem('techo_aros', 'Aros decorativos', 'hanging_hoops', { height: 2.8, diameter: 0.9, color: '#D9C089', icon: 'circle-dashed' }),
+    ceilingItem('techo_cortina_luz', 'Cortina de luces', 'light_drop', { height: 2.8, length: 2.4, color: '#2a2a2e', lightColor: '#FFE8A3', icon: 'sparkles' }),
+    ceilingItem('techo_movil', 'Movil de estrellas', 'hanging_mobile', { height: 2.6, diameter: 1, color: '#F2C94C', icon: 'star' }),
+    ceilingItem('techo_floral', 'Instalacion floral', 'floral_hang', { height: 2.8, length: 1.6, color: '#27AE60', icon: 'flower-2' }),
   ],
   structures: [
     surfaceItem('carretera_base_350', 'Carretera 3,50m base', 'structures', { width: 3.5, length: 12, color: '#4B5563', borderColor: '#9CA3AF', icon: 'road' }),

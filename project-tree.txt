@@ -127,6 +127,7 @@ PROJECT STRUCTURE
 │   │       ├── builders/
 │   │       │   ├── audio.js
 │   │       │   ├── buffet.js
+│   │       │   ├── ceiling.js
 │   │       │   ├── deco.js
 │   │       │   ├── equipment.js
 │   │       │   ├── generic.js
