@@ -486,16 +486,36 @@ async function bootstrap() {
   document.querySelectorAll('[data-measure-action]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      HeaderActionMenus.closeMenus();
       const action = btn.dataset.measureAction;
       if (action === 'rescale') {
+        HeaderActionMenus.closeMenus();
         onboardPulse.stop('btn-calibrate');
         openCalibrationDemo();
       } else if (action === 'take') {
+        HeaderActionMenus.closeMenus();
         setTopCamera();
         MeasureManager.start();
+      } else if (action === 'rotate') {
+        // No cerramos el menú: la barra de rotación vive dentro de él.
+        if (!AppState.plan.texture) {
+          alert('Carga un plano base primero (botón superior).');
+          return;
+        }
+        const row   = document.getElementById('measure-rotate-row');
+        const range = document.getElementById('measure-rotate-range');
+        const deg   = document.getElementById('measure-rotate-deg');
+        if (row) row.classList.toggle('hidden');
+        if (range) range.value = String(AppState.plan.rotationDeg || 0);
+        if (deg) deg.textContent = `${AppState.plan.rotationDeg || 0}°`;
       }
     });
+  });
+
+  document.getElementById('measure-rotate-range')?.addEventListener('input', e => {
+    const val = parseInt(e.target.value) || 0;
+    SceneManager.setPlanRotation(val);
+    const deg = document.getElementById('measure-rotate-deg');
+    if (deg) deg.textContent = `${val}°`;
   });
 
   document.getElementById('measure-banner-cancel')?.addEventListener('click', () => {

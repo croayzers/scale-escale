@@ -90,6 +90,7 @@ export const AppState = {
     widthM: 30,
     lengthM: 30,
     opacity: 0.95,
+    rotationDeg: 0,
   },
   calibration: { active: false, p1: null, p2: null },
 

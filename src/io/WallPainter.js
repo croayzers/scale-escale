@@ -9,6 +9,7 @@ import { AppState }     from '../core/AppState.js';
 const WALL_THICKNESS  = 0.10;
 const ANGLE_SNAP_RAD  = Math.PI / 12;
 const ENDPOINT_SNAP_M = 0.35;
+const DOOR_HEIGHT_M   = 2.05;   // alto del hueco de puerta
 
 /* ─── Estado ─────────────────────────────────────────────────────────────── */
 let _active     = false;
@@ -34,6 +35,7 @@ let _labels = [];
 
 let _ctxSeg     = null;  // mesh 3D seleccionado (menú wall-ctx-menu)
 let _ctxSegIdx  = -1;    // índice de segmento 2D seleccionado (menú wp-seg-menu)
+let _doorMode   = null;  // { segIdx, clicks:[t,...] } durante colocación de puerta
 let _globalContextMenuBound = false;
 let _globalDownPos  = null;
 let _globalDownSeg  = null;
@@ -129,6 +131,7 @@ function _redrawCanvas() {
     const s2 = _worldToScreen(seg.p2.x, seg.p2.z);
     const isSelected = _tool === 'select' && i === _ctxSegIdx;
     _drawSegLine(s1, s2, isSelected ? '#2563eb' : seg.color, isSelected ? 3.5 : 2.5);
+    _drawDoors(seg);
     _drawDot(s1, seg.color);
     _drawDot(s2, seg.color);
   }
@@ -150,6 +153,30 @@ function _drawSegLine(s1, s2, color, lineWidth = 2.5) {
   _ctx.lineTo(s2.x, s2.y);
   _ctx.stroke();
   _ctx.restore();
+}
+
+// Dibuja los huecos de puerta de un segmento: borra el trazo y marca las jambas.
+function _drawDoors(seg) {
+  const doors = _normalizeDoors(seg.doors);
+  if (!doors.length) return;
+  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
+  const ptAt = t => _worldToScreen(seg.p1.x + dx * t, seg.p1.z + dz * t);
+  for (const d of doors) {
+    const a = ptAt(d.t1), b = ptAt(d.t2);
+    // Borrar el trazo de la pared en el hueco
+    _ctx.save();
+    _ctx.strokeStyle = '#ffffff';
+    _ctx.lineWidth = 6;
+    _ctx.lineCap = 'butt';
+    _ctx.beginPath(); _ctx.moveTo(a.x, a.y); _ctx.lineTo(b.x, b.y); _ctx.stroke();
+    // Jambas
+    _ctx.strokeStyle = '#16a34a';
+    _ctx.lineWidth = 2.5;
+    const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2;
+    const jx = Math.cos(ang) * 6, jy = Math.sin(ang) * 6;
+    [a, b].forEach(p => { _ctx.beginPath(); _ctx.moveTo(p.x - jx, p.y - jy); _ctx.lineTo(p.x + jx, p.y + jy); _ctx.stroke(); });
+    _ctx.restore();
+  }
 }
 
 function _drawDot(s, color) {
@@ -218,7 +245,7 @@ function _addSeg(p1, p2) {
   const len = Math.sqrt(dx*dx + dz*dz);
   if (len < 0.05) return;
 
-  const seg = { p1: {x: p1.x, z: p1.z}, p2: {x: p2.x, z: p2.z}, len, color: _wallColor };
+  const seg = { p1: {x: p1.x, z: p1.z}, p2: {x: p2.x, z: p2.z}, len, color: _wallColor, doors: [] };
   _segs.push(seg);
 
   const labelEl = document.createElement('div');
@@ -244,26 +271,65 @@ function _transform() {
   _meshes = [];
 
   for (let i = 0; i < _segs.length; i++) {
-    _buildWallMesh(_segs[i].p1, _segs[i].p2, _segs[i].color, i);
+    _buildWallMesh(_segs[i].p1, _segs[i].p2, _segs[i].color, i, _segs[i].doors);
   }
 }
 
-function _buildWallMesh(p1, p2, color, segIdx = -1) {
+// Normaliza la lista de puertas: clampa a [0,1], ordena y descarta vacías.
+function _normalizeDoors(doors) {
+  return (doors || [])
+    .map(d => ({ t1: Math.max(0, Math.min(1, Math.min(d.t1, d.t2))), t2: Math.max(0, Math.min(1, Math.max(d.t1, d.t2))) }))
+    .filter(d => d.t2 - d.t1 > 0.005)
+    .sort((a, b) => a.t1 - b.t1);
+}
+
+function _buildWallMesh(p1, p2, color, segIdx = -1, doors = []) {
   const dx = p2.x - p1.x, dz = p2.z - p1.z;
   const len = Math.sqrt(dx*dx + dz*dz);
   if (len < 0.05) return;
-  const cx = (p1.x + p2.x) / 2, cz = (p1.z + p2.z) / 2;
   const angle = Math.atan2(dx, dz);
-  const geo = new THREE.BoxGeometry(WALL_THICKNESS, _wallHeight, len);
-  const mat = new THREE.MeshStandardMaterial({ color: color || _wallColor, roughness: 0.85, metalness: 0 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(cx, _wallHeight / 2, cz);
-  mesh.rotation.y = angle;
-  mesh.castShadow = mesh.receiveShadow = true;
-  mesh.userData.isWall = true;
-  mesh.userData.segIdx = segIdx;
-  SceneManager.scene.add(mesh);
-  _meshes.push(mesh);
+  const doorH = Math.min(DOOR_HEIGHT_M, _wallHeight);
+
+  const addPiece = (ta, tb, yBottom, yTop) => {
+    const pieceLen = (tb - ta) * len;
+    if (pieceLen < 0.02 || yTop - yBottom < 0.02) return;
+    const midt = (ta + tb) / 2;
+    const cx = p1.x + dx * midt, cz = p1.z + dz * midt;
+    const h  = yTop - yBottom;
+    const geo = new THREE.BoxGeometry(WALL_THICKNESS, h, pieceLen);
+    const mat = new THREE.MeshStandardMaterial({ color: color || _wallColor, roughness: 0.85, metalness: 0 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(cx, yBottom + h / 2, cz);
+    mesh.rotation.y = angle;
+    mesh.castShadow = mesh.receiveShadow = true;
+    mesh.userData.isWall = true;
+    mesh.userData.segIdx = segIdx;
+    SceneManager.scene.add(mesh);
+    _meshes.push(mesh);
+  };
+
+  const ds = _normalizeDoors(doors);
+  // Tramos a altura completa entre puertas
+  let cursor = 0;
+  for (const d of ds) { addPiece(cursor, d.t1, 0, _wallHeight); cursor = d.t2; }
+  addPiece(cursor, 1, 0, _wallHeight);
+  // Dintel sobre cada puerta
+  if (_wallHeight > doorH + 0.02) for (const d of ds) addPiece(d.t1, d.t2, doorH, _wallHeight);
+}
+
+// Reconstruye las mallas 3D de un solo segmento (si ya están transformadas).
+function _rebuildSegMeshes(idx) {
+  if (idx < 0 || idx >= _segs.length) return;
+  const had = _meshes.some(m => m.userData.segIdx === idx);
+  if (!had) return;  // aún en 2D, las puertas se aplicarán al transformar
+  for (let i = _meshes.length - 1; i >= 0; i--) {
+    if (_meshes[i].userData.segIdx !== idx) continue;
+    const m = _meshes[i];
+    SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
+    _meshes.splice(i, 1);
+  }
+  const seg = _segs[idx];
+  _buildWallMesh(seg.p1, seg.p2, seg.color, idx, seg.doors);
 }
 
 /* ─── Menú contextual de segmento 2D (modo Selección) ───────────────────── */
@@ -304,6 +370,47 @@ function _closeSegMenu() {
   const menu = document.getElementById('wp-seg-menu');
   if (menu) menu.style.display = 'none';
   _ctxSegIdx = -1;
+}
+
+/* ─── Puertas (cortar pared en 2 puntos) ─────────────────────────────────── */
+// Proyecta un punto del mundo sobre el segmento → fracción t en [0,1].
+function _projectToSeg(seg, wx, wz) {
+  const dx = seg.p2.x - seg.p1.x, dz = seg.p2.z - seg.p1.z;
+  const len2 = dx*dx + dz*dz;
+  if (len2 < 1e-6) return 0;
+  const t = ((wx - seg.p1.x)*dx + (wz - seg.p1.z)*dz) / len2;
+  return Math.max(0, Math.min(1, t));
+}
+
+function _startDoorMode(idx) {
+  if (idx < 0 || idx >= _segs.length) return;
+  _closeSegMenu();
+  _doorMode = { segIdx: idx, clicks: [] };
+  if (_cvs) _cvs.style.cursor = 'crosshair';
+  _showConfirmToast('Marca el inicio de la puerta');
+}
+
+function _cancelDoorMode() {
+  _doorMode = null;
+}
+
+function _handleDoorClick(worldPos) {
+  const seg = _segs[_doorMode.segIdx];
+  if (!seg) { _cancelDoorMode(); return; }
+  const t = _projectToSeg(seg, worldPos.x, worldPos.z);
+  _doorMode.clicks.push(t);
+  if (_doorMode.clicks.length < 2) {
+    _showConfirmToast('Marca el fin de la puerta');
+    return;
+  }
+  const [t1, t2] = _doorMode.clicks.sort((a, b) => a - b);
+  const idx = _doorMode.segIdx;
+  _cancelDoorMode();
+  if (t2 - t1 < 0.01) { _showConfirmToast('Puerta demasiado pequeña'); return; }
+  seg.doors = seg.doors || [];
+  seg.doors.push({ t1, t2 });
+  _rebuildSegMeshes(idx);
+  _showConfirmToast(`Puerta de ${((t2 - t1) * seg.len).toFixed(2)} m`);
 }
 
 /* ─── Menú contextual (meshes transformados) ─────────────────────────────── */
@@ -356,6 +463,11 @@ function _openCtxMenuForMesh(mesh, sx, sy) {
   if (!menu) return;
   const colorPicker = document.getElementById('wall-ctx-color');
   if (colorPicker) colorPicker.value = '#' + mesh.material.color.getHexString();
+  const flattenBtn = document.getElementById('wall-ctx-flatten');
+  if (flattenBtn) {
+    const isFlat = (mesh.geometry.parameters?.height ?? 99) <= 0.11;
+    flattenBtn.textContent = isFlat ? 'Pared 2D · ON' : 'Pared 2D · OFF';
+  }
   menu.style.display = 'block';
   const menuW = 200, menuH = 160;
   menu.style.left = `${Math.min(sx, window.innerWidth - menuW)}px`;
@@ -380,7 +492,10 @@ function _onKeyDown(e) {
   if (!_active) return;
   if (e.key === 'Shift') { _shiftDown = true; return; }
   if (e.key === 'Alt')   { _altDown   = true; return; }
-  if (e.key === 'Escape') { _cancelDrawing(); return; }
+  if (e.key === 'Escape') {
+    if (_doorMode) { _cancelDoorMode(); _showConfirmToast('Puerta cancelada'); return; }
+    _cancelDrawing(); return;
+  }
   if (e.key === 'l' || e.key === 'L') _setTool('line');
   if (e.key === 'r' || e.key === 'R') _setTool('rect');
   if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
@@ -421,6 +536,12 @@ function _onPointerUp(e) {
   const moved = Math.abs(e.clientX - _downPos.x) + Math.abs(e.clientY - _downPos.y);
   _downPos = null;
   if (moved > 5) return;
+
+  if (_doorMode) {
+    const wp = _screenToWorld(e.clientX, e.clientY);
+    if (wp) _handleDoorClick(wp);
+    return;
+  }
 
   _closeCtxMenu();
   _closeSegMenu();
@@ -479,7 +600,9 @@ function _onPointerMove(e) {
   }
 
   if (_cvs) {
-    if (_tool === 'select') {
+    if (_doorMode) {
+      _cvs.style.cursor = 'crosshair';
+    } else if (_tool === 'select') {
       const idx = _pickSegIdx(e.clientX, e.clientY);
       _cvs.style.cursor = idx >= 0 ? 'pointer' : 'default';
     } else {
@@ -559,6 +682,7 @@ function _cancelDrawing() {
   _drawing  = false;
   _p1 = null; _p1Screen = null;
   _guideState = null;
+  _cancelDoorMode();
   _hideTooltip(); _hideDistInput();
   _closeSegMenu();
 }
@@ -651,16 +775,27 @@ function _initListeners() {
     _segs[_ctxSegIdx].labelHidden = !_segs[_ctxSegIdx].labelHidden;
     _closeSegMenu();
   });
+  document.getElementById('wp-seg-add-door')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    _startDoorMode(_ctxSegIdx);
+  });
+  document.getElementById('wp-seg-clear-doors')?.addEventListener('click', () => {
+    if (_ctxSegIdx < 0) return;
+    const idx = _ctxSegIdx;
+    _segs[idx].doors = [];
+    _rebuildSegMeshes(idx);
+    _closeSegMenu();
+  });
   document.getElementById('wp-seg-delete')?.addEventListener('click', () => {
     if (_ctxSegIdx < 0) return;
     const idx = _ctxSegIdx;
-    const meshIdx = _meshes.findIndex(m => m.userData.segIdx === idx);
-    if (meshIdx >= 0) {
-      const m = _meshes[meshIdx];
+    for (let i = _meshes.length - 1; i >= 0; i--) {
+      const m = _meshes[i];
+      if (m.userData.segIdx !== idx) continue;
       SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
-      _meshes.splice(meshIdx, 1);
-      _meshes.forEach(m => { if (m.userData.segIdx > idx) m.userData.segIdx--; });
+      _meshes.splice(i, 1);
     }
+    _meshes.forEach(m => { if (m.userData.segIdx > idx) m.userData.segIdx--; });
     _segs.splice(idx, 1);
     const lbl = _labels.splice(idx, 1)[0];
     lbl?.el.remove();
@@ -670,34 +805,46 @@ function _initListeners() {
   // Menú mesh 3D
   document.getElementById('wall-ctx-color')?.addEventListener('input', e => {
     if (!_ctxSeg) return;
-    _ctxSeg.material.color.set(e.target.value);
+    const segIdx = _ctxSeg.userData.segIdx;
+    // Pintar todas las piezas del mismo segmento (puede tener puertas).
+    _meshes.forEach(m => { if (m.userData.segIdx === segIdx) m.material.color.set(e.target.value); });
+    if (segIdx >= 0 && segIdx < _segs.length) _segs[segIdx].color = e.target.value;
   });
   document.getElementById('wall-ctx-flatten')?.addEventListener('click', () => {
     if (!_ctxSeg) return;
-    const newH = 0.10;
-    // Reconstruir geometría: leer dimensiones del bounding box del mesh actual
-    const box = new THREE.Box3().setFromObject(_ctxSeg);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-    // size está en world-space; la pared puede estar rotada así que usamos WALL_THICKNESS y el largo del segmento
+    const FLAT_H = 0.10;
+    const curH = _ctxSeg.geometry.parameters?.height ?? _wallHeight;
+    const isFlat = curH <= FLAT_H + 0.001;
+
+    // Largo del segmento (la pared puede estar rotada, usamos su largo real)
     const segIdx = _ctxSeg.userData.segIdx;
     const seg = segIdx >= 0 ? _segs[segIdx] : null;
-    const len = seg ? seg.len : Math.max(size.x, size.z);
-    const newGeo = new THREE.BoxGeometry(WALL_THICKNESS, newH, len);
+    let len = seg ? seg.len : null;
+    if (len == null) {
+      const size = new THREE.Vector3();
+      new THREE.Box3().setFromObject(_ctxSeg).getSize(size);
+      len = Math.max(size.x, size.z);
+    }
+
+    // Toggle: si está aplanada vuelve a 3D (altura guardada), si no la aplana a 2D.
+    const newH = isFlat ? (_ctxSeg.userData.origHeight || _wallHeight || 2.5) : FLAT_H;
+    if (!isFlat) _ctxSeg.userData.origHeight = curH;
+
     _ctxSeg.geometry.dispose();
-    _ctxSeg.geometry = newGeo;
+    _ctxSeg.geometry = new THREE.BoxGeometry(WALL_THICKNESS, newH, len);
     _ctxSeg.position.y = newH / 2;
     _closeCtxMenu();
   });
   document.getElementById('wall-ctx-toggle-label')?.addEventListener('click', () => _closeCtxMenu());
   document.getElementById('wall-ctx-delete')?.addEventListener('click', () => {
     if (!_ctxSeg) return;
-    const meshIdx = _meshes.indexOf(_ctxSeg);
-    const segIdx  = _ctxSeg.userData.segIdx;
-    if (meshIdx >= 0) {
-      SceneManager.scene.remove(_ctxSeg);
-      _ctxSeg.geometry.dispose(); _ctxSeg.material.dispose();
-      _meshes.splice(meshIdx, 1);
+    const segIdx = _ctxSeg.userData.segIdx;
+    // Eliminar todas las piezas del segmento (puede tener varias por puertas).
+    for (let i = _meshes.length - 1; i >= 0; i--) {
+      const m = _meshes[i];
+      if (m.userData.segIdx !== segIdx) continue;
+      SceneManager.scene.remove(m); m.geometry.dispose(); m.material.dispose();
+      _meshes.splice(i, 1);
     }
     if (segIdx >= 0 && segIdx < _segs.length) {
       _segs.splice(segIdx, 1);

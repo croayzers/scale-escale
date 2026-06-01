@@ -1366,7 +1366,21 @@ function setPlanTexture(texture) {
   scene.add(planMesh);
   _appState.plan.mesh = planMesh;
   _appState.plan.texture = texture;
+  applyPlanRotation();
   updatePlanViewMode();
+}
+
+/* Rota el plano base sobre el suelo (eje Y mundial), conservando su posición plana. */
+function setPlanRotation(deg) {
+  _appState.plan.rotationDeg = deg || 0;
+  applyPlanRotation();
+}
+
+function applyPlanRotation() {
+  if (!planMesh) return;
+  planMesh.rotation.set(-Math.PI / 2, 0, 0);
+  const deg = _appState.plan.rotationDeg || 0;
+  if (deg) planMesh.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), (deg * Math.PI) / 180);
 }
 
 function updatePlanViewMode() {
@@ -1607,7 +1621,9 @@ function endPlanMove() {
 }
 
 function redrawCotas() {
-  if (_appState?.showCotas) drawCotas();
+  // drawCotas limpia el grupo y hace early-return si showCotas está apagado,
+  // así que debe llamarse siempre para que apagar las cotas también las borre.
+  drawCotas();
 }
 
 export const SceneManager = {
@@ -1636,7 +1652,7 @@ export const SceneManager = {
   despawnGhost,
   rebuildGrids,
   applyShadowState,
-  setPlanTexture, updatePlanSize, updatePlanOpacity,
+  setPlanTexture, updatePlanSize, updatePlanOpacity, setPlanRotation,
   setCanvasSize,
   setPlanMoving, setPlanLocked, isPlanLocked, isPlanMoving,
   startPlanMove, updatePlanMove, endPlanMove,

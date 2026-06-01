@@ -11,7 +11,7 @@ let _broadcasting = false;
 let _camTimer     = null;
 
 const initials = name => (name || '?').slice(0, 2).toUpperCase();
-const isPro = () => ['pro', 'premium'].includes(SubscriptionManager.currentPlanCode?.() || '');
+const isPro = () => true; // temporarily open to all plans
 
 function injectStyles() {
   if (document.getElementById('ci-styles')) return;

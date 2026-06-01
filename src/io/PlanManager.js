@@ -50,6 +50,7 @@ function init() {
 
   document.getElementById('file-plan-img')?.addEventListener('change', handleImageFile);
   document.getElementById('file-plan-pdf')?.addEventListener('change', handlePdfFile);
+  document.getElementById('file-plan-dxf')?.addEventListener('change', handleDwgFile);
   document.getElementById('file-plan-dwg')?.addEventListener('change', handleDwgFile);
 
   document.getElementById('plan-fmt-img')?.addEventListener('click', () => {
@@ -59,6 +60,10 @@ function init() {
   document.getElementById('plan-fmt-pdf')?.addEventListener('click', () => {
     closeFormatModal();
     document.getElementById('file-plan-pdf').click();
+  });
+  document.getElementById('plan-fmt-dxf')?.addEventListener('click', () => {
+    closeFormatModal();
+    document.getElementById('file-plan-dxf').click();
   });
   document.getElementById('plan-fmt-dwg')?.addEventListener('click', () => {
     closeFormatModal();
@@ -813,6 +818,7 @@ function parseDxfText(text) {
     AppState.plan.lengthM = Math.max(1, realHeight);
     document.getElementById('plan-width').value  = AppState.plan.widthM.toFixed(2);
     document.getElementById('plan-length').value = AppState.plan.lengthM.toFixed(2);
+    window._skipCalibrationDemo = true;
     SceneManager.setPlanTexture(texture);
     document.getElementById('plan-status').textContent =
       `DXF · ${dxf.entities.length} entidades · ${realWidth.toFixed(1)}×${realHeight.toFixed(1)}m`;

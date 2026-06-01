@@ -212,18 +212,55 @@ export function buildMesaRect(item, view) {
   cloth.castShadow = true;
   group.add(cloth);
 
-  const CHAIR_HALF_DEPTH = 0.21;
-  const sep        = item.chairSep ?? 0.60;
-  const sideChairs = Math.max(1, Math.floor(L / sep));
-  const offsetZ    = W / 2 + CHAIR_HALF_DEPTH + (item.chairOffset ?? 0.10);
-  for (let i = 0; i < sideChairs; i++) {
-    const t = (i + 0.5) / sideChairs;
-    const x = -L / 2 + t * L;
-    const cf = makeChair(); cf.position.set(x, 0,  offsetZ); cf.rotation.y = 0;       group.add(cf);
-    const cb = makeChair(); cb.position.set(x, 0, -offsetZ); cb.rotation.y = Math.PI; group.add(cb);
-  }
+  placeRectChairs(group, item, L, W);
   addLabel(group, item.labelText, H + 0.45);
   return group;
+}
+
+/* Reparte sillas alrededor del perímetro de una mesa rectangular/cuadrada.
+   Si item.chairs está definido, respeta exactamente ese total repartiéndolo
+   entre lados largos (eje X) y cortos (eje Z) de forma proporcional y simétrica.
+   Si no, recae en el comportamiento clásico: sillas solo en los lados largos. */
+function placeRectChairs(group, item, L, W) {
+  const CHAIR_HALF_DEPTH = 0.21;
+  const gap     = item.chairOffset ?? 0.10;
+  const offsetZ = W / 2 + CHAIR_HALF_DEPTH + gap;
+  const offsetX = L / 2 + CHAIR_HALF_DEPTH + gap;
+
+  const addRow = (n, axis, sidePos, rotY) => {
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      const c = makeChair();
+      if (axis === 'x') c.position.set(-L / 2 + t * L, 0, sidePos);
+      else              c.position.set(sidePos, 0, -W / 2 + t * W);
+      c.rotation.y = rotY;
+      group.add(c);
+    }
+  };
+
+  if (item.chairs == null) {
+    // Legacy: sillas solo en los dos lados largos según separación.
+    const sep        = item.chairSep ?? 0.60;
+    const sideChairs = Math.max(1, Math.floor(L / sep));
+    addRow(sideChairs, 'x',  offsetZ, 0);
+    addRow(sideChairs, 'x', -offsetZ, Math.PI);
+    return;
+  }
+
+  const total = Math.max(0, Math.round(item.chairs));
+  if (total === 0) return;
+
+  // Sillas por lado corto (simétricas), el resto a los lados largos.
+  const perim      = 2 * L + 2 * W;
+  const nShortEach = Math.round((total * W) / perim);
+  const remaining  = Math.max(0, total - 2 * nShortEach);
+  const nLongFront = Math.ceil(remaining / 2);
+  const nLongBack  = Math.floor(remaining / 2);
+
+  addRow(nLongFront, 'x',  offsetZ, 0);
+  addRow(nLongBack,  'x', -offsetZ, Math.PI);
+  addRow(nShortEach, 'z',  offsetX, Math.PI / 2);
+  addRow(nShortEach, 'z', -offsetX, -Math.PI / 2);
 }
 
 export function buildMesaCocktail(item, view) {

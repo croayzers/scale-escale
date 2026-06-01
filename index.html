@@ -361,6 +361,20 @@
         <div style="font-size:11px;opacity:0.55;margin-top:1px">Dibujar cotas de distancia sobre el plano</div>
       </div>
     </button>
+    <button class="btn ghost" style="justify-content:flex-start;gap:10px;padding:10px 12px;text-align:left" data-measure-action="rotate">
+      <i data-lucide="rotate-cw" class="w-4 h-4" style="flex-shrink:0"></i>
+      <div>
+        <div style="font-size:13px;font-weight:600">Rotar plano</div>
+        <div style="font-size:11px;opacity:0.55;margin-top:1px">Orientar el plano base con una barra</div>
+      </div>
+    </button>
+    <div id="measure-rotate-row" class="hidden" style="padding:4px 12px 8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;opacity:0.7;margin-bottom:4px">
+        <span>Ángulo</span>
+        <span id="measure-rotate-deg">0°</span>
+      </div>
+      <input id="measure-rotate-range" type="range" min="0" max="359" step="1" value="0" style="width:100%"/>
+    </div>
   </div>
 </div>
 
@@ -599,6 +613,7 @@
 
   <input type="file" id="file-plan-img" accept="image/*" class="hidden"/>
   <input type="file" id="file-plan-pdf" accept="application/pdf" class="hidden"/>
+  <input type="file" id="file-plan-dxf" accept=".dxf" class="hidden"/>
 
 <!-- ============ CALIBRATION HINT BANNER ============ -->
 <div id="cal-banner" class="cal-banner hidden" role="status" aria-live="polite"></div>
@@ -1504,6 +1519,11 @@
         <div class="display-font text-xl mb-1">PDF</div>
         <div class="text-[10.5px] opacity-70">PÃ¡gina 1 rasterizada</div>
       </button>
+      <button id="plan-fmt-dxf" class="p-5 text-left border border-black/15 hover:border-black hover:bg-black hover:text-white transition-all col-span-2">
+        <i data-lucide="pen-tool" class="w-7 h-7 mb-3"></i>
+        <div class="display-font text-xl mb-1">DXF</div>
+        <div class="text-[10.5px] opacity-70">Vectorial · dimensiones reales autom&aacute;ticas</div>
+      </button>
     </div>
     <div class="flex justify-end"><button id="plan-fmt-cancel" class="btn ghost">Cancelar</button></div>
   </div>
@@ -1851,7 +1871,7 @@
     Color de la pared
   </label>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
-  <button class="wall-ctx-item" id="wall-ctx-flatten">Plano 2D</button>
+  <button class="wall-ctx-item" id="wall-ctx-flatten">Pared 2D · OFF</button>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item" id="wall-ctx-toggle-label">Cerrar</button>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
@@ -1867,6 +1887,9 @@
   </label>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item" id="wp-seg-toggle-label">Ocultar medida</button>
+  <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
+  <button class="wall-ctx-item" id="wp-seg-add-door">Añadir puerta</button>
+  <button class="wall-ctx-item" id="wp-seg-clear-doors">Quitar puertas</button>
   <div style="height:1px;background:rgba(0,0,0,0.07);margin:2px 4px"></div>
   <button class="wall-ctx-item wall-ctx-danger" id="wp-seg-delete">Eliminar segmento</button>
 </div>
