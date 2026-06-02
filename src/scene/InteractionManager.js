@@ -197,7 +197,10 @@ function getIntersectedItem() {
   let firstNonCarpa = null, firstCarpa = null;
   for (const hit of intersects) {
     const item = resolveItem(hit.object);
-    if (!item || item.disabled) continue;
+    // Las zonas deshabilitadas siguen siendo seleccionables (para abrir su menú de
+    // modificación); no se mueven porque están bloqueadas. El resto de items
+    // deshabilitados sí se ignoran.
+    if (!item || (item.disabled && item.type !== 'zone')) continue;
     if (!String(item.type || '').startsWith('carpa') && !firstNonCarpa) firstNonCarpa = item;
     if (String(item.type || '').startsWith('carpa') && !firstCarpa) firstCarpa = item;
     if (firstNonCarpa) break;
