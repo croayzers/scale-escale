@@ -807,6 +807,39 @@ async function savePending() {
   if (onboardingActive) finalizeOnboarding();
 }
 
+// Guarda un parche parcial de datos de empresa (los que rellenan los PDFs) y
+// sincroniza con la base de datos, sin pasar por el modal completo de empresa.
+function saveDocumentData(patch = {}) {
+  const clean = {};
+  if (patch.name !== undefined)      clean.name      = cleanText(patch.name);
+  if (patch.venueName !== undefined) clean.venueName = cleanText(patch.venueName);
+  if (patch.cliente !== undefined)   clean.cliente   = cleanText(patch.cliente);
+  if (patch.email !== undefined)     clean.email     = cleanEmail(patch.email);
+
+  AppState.company = { ...AppState.company, ...clean };
+
+  // Dashboard local — falla silenciosamente si el server no está activo
+  DashboardSync.syncCompany(AppState.company).catch(error => {
+    console.warn('No se pudo sincronizar con el dashboard local:', error);
+  });
+
+  // Cloud sync — falla silenciosamente, no interrumpe el guardado
+  CloudSync.syncCompany(AppState.company).then(cloudResponse => {
+    if (cloudResponse?.reason === 'auth_required') {
+      AppState.company.cloudSyncStatus = 'needs_auth';
+    }
+  }).catch(error => {
+    console.warn('No se pudo sincronizar con servicios cloud:', error);
+  });
+
+  storeCompanyProfile(AppState.company);
+  saveCompanyState();
+  syncBrandUI();
+  PlanningRegistry.record('company-doc-save');
+  document.dispatchEvent(new CustomEvent('escale:company-doc-saved'));
+  return AppState.company;
+}
+
 function init() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1345,5 +1378,6 @@ export const CompanyManager = {
   requireReady,
   requestAfterWelcome: () => {},
   syncBrandUI,
-  applyBrandColors
+  applyBrandColors,
+  saveDocumentData
 };

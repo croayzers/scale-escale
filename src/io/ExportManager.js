@@ -92,6 +92,10 @@ function init() {
     if (event.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) cancelArea();
   });
 
+  document.getElementById('pdf-data-close')?.addEventListener('click', closeDataModal);
+  document.getElementById('pdf-data-cancel')?.addEventListener('click', closeDataModal);
+  document.getElementById('pdf-data-save')?.addEventListener('click', saveDataModal);
+
   syncExportModalCopy();
 }
 
@@ -137,6 +141,62 @@ function openModal(options = {}) {
 
 function closeModal() {
   document.getElementById('export-modal')?.classList.remove('visible');
+}
+
+/* ─── Datos del documento (campos que rellenan los PDF) ─── */
+const PDF_DATA_FIELDS = [
+  { id: 'pdf-data-name',    key: 'name',      required: true },
+  { id: 'pdf-data-venue',   key: 'venueName', required: true },
+  { id: 'pdf-data-email',   key: 'email',     required: false },
+  { id: 'pdf-data-cliente', key: 'cliente',   required: false }
+];
+
+function _markPdfField(input, required) {
+  const missing = required && !input.value.trim();
+  input.classList.toggle('pdf-field-missing', missing);
+  return missing;
+}
+
+function openDataModal() {
+  const company = AppState.company || {};
+  PDF_DATA_FIELDS.forEach(({ id, key, required }) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.value = company[key] || (key === 'email' ? (company.authEmail || '') : '');
+    _markPdfField(input, required);
+    if (!input._pdfBound) {
+      input.addEventListener('input', () => _markPdfField(input, required));
+      input._pdfBound = true;
+    }
+  });
+  const logoStatus = document.getElementById('pdf-data-logo-status');
+  if (logoStatus) logoStatus.textContent = company.logo ? 'Logo: cargado' : 'Logo: sin logo';
+  document.getElementById('pdf-data-hint')?.classList.add('hidden');
+  document.getElementById('pdf-data-modal')?.classList.add('visible');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeDataModal() {
+  document.getElementById('pdf-data-modal')?.classList.remove('visible');
+}
+
+function saveDataModal() {
+  let firstMissing = null;
+  const patch = {};
+  PDF_DATA_FIELDS.forEach(({ id, key, required }) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    if (_markPdfField(input, required) && !firstMissing) firstMissing = input;
+    patch[key] = input.value.trim();
+  });
+  if (firstMissing) {
+    const hint = document.getElementById('pdf-data-hint');
+    if (hint) { hint.textContent = 'Rellena los campos obligatorios marcados en rojo.'; hint.classList.remove('hidden'); }
+    firstMissing.focus();
+    return;
+  }
+  CompanyManager.saveDocumentData(patch);
+  closeDataModal();
 }
 
 function openPreviewShell(message = 'Preparando vista previa...') {
@@ -1348,6 +1408,7 @@ function _addInventoryPage(pdf, modeLabel, pageNum, totalPages) {
 export const ExportManager = {
   init,
   openModal,
+  openDataModal,
   printPng,
   downloadInventoryCsv
 };

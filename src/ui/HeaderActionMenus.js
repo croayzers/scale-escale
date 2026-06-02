@@ -213,6 +213,11 @@ function handlePrintAction(action, button) {
     return;
   }
 
+  if (action === 'pdf-data') {
+    ExportManager.openDataModal();
+    return;
+  }
+
   if (action === 'pdf') {
     ExportManager.openModal({ kind: 'pdf' });
     return;
@@ -238,13 +243,17 @@ function handlePlanUpgrade(planCode) {
   PlansModal.open(planCode);
 }
 
-function onDocumentClick(event) {
-  const clickedInsideMenu = Object.keys(MENU_CONFIG).some(key => {
+function onDocumentPointerDown(event) {
+  const pressedInsideMenu = Object.keys(MENU_CONFIG).some(key => {
     const { button, menu } = getMenuElements(key);
     return button?.contains(event.target) || menu?.contains(event.target);
   });
 
-  if (!clickedInsideMenu) closeMenus();
+  // Paneles laterales asociados a un menú (p.ej. ajustes de zona) cuentan como "dentro":
+  // no deben cerrar el menú al editar sus campos.
+  const sidePanel = event.target.closest?.('.zone-side-panel');
+
+  if (!pressedInsideMenu && !sidePanel) closeMenus();
 }
 
 function init() {
@@ -278,7 +287,9 @@ function init() {
     });
   });
 
-  document.addEventListener('click', onDocumentClick);
+  // pointerdown (no click): cerrar solo si la pulsación empieza fuera del menú,
+  // para no cerrarlo al arrastrar dentro de un input numérico y soltar fuera.
+  document.addEventListener('pointerdown', onDocumentPointerDown);
   document.addEventListener('escale:scene-overlay-open', event => {
     if (event.detail?.kind !== 'header') closeMenus();
   });

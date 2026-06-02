@@ -56,9 +56,14 @@ function init() {
 
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
-  document.addEventListener('click', e => {
+  // Cerrar en pointerdown (al pulsar), no en click: así arrastrar para seleccionar
+  // texto dentro de un input y soltar fuera del menú no lo cierra. Solo cierra si
+  // la pulsación empieza fuera del menú.
+  document.addEventListener('pointerdown', e => {
     const ctx = document.getElementById('context-menu');
-    if (ctx && !ctx.contains(e.target)) ctx.classList.remove('visible');
+    if (ctx && ctx.classList.contains('visible') && !ctx.contains(e.target)) {
+      ctx.classList.remove('visible');
+    }
   });
   document.getElementById('context-menu')?.addEventListener('click', e => {
     e.stopPropagation();

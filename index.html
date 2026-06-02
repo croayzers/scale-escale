@@ -529,6 +529,14 @@
       </span>
       <span class="menu-action-tag">PRO</span>
     </button>
+    <button class="menu-action" type="button" data-print-action="pdf-data">
+      <span class="menu-action-icon"><i data-lucide="file-pen-line" class="w-4 h-4"></i></span>
+      <span class="menu-action-copy">
+        <strong>Datos del documento</strong>
+        <small>Editar la informacion de los PDF exportados</small>
+      </span>
+      <span class="menu-action-tag">PRO</span>
+    </button>
   </div>
 </div>
 
@@ -1632,6 +1640,52 @@
       </button>
     </div>
     <div class="flex justify-end"><button id="export-cancel" class="btn ghost">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- Modal datos del documento (datos que rellenan los PDF) -->
+<div id="pdf-data-modal" class="modal-bg">
+  <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Documento</div>
+        <h3 class="display-font text-3xl leading-tight">Datos del PDF</h3>
+        <p class="text-[12px] mt-2" style="color:var(--muted)">Esta informacion aparece en los PDF exportados. Los campos en rojo son obligatorios.</p>
+      </div>
+      <button id="pdf-data-close" class="icon-btn" title="Cerrar"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <div id="pdf-data-hint" class="company-missing-banner hidden"></div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre de empresa *</span>
+        <input id="pdf-data-name" type="text" placeholder="Nombre de tu empresa" class="input-field"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento *</span>
+        <input id="pdf-data-venue" type="text" placeholder="Ej: Can Cristobal, Hotel Vela…" class="input-field"/>
+      </label>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Email del documento</span>
+        <input id="pdf-data-email" type="email" placeholder="contacto@empresa.com" class="input-field"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Cliente</span>
+        <input id="pdf-data-cliente" type="text" placeholder="Nombre del cliente" class="input-field"/>
+      </label>
+    </div>
+
+    <div class="rule mb-4"></div>
+    <div class="flex justify-between items-center gap-2">
+      <span id="pdf-data-logo-status" class="mono text-[10px] uppercase tracking-widest" style="color:var(--muted)"></span>
+      <div class="flex gap-2">
+        <button id="pdf-data-cancel" class="btn ghost">Cancelar</button>
+        <button id="pdf-data-save" class="btn primary"><i data-lucide="save" class="w-4 h-4"></i><span>Guardar</span></button>
+      </div>
+    </div>
   </div>
 </div>
 
