@@ -360,7 +360,10 @@ function suggestProvider(email) {
 
 function getPortalUrl() {
   const cfg = ServiceConfig.get();
-  return cfg?.portalUrl || 'https://thescaleapps.com';
+  const url = cfg?.portalUrl;
+  // Ignorar valores mal configurados (ej. el nombre de la var en vez de la URL)
+  if (url && url.startsWith('http')) return url.replace(/\/$/, '');
+  return 'https://thescaleapps.com';
 }
 
 function redirectToPortalLogin(returnUrl) {
