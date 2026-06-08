@@ -144,6 +144,77 @@ function exposeTokenGetter() {
   };
 }
 
+// ── Cookie storage adapter para compartir sesión con el portal Scale ──────────
+// @supabase/ssr guarda la sesión como cookies sb-<ref>-auth-token (o chunkeadas
+// sb-<ref>-auth-token.0, .1 …). Este adapter las lee/escribe para que E-Scale
+// herede la sesión del portal sin necesidad de un nuevo login.
+
+function extractProjectRef(supabaseUrl) {
+  const match = String(supabaseUrl || '').match(/https?:\/\/([^.]+)\.supabase\.co/);
+  return match ? match[1] : '';
+}
+
+function parseCookies() {
+  return Object.fromEntries(
+    document.cookie.split(';').map(c => {
+      const [k, ...v] = c.trim().split('=');
+      return [decodeURIComponent(k), decodeURIComponent(v.join('='))];
+    }).filter(([k]) => k)
+  );
+}
+
+function writeCookie(name, value, opts = {}) {
+  let str = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+  str += `; path=${opts.path || '/'}`;
+  if (opts.domain)   str += `; domain=${opts.domain}`;
+  if (opts.secure)   str += `; secure`;
+  if (opts.sameSite) str += `; samesite=${opts.sameSite}`;
+  if (opts.maxAge != null) str += `; max-age=${opts.maxAge}`;
+  document.cookie = str;
+}
+
+function createCookieStorage(cookieDomain) {
+  const isLocal = !cookieDomain ||
+    cookieDomain.replace(/^\./, '') === 'localhost' ||
+    cookieDomain.replace(/^\./, '') === '127.0.0.1';
+
+  const opts = {
+    path: '/',
+    sameSite: 'lax',
+    ...(cookieDomain && !isLocal ? { domain: cookieDomain } : {}),
+    ...(!isLocal ? { secure: true } : {})
+  };
+
+  return {
+    getItem(key) {
+      const cookies = parseCookies();
+      // Intentar primero el valor directo
+      if (cookies[key] != null) return cookies[key];
+      // Luego chunks: key.0 + key.1 + …
+      const chunks = [];
+      let i = 0;
+      while (cookies[`${key}.${i}`] != null) {
+        chunks.push(cookies[`${key}.${i}`]);
+        i++;
+      }
+      return chunks.length > 0 ? chunks.join('') : null;
+    },
+    setItem(key, value) {
+      writeCookie(key, value, opts);
+    },
+    removeItem(key) {
+      writeCookie(key, '', { ...opts, maxAge: 0 });
+      // Limpiar chunks si los hubiese
+      const cookies = parseCookies();
+      let i = 0;
+      while (cookies[`${key}.${i}`] != null) {
+        writeCookie(`${key}.${i}`, '', { ...opts, maxAge: 0 });
+        i++;
+      }
+    }
+  };
+}
+
 function getSupabaseClient() {
   const config = ServiceConfig.getService('supabase');
   const enabled = Boolean(config?.enabled && config?.url && config?.anonKey);
@@ -152,11 +223,15 @@ function getSupabaseClient() {
   if (!window.supabase?.createClient) {
     throw new Error('Supabase Auth no esta disponible. Revisa el script @supabase/supabase-js o el bundle de la app.');
   }
+  const cookieDomain = config?.cookieDomain || '';
+  const projectRef   = extractProjectRef(config.url);
   supabaseClient = window.supabase.createClient(config.url, config.anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storage: createCookieStorage(cookieDomain),
+      storageKey: projectRef ? `sb-${projectRef}-auth-token` : undefined
     }
   });
   return supabaseClient;
@@ -283,6 +358,17 @@ function suggestProvider(email) {
   };
 }
 
+function getPortalUrl() {
+  const cfg = ServiceConfig.get();
+  return cfg?.portalUrl || 'https://thescaleapps.com';
+}
+
+function redirectToPortalLogin(returnUrl) {
+  const portal = getPortalUrl();
+  const back   = returnUrl || window.location.href;
+  window.location.href = `${portal}/login?returnUrl=${encodeURIComponent(back)}`;
+}
+
 async function mockSignIn(provider, email, options = {}) {
   const normalizedEmail = cleanEmail(email);
   const normalizedProvider = provider === 'microsoft' ? 'azure' : provider;
@@ -297,26 +383,9 @@ async function mockSignIn(provider, email, options = {}) {
     const client = getSupabaseClient();
     if (client) {
       if (createAccount) {
-        const { data, error } = await client.auth.signUp({
-          email: normalizedEmail,
-          password,
-          options: { data: { fullName } }
-        });
-        if (error) {
-          const msg = error.message?.toLowerCase() || '';
-          if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
-            throw new Error('Ya existe una cuenta con ese correo. Inicia sesion para continuar.');
-          }
-          throw new Error(error.message);
-        }
-        if (!data.session) {
-          // Supabase requiere confirmación de correo
-          return { data, error: null, confirmationRequired: true };
-        }
-        const session = normalizeSupabaseSession(data.session);
-        saveLocalSession(session);
-        hydrateAuthState(session);
-        return { data: { session }, error: null };
+        // El alta vive en el portal Scale — redirigir en vez de crear cuenta aquí
+        redirectToPortalLogin();
+        return { data: null, error: null, redirecting: true };
       } else {
         const { data, error } = await client.auth.signInWithPassword({
           email: normalizedEmail,
@@ -418,5 +487,7 @@ export const AuthManager = {
   isAuthenticated,
   providerLabel,
   findLocalAccount,
+  redirectToPortalLogin,
+  getPortalUrl,
   getSupabaseClient: () => supabaseClient
 };
