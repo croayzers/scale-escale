@@ -188,16 +188,28 @@ function createCookieStorage(cookieDomain) {
   return {
     getItem(key) {
       const cookies = parseCookies();
-      // Intentar primero el valor directo
-      if (cookies[key] != null) return cookies[key];
-      // Luego chunks: key.0 + key.1 + …
-      const chunks = [];
-      let i = 0;
-      while (cookies[`${key}.${i}`] != null) {
-        chunks.push(cookies[`${key}.${i}`]);
-        i++;
+      let raw = cookies[key] ?? null;
+      // Chunks: key.0 + key.1 + …
+      if (raw === null) {
+        const chunks = [];
+        let i = 0;
+        while (cookies[`${key}.${i}`] != null) {
+          chunks.push(cookies[`${key}.${i}`]);
+          i++;
+        }
+        if (chunks.length > 0) raw = chunks.join('');
       }
-      return chunks.length > 0 ? chunks.join('') : null;
+      if (raw === null) return null;
+      // @supabase/ssr codifica el valor como "base64-<btoa(json)>"
+      // El cliente supabase-js estándar espera JSON plano — decodificar aquí.
+      if (raw.startsWith('base64-')) {
+        try {
+          return decodeURIComponent(escape(atob(raw.slice(7))));
+        } catch {
+          return raw;
+        }
+      }
+      return raw;
     },
     setItem(key, value) {
       writeCookie(key, value, opts);
