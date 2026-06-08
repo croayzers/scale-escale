@@ -988,19 +988,22 @@ function init() {
     syncAuthUi();
     syncBrandUI();
 
-    // Con sesión Supabase y sin organizationId, hacemos sync de fondo para
-    // que el backend localice (o cree) la empresa y rellene organizationId.
-    // Necesario para que el panel de plantillas/planos funcione sin guardar
-    // primero el perfil de empresa.
-    if (AppState.company.authStatus === 'authenticated' && !AppState.company.organizationId) {
-      CloudSync.syncCompany(AppState.company).catch(() => {});
-    }
+    // SubscriptionManager escucha este mismo evento y llama a hydrateFromCloud,
+    // que resuelve/crea la empresa en Supabase y rellena organizationId.
+    // No hay que duplicar aquí.
   });
 
   document.addEventListener('escale:license-state', () => {
     syncAccessUi();
     syncAuthUi();
     syncBrandUI();
+    // Persistir datos auto-rellenados desde Supabase a localStorage
+    saveCompanyState();
+  });
+
+  document.addEventListener('escale:company-logo-loaded', () => {
+    syncCompanyButton();
+    saveCompanyState();
   });
 
   if (hasRecoveredIdentity()) {

@@ -95,19 +95,51 @@ function applyAnonymousFallback(reason = 'needs_auth') {
   return plan;
 }
 
+// Convierte una URL de imagen a data URL (para incrustar en PDF).
+// Falla silenciosamente: si CORS o red fallan, no afecta al flujo principal.
+async function _urlToDataUrl(url) {
+  try {
+    const blob = await fetch(url, { mode: 'cors' }).then(r => r.blob());
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
+}
+
 function applyBootstrapResponse(response) {
   const planCode = normalizePlanCode(response?.planCode || 'free_lite');
   const organization = response?.organization || null;
   const auth = response?.auth || null;
   const license = response?.license || {};
 
-  if (auth?.email && !cleanText(AppState.company.email)) {
-    AppState.company.email = auth.email;
+  // ── Sincronizar campos de empresa desde Supabase (fuente de verdad) ──────────
+  // Solo se sobreescribe si Supabase tiene un valor no vacío.
+  if (organization?.nombre) AppState.company.name = organization.nombre;
+  const billingEmail = organization?.billing_email || auth?.email || '';
+  if (billingEmail) AppState.company.email = billingEmail;
+  if (organization?.venue_default) AppState.company.venue = organization.venue_default;
+
+  // Logo: asignar URL inmediatamente (funciona en <img src>).
+  // En paralelo convertir a data URL para que el PDF también pueda incrustarlo.
+  if (organization?.logoUrl && organization.logoUrl !== AppState.company.logo) {
+    AppState.company.logo = organization.logoUrl;
+    AppState.company.logoRelativePath = organization.logo_path || '';
+    _urlToDataUrl(organization.logoUrl).then(dataUrl => {
+      if (dataUrl) {
+        AppState.company.logo = dataUrl;
+        // Refrescar el botón de empresa cuando el data URL esté listo
+        document.dispatchEvent(new CustomEvent('escale:company-logo-loaded'));
+      }
+    });
   }
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const plan = setPlan(planCode, {
     organizationId: organization?.id || '',
-    organizationDisplayName: organization?.display_name || '',
+    organizationDisplayName: organization?.nombre || organization?.display_name || '',
     organizationRole: license.role || '',
     billingCustomerId: response?.billing?.stripeCustomerId || '',
     subscriptionStatus: response?.billing?.subscriptionStatus || (planCode === 'free_lite' ? 'Free Lite' : 'Activo'),
