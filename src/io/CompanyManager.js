@@ -987,6 +987,14 @@ function init() {
     syncAccessUi();
     syncAuthUi();
     syncBrandUI();
+
+    // Con sesión Supabase y sin organizationId, hacemos sync de fondo para
+    // que el backend localice (o cree) la empresa y rellene organizationId.
+    // Necesario para que el panel de plantillas/planos funcione sin guardar
+    // primero el perfil de empresa.
+    if (AppState.company.authStatus === 'authenticated' && !AppState.company.organizationId) {
+      CloudSync.syncCompany(AppState.company).catch(() => {});
+    }
   });
 
   document.addEventListener('escale:license-state', () => {
