@@ -471,17 +471,8 @@ function syncBrandUI() {
 }
 
 function openAccessModal() {
-  if (!hasAccessScreen()) {
-    onboardingActive = false;
-    return false;
-  }
-  onboardingActive = true;
-  accessPasswordVisible = false;
-  const accessModal = document.getElementById('access-modal');
-  if (accessModal) accessModal.style.display = 'flex';
-  syncAccessUi();
-  const targetId = currentAccessMode() === 'register' ? 'access-name' : 'access-email';
-  document.getElementById(targetId)?.focus();
+  // Auth is handled by the portal — redirect instead of showing local modal
+  AuthManager.redirectToPortalLogin(window.location.href);
   return true;
 }
 
@@ -962,8 +953,6 @@ function init() {
     AppState.company.authStatus = 'anonymous';
     saveCompanyState();
     syncAuthUi();
-    setAccessMode('login');
-    openAccessModal();
   });
 
   document.getElementById('company-save')?.addEventListener('click', () => void savePending());
@@ -978,13 +967,10 @@ function init() {
     AppState.company.authStatus = 'anonymous';
     saveCompanyState();
     syncAuthUi();
-    setAccessMode('login');
-    openAccessModal();
   });
   document.getElementById('account-pop-switch')?.addEventListener('click', () => {
     _closeAccountPopover();
-    setAccessMode('login');
-    openAccessModal();
+    AuthManager.redirectToPortalLogin(window.location.href);
   });
   document.addEventListener('click', e => {
     const pop = document.getElementById('account-popover');
