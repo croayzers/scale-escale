@@ -1281,7 +1281,7 @@ async function _sendInvitation() {
     }
 
     // Invitación registrada — abrir cliente de correo del usuario
-    const appUrl     = data.appUrl || 'https://escale.app';
+    const appUrl     = data.appUrl || 'https://events.thescaleapps.com';
     const orgName    = AppState.company?.name || 'nuestra empresa';
     const inviterName = AppState.company?.authDisplayName || AppState.company?.authEmail || 'Un compañero';
     const roleLabel  = { admin: 'Administrador', editor: 'Editor', viewer: 'Visualizador' }[roleEl?.value] || 'Editor';

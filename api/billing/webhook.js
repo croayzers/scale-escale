@@ -19,15 +19,18 @@ function supabaseHeaders() {
   };
 }
 
-async function supabaseRest(path, method, body, query = '') {
+async function supabaseRest(path, method, body, query = '', schema = null) {
   const baseUrl = supabaseRestUrl();
   if (!baseUrl) {
     throw new Error('ESCALE_SUPABASE_URL no esta configurada correctamente.');
   }
   const url = `${baseUrl}/${path}${query}`;
+  const schemaHeaders = schema
+    ? (method === 'GET' ? { 'Accept-Profile': schema } : { 'Content-Profile': schema, 'Accept-Profile': schema })
+    : {};
   const res = await fetch(url, {
     method,
-    headers: supabaseHeaders(),
+    headers: { ...supabaseHeaders(), ...schemaHeaders },
     body: body ? JSON.stringify(body) : undefined
   });
   const text = await res.text();
@@ -175,10 +178,10 @@ module.exports = async function handler(req, res) {
 
         // Audit
         await supabaseRest('audit_events', 'POST', {
-          organization_id: orgId,
+          company_id: orgId,
           event_type: 'subscription_started',
           event_payload: { plan_code: planCode, stripe_customer_id: customerId }
-        });
+        }, '', 'escale');
 
         console.log(`[webhook] SUCCESS org=${orgId} plan=${planCode}`);
         break;
@@ -232,10 +235,10 @@ module.exports = async function handler(req, res) {
           }, `?id=eq.${billing.organization_id}`);
 
           await supabaseRest('audit_events', 'POST', {
-            organization_id: billing.organization_id,
+            company_id: billing.organization_id,
             event_type: 'subscription_cancelled',
             event_payload: { stripe_customer_id: customerId }
-          });
+          }, '', 'escale');
         }
         console.log(`[webhook] subscription.deleted customer=${customerId}`);
         break;
@@ -256,10 +259,10 @@ module.exports = async function handler(req, res) {
           }, `?organization_id=eq.${billing.organization_id}`);
 
           await supabaseRest('audit_events', 'POST', {
-            organization_id: billing.organization_id,
+            company_id: billing.organization_id,
             event_type: 'payment_failed',
             event_payload: { stripe_customer_id: customerId, invoice_id: invoice.id }
-          });
+          }, '', 'escale');
         }
         console.warn(`[webhook] payment_failed customer=${customerId}`);
         break;

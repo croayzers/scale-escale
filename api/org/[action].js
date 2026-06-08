@@ -72,7 +72,7 @@ async function handleInvite(req, res, access) {
     const inviterName = access.user?.fullName || access.user?.email || 'Un compañero';
     const invitation  = await createOrgInvitation(orgId, email, invitedRole, access.user?.id, inviterName);
     if (!invitation) return json(res, 200, { ok: false, reason: 'duplicate', msg: 'Ya existe una invitación pendiente para ese email' });
-    const appUrl = env('ESCALE_PUBLIC_APP_URL') || 'https://escale.app';
+    const appUrl = env('ESCALE_PUBLIC_APP_URL') || 'https://events.thescaleapps.com';
     return json(res, 200, { ok: true, invitation, appUrl });
   }
 

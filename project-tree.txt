@@ -203,6 +203,7 @@ PROJECT STRUCTURE
 │   ├── dock.css
 │   └── layout.css
 ├── supabase/
+│   ├── 01_escale.sql
 │   ├── migrations/
 │   │   ├── 20260528_collab_sessions.sql
 │   │   ├── 20260529_org_invitations.sql
