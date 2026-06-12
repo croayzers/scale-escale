@@ -143,11 +143,26 @@ export function buildMesaPresi(item, view) {
   const offsetZ    = W / 2 + CHAIR_HALF_DEPTH + chairGap;
   const endOffsetX = L / 2 + CHAIR_HALF_DEPTH + chairGap;
 
-  // Sillas laterales derivadas de item.chairs (si no, 4 por lado como antes)
-  const endCount   = (item.endHead !== false ? 1 : 0) + (item.endFoot !== false ? 1 : 0);
-  const sideChairs = item.chairs != null
-    ? Math.max(1, Math.round((item.chairs - endCount) / 2))
-    : 4;
+  const endCount = (item.endHead !== false ? 1 : 0) + (item.endFoot !== false ? 1 : 0);
+  let nFront, nBack;
+  if (item.chairsFront != null || item.chairsBack != null) {
+    nFront = Math.max(0, Math.round(item.chairsFront ?? 0));
+    nBack  = Math.max(0, Math.round(item.chairsBack  ?? 0));
+  } else if (item.chairs != null) {
+    const perSide = Math.max(1, Math.round((item.chairs - endCount) / 2));
+    nFront = perSide;
+    nBack  = perSide;
+  } else {
+    nFront = 4;
+    nBack  = 4;
+  }
+
+  const addPresideRow = (n, sideZ, rotY, v) => {
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      const c = makeChair(v); c.position.set(-L / 2 + t * L, 0, sideZ); c.rotation.y = rotY; group.add(c);
+    }
+  };
 
   if (view === 'top') {
     const fill = new THREE.Mesh(new THREE.PlaneGeometry(L, W), makeTopFill(color, 0.18));
@@ -155,12 +170,8 @@ export function buildMesaPresi(item, view) {
     fill.position.y = 0.04;
     markMain(fill, color);
     group.add(fill);
-    for (let i = 0; i < sideChairs; i++) {
-      const t = (i + 0.5) / sideChairs;
-      const x = -L / 2 + t * L;
-      const cf = makeChair('top'); cf.position.set(x, 0,  offsetZ); cf.rotation.y = 0;       group.add(cf);
-      const cb = makeChair('top'); cb.position.set(x, 0, -offsetZ); cb.rotation.y = Math.PI; group.add(cb);
-    }
+    if (nFront > 0) addPresideRow(nFront,  offsetZ, 0,         'top');
+    if (nBack  > 0) addPresideRow(nBack,  -offsetZ, Math.PI,   'top');
     if (item.endHead !== false) {
       const ch = makeChair('top'); ch.position.set( endOffsetX, 0, 0); ch.rotation.y =  Math.PI / 2; group.add(ch);
     }
@@ -183,12 +194,8 @@ export function buildMesaPresi(item, view) {
   cloth.castShadow = true;
   group.add(cloth);
 
-  for (let i = 0; i < sideChairs; i++) {
-    const t = (i + 0.5) / sideChairs;
-    const x = -L / 2 + t * L;
-    const cf = makeChair(); cf.position.set(x, 0,  offsetZ); cf.rotation.y = 0;            group.add(cf);
-    const cb = makeChair(); cb.position.set(x, 0, -offsetZ); cb.rotation.y = Math.PI;      group.add(cb);
-  }
+  if (nFront > 0) addPresideRow(nFront,  offsetZ, 0,       'iso');
+  if (nBack  > 0) addPresideRow(nBack,  -offsetZ, Math.PI, 'iso');
 
   if (item.endHead !== false) {
     const ch = makeChair(); ch.position.set( endOffsetX, 0, 0); ch.rotation.y =  Math.PI / 2; group.add(ch);
@@ -257,35 +264,33 @@ function placeRectChairs(group, item, L, W, view = 'iso') {
     }
   };
 
-  if (item.chairs == null) {
-    // Legacy: sillas solo en los dos lados largos según separación.
-    const sep        = item.chairSep ?? 0.60;
-    const sideChairs = Math.max(1, Math.floor(L / sep));
-    addRow(sideChairs, 'x',  offsetZ, 0);
-    addRow(sideChairs, 'x', -offsetZ, Math.PI);
-    return;
-  }
-
-  const total = Math.max(0, Math.round(item.chairs));
-  if (total === 0) return;
-
   const showHead = item.endHead !== false;
   const showFoot = item.endFoot !== false;
 
-  // Sillas por extremo (lado corto), proporcional al perímetro.
-  // Las de extremos desactivados se redistribuyen a los lados largos.
-  const perim      = 2 * L + 2 * W;
-  const nShortEach = Math.round((total * W) / perim);
-  const headChairs = showHead ? nShortEach : 0;
-  const footChairs = showFoot ? nShortEach : 0;
-  const remaining  = Math.max(0, total - headChairs - footChairs);
-  const nLongFront = Math.ceil(remaining / 2);
-  const nLongBack  = Math.floor(remaining / 2);
+  let nFront, nBack;
+  if (item.chairsFront != null || item.chairsBack != null) {
+    nFront = Math.max(0, Math.round(item.chairsFront ?? 0));
+    nBack  = Math.max(0, Math.round(item.chairsBack  ?? 0));
+  } else if (item.chairs != null) {
+    const total = Math.max(0, Math.round(item.chairs));
+    if (total === 0) return;
+    const perim      = 2 * L + 2 * W;
+    const nShortEach = Math.round((total * W) / perim);
+    const headC      = showHead ? nShortEach : 0;
+    const footC      = showFoot ? nShortEach : 0;
+    const remaining  = Math.max(0, total - headC - footC);
+    nFront = Math.ceil(remaining / 2);
+    nBack  = Math.floor(remaining / 2);
+  } else {
+    const sep = item.chairSep ?? 0.60;
+    nFront = Math.max(1, Math.floor(L / sep));
+    nBack  = nFront;
+  }
 
-  addRow(nLongFront, 'x',  offsetZ, 0);
-  addRow(nLongBack,  'x', -offsetZ, Math.PI);
-  if (showHead) addRow(nShortEach, 'z',  offsetX,  Math.PI / 2);
-  if (showFoot) addRow(nShortEach, 'z', -offsetX, -Math.PI / 2);
+  if (nFront > 0) addRow(nFront, 'x',  offsetZ, 0);
+  if (nBack  > 0) addRow(nBack,  'x', -offsetZ, Math.PI);
+  if (showHead)   addRow(1, 'z',  offsetX,  Math.PI / 2);
+  if (showFoot)   addRow(1, 'z', -offsetX, -Math.PI / 2);
 }
 
 export function buildMesaCocktail(item, view) {

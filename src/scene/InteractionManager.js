@@ -1082,7 +1082,7 @@ function typeControlHTML(item) {
 
 function fieldBounds(field) {
   const name = field.split('.').pop();
-  if (['chairs', 'count', 'cubiteras', 'peaks'].includes(name)) return { min: 0, max: 500, step: 1 };
+  if (['chairs', 'chairsFront', 'chairsBack', 'count', 'cubiteras', 'peaks'].includes(name)) return { min: 0, max: 500, step: 1 };
   if (['rows', 'cols'].includes(name)) return { min: 1, max: 20, step: 1 };
   if (name === 'anguloDeg') return { min: 1, max: 360, step: 1 };
   if (name === 'diameter') return { min: 0.04, max: 30, step: 0.01 };
@@ -1100,6 +1100,16 @@ function numberFieldHTML(field, label, value) {
       <input data-field="${escapeAttr(field)}" class="ctx-input" type="number"
         min="${b.min}" max="${b.max}" step="${b.step}" value="${escapeAttr(formatNum(value))}"/>
     </label>`;
+}
+
+function sillasBlockHTML(item) {
+  const isRectLike = item.type === 'mesaRect' || item.type === 'mesaImperial'
+    || (item.type === 'mesa' && item.subtype === 'presi');
+  if (!isRectLike) return numberFieldHTML('chairs', 'Cantidad', item.chairs ?? 0);
+  const nFront = item.chairsFront ?? (item.chairs != null ? Math.ceil(item.chairs / 2) : 3);
+  const nBack  = item.chairsBack  ?? (item.chairs != null ? Math.floor(item.chairs / 2) : 3);
+  return numberFieldHTML('chairsFront', 'Lado izq.', nFront)
+       + numberFieldHTML('chairsBack',  'Lado der.', nBack);
 }
 
 function checkboxFieldHTML(field, label, checked) {
@@ -1671,7 +1681,7 @@ function buildUnifiedContextMenuHTML(item) {
       ${hasSeats ? `
         <div class="ctx-block">
           <div class="ctx-label">Sillas</div>
-          ${numberFieldHTML('chairs', 'Cantidad', item.chairs ?? 0)}
+          ${sillasBlockHTML(item)}
         </div>` : ''}
 
       ${specificHTML ? specificHTML : ''}
@@ -1996,6 +2006,12 @@ function handleContextField(field, value, id) {
     const chairs = Math.max(0, Math.min(500, Math.round(parseFloat(value) || 0)));
     const patch = item.type === 'sillaLineal' ? { chairs, count: chairs } : { chairs };
     applyContextPatch(id, patch);
+    return;
+  }
+
+  if (field === 'chairsFront' || field === 'chairsBack') {
+    const n = Math.max(0, Math.min(500, Math.round(parseFloat(value) || 0)));
+    applyContextPatch(id, { [field]: n });
     return;
   }
 
