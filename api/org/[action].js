@@ -1,6 +1,9 @@
 const { json, methodNotAllowed, readJsonBody, badRequest, serverError } = require('../../lib/http');
 const {
   resolveAuthenticatedContext,
+  findAuthUserByEmail,
+  ensureOrganizationMembership,
+  setUserActiveCompany,
   createOrgInvitation,
   listOrgInvitations,
   deleteOrgInvitation,
@@ -70,10 +73,26 @@ async function handleInvite(req, res, access) {
     if (!email || !email.includes('@')) return badRequest(res, 'Email inválido');
     if (!['admin', 'editor', 'viewer'].includes(invitedRole)) return badRequest(res, 'Rol inválido');
     const inviterName = access.user?.fullName || access.user?.email || 'Un compañero';
-    const invitation  = await createOrgInvitation(orgId, email, invitedRole, access.user?.id, inviterName);
-    if (!invitation) return json(res, 200, { ok: false, reason: 'duplicate', msg: 'Ya existe una invitación pendiente para ese email' });
     const appUrl = env('ESCALE_PUBLIC_APP_URL') || 'https://events.thescaleapps.com';
-    return json(res, 200, { ok: true, invitation, appUrl });
+
+    // Si el usuario ya tiene cuenta en Supabase, añadirlo directamente a company_members
+    const existingUser = await findAuthUserByEmail(email);
+    if (existingUser?.id) {
+      await ensureOrganizationMembership(orgId, existingUser.id, invitedRole);
+      // Actualizar la empresa activa del invitado para que vea esta organización en el Portal y E-Scale
+      await setUserActiveCompany(existingUser.id, orgId);
+      return json(res, 200, { ok: true, direct: true, appUrl });
+    }
+
+    // Usuario nuevo — guardar invitación pendiente (se aplica al hacer login)
+    try {
+      const invitation = await createOrgInvitation(orgId, email, invitedRole, access.user?.id, inviterName);
+      if (!invitation) return json(res, 200, { ok: false, reason: 'duplicate', msg: 'Ya existe una invitación pendiente para ese email' });
+      return json(res, 200, { ok: true, invitation, appUrl });
+    } catch (invErr) {
+      console.error('[handleInvite] Error guardando invitación:', invErr?.message);
+      return json(res, 500, { ok: false, reason: 'invite_error', msg: invErr?.message });
+    }
   }
 
   return methodNotAllowed(req, res, ['GET', 'POST', 'DELETE']);

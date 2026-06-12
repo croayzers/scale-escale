@@ -1351,8 +1351,20 @@ async function _sendInvitation() {
       _showInviteFeedback('Ya existe una invitación pendiente para ese email', 'info');
       return;
     }
+    if (!data.ok && data.reason === 'insufficient_role') {
+      _showInviteFeedback('Solo el owner o admin puede invitar', 'error');
+      return;
+    }
     if (!data.ok) {
-      _showInviteFeedback('Error al preparar la invitación', 'error');
+      _showInviteFeedback(data.msg || 'Error al preparar la invitación', 'error');
+      return;
+    }
+
+    // Si el usuario ya existía se añadió directamente — mensaje corto
+    if (data.direct) {
+      _showInviteFeedback(`${email} añadido al equipo`, 'info');
+      _loadTeamData();
+      emailEl.value = '';
       return;
     }
 

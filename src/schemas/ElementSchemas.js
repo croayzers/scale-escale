@@ -756,14 +756,16 @@ export const ELEMENT_SCHEMAS = [
     metadata: { label: 'Mesa rectangular', icon: 'table-2', category: 'tables' },
     builder: { preset: 'mesaRect' },
     ui: { dynamic: true },
-    defaults: { dims: { length: 2.4, width: 0.9, height: 0.75 }, color: '#DDD4C8', chairs: 6, labelText: '' },
+    defaults: { dims: { length: 2.4, width: 0.9, height: 0.75 }, color: '#DDD4C8', chairs: 6, labelText: '', endHead: true, endFoot: true },
     params: [
       StandardParams.length({ default: 2.4, min: 0.6, max: 12, step: 0.1 }),
       StandardParams.width({ default: 0.9, min: 0.4, max: 6, step: 0.1 }),
       StandardParams.chairs({ default: 6, max: 48 }),
       StandardParams.rotation(),
       StandardParams.color({ default: '#DDD4C8' }),
-      StandardParams.text({ label: 'Texto mesa' })
+      StandardParams.text({ label: 'Texto mesa' }),
+      { key: 'endHead', path: 'endHead', type: 'toggle', label: 'Silla cabecero', default: true, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.CHILDREN },
+      { key: 'endFoot', path: 'endFoot', type: 'toggle', label: 'Silla pie',      default: true, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.CHILDREN }
     ]
   },
   {
@@ -773,14 +775,16 @@ export const ELEMENT_SCHEMAS = [
     metadata: { label: 'Mesa imperial', icon: 'table-2', category: 'tables' },
     builder: { preset: 'mesaRect' },
     ui: { dynamic: true },
-    defaults: { dims: { length: 6.0, width: 1.2, height: 0.75 }, color: '#DDD4C8', chairs: 20, labelText: '' },
+    defaults: { dims: { length: 6.0, width: 1.2, height: 0.75 }, color: '#DDD4C8', chairs: 20, labelText: '', endHead: true, endFoot: true },
     params: [
       StandardParams.length({ default: 6.0, min: 1, max: 20, step: 0.1 }),
       StandardParams.width({ default: 1.2, min: 0.5, max: 6, step: 0.1 }),
       StandardParams.chairs({ default: 20, max: 48 }),
       StandardParams.rotation(),
       StandardParams.color({ default: '#DDD4C8' }),
-      StandardParams.text({ label: 'Texto mesa' })
+      StandardParams.text({ label: 'Texto mesa' }),
+      { key: 'endHead', path: 'endHead', type: 'toggle', label: 'Silla cabecero', default: true, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.CHILDREN },
+      { key: 'endFoot', path: 'endFoot', type: 'toggle', label: 'Silla pie',      default: true, level: PARAM_LEVEL.ADVANCED, category: PARAM_CATEGORY.CHILDREN }
     ]
   },
   {

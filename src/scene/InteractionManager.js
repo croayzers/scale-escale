@@ -624,7 +624,6 @@ function onPointerDown(e) {
     }
     if (item.locked) {
       AppState.select(item.id, shiftDown);
-      if (!shiftDown) pendingClickItem = item;
       return;
     }
     {

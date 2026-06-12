@@ -264,17 +264,23 @@ function placeRectChairs(group, item, L, W, view = 'iso') {
   const total = Math.max(0, Math.round(item.chairs));
   if (total === 0) return;
 
-  // Sillas por lado corto (simétricas), el resto a los lados largos.
+  const showHead = item.endHead !== false;
+  const showFoot = item.endFoot !== false;
+
+  // Sillas por extremo (lado corto), proporcional al perímetro.
+  // Las de extremos desactivados se redistribuyen a los lados largos.
   const perim      = 2 * L + 2 * W;
   const nShortEach = Math.round((total * W) / perim);
-  const remaining  = Math.max(0, total - 2 * nShortEach);
+  const headChairs = showHead ? nShortEach : 0;
+  const footChairs = showFoot ? nShortEach : 0;
+  const remaining  = Math.max(0, total - headChairs - footChairs);
   const nLongFront = Math.ceil(remaining / 2);
   const nLongBack  = Math.floor(remaining / 2);
 
   addRow(nLongFront, 'x',  offsetZ, 0);
   addRow(nLongBack,  'x', -offsetZ, Math.PI);
-  addRow(nShortEach, 'z',  offsetX, Math.PI / 2);
-  addRow(nShortEach, 'z', -offsetX, -Math.PI / 2);
+  if (showHead) addRow(nShortEach, 'z',  offsetX,  Math.PI / 2);
+  if (showFoot) addRow(nShortEach, 'z', -offsetX, -Math.PI / 2);
 }
 
 export function buildMesaCocktail(item, view) {
