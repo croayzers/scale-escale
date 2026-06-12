@@ -405,7 +405,7 @@ function syncAuthUi() {
     portalButton?.classList.add('hidden');
   } else {
     providerChip.textContent = 'Correo';
-    planChip.textContent = 'Free Lite';
+    planChip.textContent = 'PRO';
     statusTitle.textContent = 'Identifica tu cuenta';
     statusText.textContent = 'Primero elegimos correo y metodo de acceso.';
     accountHint.textContent = 'Despues pasaras a los datos de empresa con autocompletado si ya existen en este equipo o con el mismo dominio.';
@@ -1028,6 +1028,78 @@ function init() {
   openAccessModal();
 }
 
+/* ─── Suite Scale ─── */
+const SUITE_APPS = [
+  { id: 'portal', label: 'Portal',  desc: 'Tu empresa, facturación y apps contratadas', letter: 'S', color: '#6366f1' },
+  { id: 'pscale', label: 'P-Scale', desc: 'Gestión de personal para eventos',           letter: 'P', color: '#0ea5e9' },
+  { id: 'sscale', label: 'S-Scale', desc: 'Automatización de redes sociales con IA',    letter: 'S', color: '#10b981' },
+  { id: 'escale', label: 'E-Scale', desc: 'Diseño 3D de espacios para eventos',          letter: 'E', color: '#f59e0b', current: true }
+];
+
+function _suiteUrls() {
+  const portal = AuthManager.getPortalUrl();
+  const prod = portal.includes('thescaleapps.com');
+  return {
+    portal,
+    pscale: prod ? 'https://people.thescaleapps.com' : 'http://localhost:5181',
+    sscale: prod ? 'https://social.thescaleapps.com' : 'http://localhost:3001',
+    escale: null
+  };
+}
+
+let _activeSuiteApp = null;
+
+function _renderSuiteApps() {
+  const container = document.getElementById('account-pop-suite');
+  if (!container) return;
+  container.innerHTML = '';
+  SUITE_APPS.forEach(app => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'suite-app-chip' +
+      (app.current ? ' is-current' : '') +
+      (_activeSuiteApp === app.id ? ' is-active' : '');
+    chip.innerHTML =
+      `<div class="suite-app-badge" style="background:${app.color}">${app.letter}</div>` +
+      `<span class="suite-app-name">${app.label}</span>`;
+    if (!app.current) {
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        _activeSuiteApp = _activeSuiteApp === app.id ? null : app.id;
+        _renderSuiteApps();
+        _renderSuiteDetail();
+      });
+    }
+    container.appendChild(chip);
+  });
+}
+
+function _renderSuiteDetail() {
+  const prev = document.getElementById('account-pop-suite-detail');
+  if (prev) prev.remove();
+  if (!_activeSuiteApp) return;
+
+  const app = SUITE_APPS.find(a => a.id === _activeSuiteApp);
+  if (!app) return;
+  const url = _suiteUrls()[app.id];
+  if (!url) return;
+
+  const detail = document.createElement('div');
+  detail.id = 'account-pop-suite-detail';
+  detail.className = 'suite-app-detail';
+  detail.innerHTML =
+    `<div class="suite-app-detail-name">${app.label}</div>` +
+    `<div class="suite-app-detail-desc">${app.desc}</div>` +
+    `<div class="suite-app-detail-warn"><span>⚠</span><span>Perderás el trabajo no guardado al cambiar de app.</span></div>` +
+    `<button class="suite-app-detail-go">Ir a ${app.label} →</button>`;
+  detail.querySelector('.suite-app-detail-go').addEventListener('click', () => {
+    window.location.href = url;
+  });
+
+  const grid = document.getElementById('account-pop-suite');
+  grid?.after(detail);
+}
+
 /* ─── Account popover ─── */
 function _toggleAccountPopover() {
   const pop = document.getElementById('account-popover');
@@ -1042,9 +1114,14 @@ function _toggleAccountPopover() {
     const rect = btn?.getBoundingClientRect();
     if (rect) {
       pop.style.top  = `${rect.bottom + 6}px`;
-      const popW = 200;
+      const popW = 280;
       pop.style.left = `${Math.min(rect.right - popW, window.innerWidth - popW - 8)}px`;
     }
+    // Renderizar suite
+    _activeSuiteApp = null;
+    document.getElementById('account-pop-suite-detail')?.remove();
+    _renderSuiteApps();
+
     pop.classList.remove('hidden');
     pop.setAttribute('aria-hidden', 'false');
     if (window.lucide) lucide.createIcons({ nodes: [pop] });
@@ -1057,6 +1134,8 @@ function _closeAccountPopover() {
   const pop = document.getElementById('account-popover');
   pop?.classList.add('hidden');
   pop?.setAttribute('aria-hidden', 'true');
+  document.getElementById('account-pop-suite-detail')?.remove();
+  _activeSuiteApp = null;
 }
 
 function _dismissLoader(delay = 0) {

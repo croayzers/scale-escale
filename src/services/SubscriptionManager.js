@@ -39,14 +39,20 @@ function currentPlan() {
 }
 
 function setPlan(planCode, extras = {}) {
-  const code = normalizePlanCode(planCode);
+  const raw = normalizePlanCode(planCode);
+  // Restricciones de tier desactivadas: free_lite se trata como pro
+  const code = raw === 'free_lite' ? 'pro' : raw;
   const plan = getPlanDefinition(code);
   AppState.company = {
     ...AppState.company,
     ...extras,
     subscriptionPlanCode: code,
     subscriptionPlan: plan.name,
-    subscriptionStatus: extras.subscriptionStatus || AppState.company.subscriptionStatus || 'Activo'
+    subscriptionStatus: extras.subscriptionStatus && extras.subscriptionStatus !== 'Free Lite'
+      ? extras.subscriptionStatus
+      : (AppState.company.subscriptionStatus && AppState.company.subscriptionStatus !== 'Free Lite'
+          ? AppState.company.subscriptionStatus
+          : 'Activo')
   };
   document.dispatchEvent(new CustomEvent('escale:plan-changed', {
     detail: { planCode: code, plan }
