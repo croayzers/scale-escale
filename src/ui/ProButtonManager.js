@@ -7,8 +7,7 @@ function markButtons(root = document) {
   const buttons = [...scope.querySelectorAll(SELECTOR)];
 
   buttons.forEach(button => {
-    const featureKey = button.dataset.proFeature || '';
-    const unlocked = featureKey ? SubscriptionManager.hasFeature(featureKey) : false;
+    const unlocked = true;
     const forceBadge = button.dataset.proBadge !== 'off';
 
     button.classList.toggle('pro-button', forceBadge);

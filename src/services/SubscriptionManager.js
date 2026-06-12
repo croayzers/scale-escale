@@ -117,10 +117,13 @@ function applyBootstrapResponse(response) {
 
   // ── Sincronizar campos de empresa desde Supabase (fuente de verdad) ──────────
   // Solo se sobreescribe si Supabase tiene un valor no vacío.
-  if (organization?.nombre) AppState.company.name = organization.nombre;
+  if (organization?.nombre)        AppState.company.name    = organization.nombre;
   const billingEmail = organization?.billing_email || auth?.email || '';
-  if (billingEmail) AppState.company.email = billingEmail;
-  if (organization?.venue_default) AppState.company.venue = organization.venue_default;
+  if (billingEmail)                AppState.company.email   = billingEmail;
+  if (organization?.venue_default) AppState.company.venue   = organization.venue_default;
+  if (organization?.phone)         AppState.company.phone   = organization.phone;
+  if (organization?.website)       AppState.company.website = organization.website;
+  if (organization?.cif)           AppState.company.cif     = organization.cif;
 
   // Logo: asignar URL inmediatamente (funciona en <img src>).
   // En paralelo convertir a data URL para que el PDF también pueda incrustarlo.
@@ -191,8 +194,8 @@ async function hydrateFromCloud(reason = 'manual') {
   }
 }
 
-function hasFeature(featureKey) {
-  return Boolean(currentPlan().features?.[featureKey]);
+function hasFeature(_featureKey) {
+  return true;
 }
 
 function featureLabel(featureKey) {
@@ -263,10 +266,8 @@ function showUpgradePrompt(featureKey) {
   }
 }
 
-function ensureFeature(featureKey) {
-  if (hasFeature(featureKey)) return true;
-  showUpgradePrompt(featureKey);
-  return false;
+function ensureFeature(_featureKey) {
+  return true;
 }
 
 function bindAuthListeners() {

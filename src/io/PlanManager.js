@@ -28,11 +28,6 @@ function init() {
   });
   document.getElementById('plan-drop-search')?.addEventListener('click', () => {
     closePlanDropdown();
-    const code = SubscriptionManager.currentPlanCode();
-    if (code !== 'pro' && code !== 'premium') {
-      SubscriptionManager.ensureFeature('planSearch');
-      return;
-    }
     openSearchModal();
   });
 
@@ -86,11 +81,7 @@ function init() {
     const tab = e.target.closest('[data-tab]');
     if (!tab) return;
     if (tab.dataset.tab === 'community') {
-      const code = SubscriptionManager.currentPlanCode();
-      if (code !== 'pro' && code !== 'premium') {
-        SubscriptionManager.ensureFeature('planCommunity');
-        return;
-      }
+      // tier check removed
     }
     _switchPlanTab(tab.dataset.tab);
   });
