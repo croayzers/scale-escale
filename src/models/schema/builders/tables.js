@@ -140,9 +140,14 @@ export function buildMesaPresi(item, view) {
 
   const CHAIR_HALF_DEPTH = 0.21;
   const chairGap   = item.chairOffset ?? 0.10;
-  const sideChairs = 4;
   const offsetZ    = W / 2 + CHAIR_HALF_DEPTH + chairGap;
   const endOffsetX = L / 2 + CHAIR_HALF_DEPTH + chairGap;
+
+  // Sillas laterales derivadas de item.chairs (si no, 4 por lado como antes)
+  const endCount   = (item.endHead !== false ? 1 : 0) + (item.endFoot !== false ? 1 : 0);
+  const sideChairs = item.chairs != null
+    ? Math.max(1, Math.round((item.chairs - endCount) / 2))
+    : 4;
 
   if (view === 'top') {
     const fill = new THREE.Mesh(new THREE.PlaneGeometry(L, W), makeTopFill(color, 0.18));

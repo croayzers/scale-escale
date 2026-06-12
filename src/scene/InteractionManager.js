@@ -1549,13 +1549,13 @@ function categorySpecificHTML(item) {
       </div>`;
   }
 
-  // Mesas (ya cubierto por tableAssignmentHTML, añadir endHead/endFoot si es presi)
-  if (type === 'mesa' && item.subtype === 'presi') {
+  // Mesas con extremos cabecero/pie
+  if ((type === 'mesa' && item.subtype === 'presi') || type === 'mesaRect' || type === 'mesaImperial') {
     return `
       <div class="ctx-block">
-        <div class="ctx-label">Extremos mesa presidencia</div>
-        ${checkboxFieldHTML('endHead', 'Silla cabecera (+X)', item.endHead !== false)}
-        ${checkboxFieldHTML('endFoot', 'Silla pie (−X)', item.endFoot !== false)}
+        <div class="ctx-label">Extremos</div>
+        ${checkboxFieldHTML('endHead', 'Silla cabecero', item.endHead !== false)}
+        ${checkboxFieldHTML('endFoot', 'Silla pie', item.endFoot !== false)}
       </div>`;
   }
 
