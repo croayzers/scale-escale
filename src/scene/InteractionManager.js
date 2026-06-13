@@ -781,15 +781,7 @@ function onPointerUp(e) {
   }
 
   if (pendingClickItem) {
-    const dx = Math.abs(e.clientX - (mouseDownPos?.x ?? e.clientX));
-    const dy = Math.abs(e.clientY - (mouseDownPos?.y ?? e.clientY));
-    const item = pendingClickItem;
     pendingClickItem = null;
-    if (dx < 5 && dy < 5 && !isViewer()) {
-      // Click limpio sin drag: mostrar settings del item clickado.
-      // La selección múltiple se preserva (no se estrecha).
-      showContextMenu(e.clientX, e.clientY, item);
-    }
   }
 }
 
