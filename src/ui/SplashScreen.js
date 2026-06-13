@@ -244,6 +244,87 @@ function _runParticleAnim(canvas, onComplete) {
 }
 
 /* ════════════════════════════════════════════════════════
+   BORDE BRILLANTE EN EL DOCK — luz de colores circulando
+   ════════════════════════════════════════════════════════ */
+let _dockGlowRaf = null;
+let _dockGlowStyle = null;
+
+function _startDockGlow() {
+  const dock = document.getElementById('dock');
+  if (!dock) return;
+
+  // Inyectar el estilo del keyframe una sola vez
+  if (!_dockGlowStyle) {
+    _dockGlowStyle = document.createElement('style');
+    _dockGlowStyle.id = 'dock-glow-style';
+    _dockGlowStyle.textContent = `
+      @keyframes dockGlowRotate {
+        0%   { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+      }
+      #dock.dock-glow::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: linear-gradient(90deg,
+          #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff, #ff6b6b, #ffd93d);
+        background-size: 200% 100%;
+        animation: dockGlowRotate 2s linear infinite;
+        z-index: -1;
+        border-radius: inherit;
+      }
+      #dock.dock-glow {
+        position: relative;
+        isolation: isolate;
+      }
+    `;
+    document.head.appendChild(_dockGlowStyle);
+  }
+  dock.classList.add('dock-glow');
+}
+
+function _stopDockGlow() {
+  document.getElementById('dock')?.classList.remove('dock-glow');
+}
+
+/* ════════════════════════════════════════════════════════
+   PANEL DE INICIO — aparece tras la animación
+   ════════════════════════════════════════════════════════ */
+function _showStartPanel(onDone) {
+  const panel = document.getElementById('start-panel');
+  if (!panel) { onDone?.(); return; }
+
+  // Mostrar con fade
+  panel.style.display = 'flex';
+  panel.style.opacity = '0';
+  panel.style.transition = 'opacity 0.4s';
+  requestAnimationFrame(() => { panel.style.opacity = '1'; });
+
+  // Borde brillante en el dock para "diseño libre"
+  _startDockGlow();
+  if (window.lucide) lucide.createIcons({ nodes: [panel] });
+
+  function dismiss(action) {
+    _stopDockGlow();
+    panel.style.opacity = '0';
+    setTimeout(() => {
+      panel.style.display = 'none';
+      action?.();
+      onDone?.();
+    }, 350);
+  }
+
+  document.getElementById('start-load-plan')?.addEventListener('click', () => {
+    dismiss(() => document.getElementById('btn-upload-plan')?.click());
+  }, { once: true });
+
+  document.getElementById('start-free')?.addEventListener('click', () => {
+    dismiss();
+  }, { once: true });
+}
+
+/* ════════════════════════════════════════════════════════
    START — punto de entrada
    ════════════════════════════════════════════════════════ */
 export function start(onDone) {
@@ -258,13 +339,18 @@ export function start(onDone) {
 
   setTimeout(() => {
     _runParticleAnim(canvas, () => {
-      // Fade out del canvas para revelar la escena
       const gsap = window.gsap;
       const afterFade = () => {
         canvas.remove();
-        onDone?.();
         _expandDock();
         _expandHeader();
+        // Panel de inicio siempre, excepto si hay un callback externo
+        // (flujo welcome/collab que ya gestiona su propio modal)
+        if (onDone) {
+          onDone();
+        } else {
+          _showStartPanel();
+        }
       };
 
       if (gsap) {

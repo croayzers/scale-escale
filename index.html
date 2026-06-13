@@ -2212,6 +2212,47 @@
   </button>
 </div>
 
+<!-- Panel de inicio post-splash -->
+<div id="start-panel" style="display:none;position:fixed;inset:0;z-index:180;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(245,243,238,0.55);backdrop-filter:blur(2px)">
+  <div style="text-align:center;max-width:480px;padding:0 24px">
+    <div class="mono" style="font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">E·Scale — ¿Cómo empezamos?</div>
+    <div style="display:flex;gap:16px;justify-content:center">
+      <!-- Opción: cargar plano -->
+      <button id="start-load-plan" style="
+        flex:1;max-width:200px;padding:28px 20px;border-radius:16px;
+        border:1.5px solid rgba(26,26,28,.14);background:var(--surface,#fff);
+        cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;
+        transition:border-color .18s,box-shadow .18s;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+        <div style="width:52px;height:52px;border-radius:14px;background:#f0ede8;
+          display:grid;place-items:center">
+          <i data-lucide="image-plus" style="width:26px;height:26px;color:#1a1a1c"></i>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--text,#1a1a1c);margin-bottom:4px">Cargar plano</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.4">Sube un plano en JPG, PNG o PDF y coloca los elementos encima</div>
+        </div>
+      </button>
+      <!-- Opción: diseño libre -->
+      <button id="start-free" style="
+        flex:1;max-width:200px;padding:28px 20px;border-radius:16px;
+        border:1.5px solid rgba(26,26,28,.14);background:var(--surface,#fff);
+        cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:12px;
+        transition:border-color .18s,box-shadow .18s;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+        <div style="width:52px;height:52px;border-radius:14px;background:#f0ede8;
+          display:grid;place-items:center">
+          <i data-lucide="layout-grid" style="width:26px;height:26px;color:#1a1a1c"></i>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--text,#1a1a1c);margin-bottom:4px">Diseño libre</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.4">Empieza en la cuadrícula vacía y coloca elementos directamente</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
