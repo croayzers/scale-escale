@@ -22,7 +22,7 @@ function open() {
   panel.classList.remove('hidden');
   document.getElementById('dock-savedgroups-btn')?.classList.add('active');
   // Cargar datos frescos de la nube al abrir
-  SavedGroupLibrary.load().then(() => refresh());
+  SavedGroupLibrary.load().then(() => refresh()).catch(err => console.warn('[SavedGroupPanel]', err));
 }
 
 function close() {
