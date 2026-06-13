@@ -1959,7 +1959,9 @@ function handleContextField(field, value, id) {
   if (field === 'endHead' || field === 'endFoot') {
     const newVal = Boolean(value);
     const other = field === 'endHead' ? item.endFoot : item.endHead;
-    const base = 8;
+    const front = item.chairsFront ?? Math.ceil((item.chairs ?? 0) / 2);
+    const back  = item.chairsBack  ?? Math.floor((item.chairs ?? 0) / 2);
+    const base  = front + back;
     const chairs = base + (field === 'endHead' ? (newVal ? 1 : 0) : (other !== false ? 1 : 0))
                         + (field === 'endFoot' ? (newVal ? 1 : 0) : (other !== false ? 1 : 0));
     applyContextPatch(id, { [field]: newVal, chairs });
@@ -2011,7 +2013,11 @@ function handleContextField(field, value, id) {
 
   if (field === 'chairsFront' || field === 'chairsBack') {
     const n = Math.max(0, Math.min(500, Math.round(parseFloat(value) || 0)));
-    applyContextPatch(id, { [field]: n });
+    const front = field === 'chairsFront' ? n : (item.chairsFront ?? Math.ceil((item.chairs ?? 0) / 2));
+    const back  = field === 'chairsBack'  ? n : (item.chairsBack  ?? Math.floor((item.chairs ?? 0) / 2));
+    const ends  = (item.endHead !== false ? 1 : 0) + (item.endFoot !== false ? 1 : 0);
+    const chairs = front + back + ends;
+    applyContextPatch(id, { [field]: n, chairs });
     return;
   }
 
