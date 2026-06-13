@@ -91,6 +91,7 @@ export const AppState = {
     lengthM: 30,
     opacity: 0.95,
     rotationDeg: 0,
+    meta: { nombre: '', ciudad: '', tipo: '', cliente: '', lugar: '' },
   },
   calibration: { active: false, p1: null, p2: null },
 

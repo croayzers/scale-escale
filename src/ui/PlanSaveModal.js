@@ -126,21 +126,25 @@ function open() {
   const modal = document.getElementById('plan-save-modal');
   if (!modal) return;
 
-  // Auto-rellenar organización
+  const meta = AppState.plan?.meta || {};
+
   const orgEl = document.getElementById('psm-org');
   if (orgEl) orgEl.value = _orgName();
 
-  // Pre-rellenar nombre desde venue si existe
   const nameEl = document.getElementById('psm-nombre');
-  if (nameEl && !nameEl.value.trim()) {
-    nameEl.value = AppState.company?.venue || '';
-  }
+  if (nameEl && !nameEl.value.trim()) nameEl.value = meta.nombre || '';
 
-  // Ciudad: pre-rellenar si está disponible
   const ciudadEl = document.getElementById('psm-ciudad');
-  if (ciudadEl && !ciudadEl.value.trim()) {
-    ciudadEl.value = '';
-  }
+  if (ciudadEl && !ciudadEl.value.trim()) ciudadEl.value = meta.ciudad || '';
+
+  const tipoEl = document.getElementById('psm-tipo');
+  if (tipoEl && !tipoEl.value) tipoEl.value = meta.tipo || '';
+
+  const clienteEl = document.getElementById('psm-cliente');
+  if (clienteEl && !clienteEl.value.trim()) clienteEl.value = meta.cliente || '';
+
+  const lugarEl = document.getElementById('psm-lugar');
+  if (lugarEl && !lugarEl.value.trim()) lugarEl.value = meta.lugar || '';
 
   modal.classList.add('visible');
   setTimeout(() => nameEl?.focus(), 60);
@@ -151,9 +155,11 @@ function close() {
 }
 
 async function save() {
-  const nombre = document.getElementById('psm-nombre')?.value.trim();
-  const ciudad = document.getElementById('psm-ciudad')?.value.trim() || null;
-  const tipo   = document.getElementById('psm-tipo')?.value || null;
+  const nombre  = document.getElementById('psm-nombre')?.value.trim();
+  const ciudad  = document.getElementById('psm-ciudad')?.value.trim() || null;
+  const tipo    = document.getElementById('psm-tipo')?.value || null;
+  const cliente = document.getElementById('psm-cliente')?.value.trim() || null;
+  const lugar   = document.getElementById('psm-lugar')?.value.trim() || null;
 
   if (!nombre) {
     const el = document.getElementById('psm-nombre');
@@ -161,6 +167,11 @@ async function save() {
     el?.classList.add('psm-field-error');
     setTimeout(() => el?.classList.remove('psm-field-error'), 1500);
     return;
+  }
+
+  // Persistir meta en AppState para que Export e Inventario lo lean
+  if (AppState.plan) {
+    AppState.plan.meta = { nombre: nombre || '', ciudad: ciudad || '', tipo: tipo || '', cliente: cliente || '', lugar: lugar || '' };
   }
 
   const saveBtn = document.getElementById('psm-save');
@@ -171,6 +182,8 @@ async function save() {
       name:         nombre,
       ciudad,
       tipo,
+      cliente,
+      venue:        lugar,
       imageDataUrl: _getPlanImage(),
       widthM:       AppState.plan.widthM,
       lengthM:      AppState.plan.lengthM,
@@ -198,6 +211,13 @@ async function save() {
 
 /** También disponible en botón "Omitir": ejecuta el flujo sin guardar. */
 function skip() {
+  // Guardar lo que haya escrito aunque no suba a la nube
+  const nombre  = document.getElementById('psm-nombre')?.value.trim() || '';
+  const ciudad  = document.getElementById('psm-ciudad')?.value.trim() || '';
+  const tipo    = document.getElementById('psm-tipo')?.value || '';
+  const cliente = document.getElementById('psm-cliente')?.value.trim() || '';
+  const lugar   = document.getElementById('psm-lugar')?.value.trim() || '';
+  if (AppState.plan) AppState.plan.meta = { nombre, ciudad, tipo, cliente, lugar };
   close();
   _postSaveFlow();
 }

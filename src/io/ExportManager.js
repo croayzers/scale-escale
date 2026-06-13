@@ -143,12 +143,27 @@ function closeModal() {
   document.getElementById('export-modal')?.classList.remove('visible');
 }
 
-/* ─── Datos del documento (campos que rellenan los PDF) ─── */
+/* ─── Datos del documento — lee plan.meta, fallback a company ─── */
+function _getPlanMeta() {
+  const meta = AppState.plan?.meta || {};
+  const company = AppState.company || {};
+  return {
+    nombre:  meta.nombre  || '',
+    ciudad:  meta.ciudad  || '',
+    tipo:    meta.tipo    || '',
+    cliente: meta.cliente || company.cliente || '',
+    lugar:   meta.lugar   || company.venueName || '',
+    orgName: company.name || '',
+    email:   company.authEmail || company.email || '',
+    logo:    company.logo || null,
+  };
+}
+
 const PDF_DATA_FIELDS = [
-  { id: 'pdf-data-name',    key: 'name',      required: true },
-  { id: 'pdf-data-venue',   key: 'venueName', required: true },
-  { id: 'pdf-data-email',   key: 'email',     required: false },
-  { id: 'pdf-data-cliente', key: 'cliente',   required: false }
+  { id: 'pdf-data-name',    key: 'lugar',   required: true },
+  { id: 'pdf-data-venue',   key: 'cliente', required: false },
+  { id: 'pdf-data-email',   key: 'email',   required: false },
+  { id: 'pdf-data-cliente', key: 'tipo',    required: false }
 ];
 
 function _markPdfField(input, required) {
@@ -158,11 +173,11 @@ function _markPdfField(input, required) {
 }
 
 function openDataModal() {
-  const company = AppState.company || {};
+  const planMeta = _getPlanMeta();
   PDF_DATA_FIELDS.forEach(({ id, key, required }) => {
     const input = document.getElementById(id);
     if (!input) return;
-    input.value = company[key] || (key === 'email' ? (company.authEmail || '') : '');
+    input.value = planMeta[key] || '';
     _markPdfField(input, required);
     if (!input._pdfBound) {
       input.addEventListener('input', () => _markPdfField(input, required));
@@ -170,7 +185,7 @@ function openDataModal() {
     }
   });
   const logoStatus = document.getElementById('pdf-data-logo-status');
-  if (logoStatus) logoStatus.textContent = company.logo ? 'Logo: cargado' : 'Logo: sin logo';
+  if (logoStatus) logoStatus.textContent = planMeta.logo ? 'Logo: cargado' : 'Logo: sin logo';
   document.getElementById('pdf-data-hint')?.classList.add('hidden');
   document.getElementById('pdf-data-modal')?.classList.add('visible');
   if (window.lucide) lucide.createIcons();
@@ -195,7 +210,13 @@ function saveDataModal() {
     firstMissing.focus();
     return;
   }
-  CompanyManager.saveDocumentData(patch);
+  // Persistir en plan.meta
+  if (AppState.plan) {
+    AppState.plan.meta = { ...AppState.plan.meta, ...patch };
+  }
+  // Compat: también actualizar company para PDF builders legacy
+  if (patch.lugar)   AppState.company.venueName = patch.lugar;
+  if (patch.cliente) AppState.company.cliente    = patch.cliente;
   closeDataModal();
 }
 

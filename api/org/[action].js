@@ -136,13 +136,13 @@ async function handlePlans(req, res, access) {
 
   if (req.method === 'POST') {
     const body = await readJsonBody(req);
-    const { name, ciudad = null, tipo = null, imageDataUrl = null, widthM, lengthM, opacity, venue = null } = body;
+    const { name, ciudad = null, tipo = null, cliente = null, imageDataUrl = null, widthM, lengthM, opacity, venue = null } = body;
     if (!name?.trim()) return badRequest(res, 'name requerido');
     const result = await saveOrgFloorPlan({
       orgId,
       userId: access.user?.id,
       userName: access.user?.fullName || access.user?.email,
-      name, venue, ciudad, tipo, widthM, lengthM, opacity, imageDataUrl,
+      name, venue, ciudad, tipo, cliente, widthM, lengthM, opacity, imageDataUrl,
     });
     if (result?.skipped) return json(res, 200, { ok: true, skipped: true });
     return json(res, 200, { ok: true, plan: result });

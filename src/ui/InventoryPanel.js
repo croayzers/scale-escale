@@ -121,11 +121,21 @@ function _updateTotals() {
   if (totalEl) totalEl.textContent = subtotal > 0 ? _fmt(total) : '—';
 }
 
+function _refreshPlanMeta() {
+  const meta = AppState.plan?.meta || {};
+  const metaEl = document.getElementById('inv-plan-meta');
+  if (!metaEl) return;
+  const parts = [meta.cliente, meta.lugar, meta.tipo].filter(Boolean);
+  metaEl.textContent = parts.length ? parts.join(' · ') : '';
+  metaEl.style.display = parts.length ? '' : 'none';
+}
+
 function refresh() {
   const list = document.getElementById('inventory-list');
   const totalPax = document.getElementById('inv-total-pax');
   const totalItems = document.getElementById('inv-total-items');
 
+  _refreshPlanMeta();
   if (!list || !totalPax || !totalItems) return;
 
   const groups = groupInventoryLines(AppState.items);

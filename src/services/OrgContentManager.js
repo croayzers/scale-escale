@@ -51,7 +51,7 @@ export async function listFloorPlans() {
   }
 }
 
-export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity, ciudad = null, tipo = null }) {
+export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity, ciudad = null, tipo = null, cliente = null, venue = null }) {
   const token = await _getToken();
   if (!token) return null;
   const res = await fetch('/api/org/plans', {
@@ -65,11 +65,12 @@ export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opaci
       name: name.trim(),
       ciudad,
       tipo,
+      cliente,
+      venue,
       imageDataUrl,
       widthM,
       lengthM,
       opacity,
-      venue: AppState.company?.venue || null,
     })
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -87,7 +88,18 @@ export async function loadFloorPlan(id) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.plan || null;
+    const plan = data.plan || null;
+    // Poblar plan.meta con los datos guardados en Supabase
+    if (plan && AppState.plan) {
+      AppState.plan.meta = {
+        nombre:  plan.name    || '',
+        ciudad:  plan.ciudad  || '',
+        tipo:    plan.tipo    || '',
+        cliente: plan.cliente || '',
+        lugar:   plan.venue   || '',
+      };
+    }
+    return plan;
   } catch { return null; }
 }
 

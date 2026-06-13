@@ -217,8 +217,8 @@
     <span class="header-brand-name">E-scale</span>
   </div>
 
-  <!-- Mi empresa -->
-  <button id="btn-company" class="hdr-chip btn-company" title="Mi empresa">
+  <!-- Mi empresa — oculto: gestionado desde el Portal -->
+  <button id="btn-company" class="hdr-chip btn-company" title="Mi empresa" style="display:none">
     <img id="company-logo-preview" class="btn-company-logo hidden" alt="logo empresa"/>
     <span id="btn-company-logo-empty" class="btn-company-logo-empty" aria-hidden="true">
       <!-- Icono edificio/empresa por defecto -->
@@ -1310,6 +1310,18 @@
           <option value="Otros">Otros</option>
         </select>
       </label>
+
+      <!-- Cliente -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Cliente</span>
+        <input id="psm-cliente" type="text" class="input-field" placeholder="Nombre del cliente o evento…"/>
+      </label>
+
+      <!-- Lugar del evento -->
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento</span>
+        <input id="psm-lugar" type="text" class="input-field" placeholder="Ej: Can Cristóbal, Hotel Vela…"/>
+      </label>
     </div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
@@ -2003,8 +2015,11 @@
       <button id="inventory-close" class="hdr-icon"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
     </div>
 
+    <!-- Meta del plano (cliente · lugar · tipo) -->
+    <div id="inv-plan-meta" class="mono text-[10px] mb-1 truncate" style="color:var(--muted);display:none"></div>
+
     <!-- Nombre evento (editable) -->
-    <input id="inventory-event-name" type="text" placeholder="Nombre del eventoâ€¦"
+    <input id="inventory-event-name" type="text" placeholder="Nombre del evento…"
       class="input-field mb-2" style="font-size:12px"/>
 
     <!-- PAX manual (coctel / sin sillas) -->
