@@ -311,11 +311,23 @@ async function init() {
       if (error) console.warn('[AuthManager] No se pudo recuperar la sesion Supabase:', error.message);
 
       const cloudSession = normalizeSupabaseSession(data?.session);
-      hydrateAuthState(cloudSession || readLocalSession());
+
+      if (!cloudSession) {
+        // Sin sesión en Supabase → redirigir al portal para autenticar
+        redirectToPortalLogin(window.location.href);
+        return null;
+      }
+
+      hydrateAuthState(cloudSession);
 
       if (!supabaseSubscription) {
         const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-          hydrateAuthState(normalizeSupabaseSession(session) || readLocalSession());
+          const normalized = normalizeSupabaseSession(session);
+          if (!normalized) {
+            redirectToPortalLogin(window.location.href);
+            return;
+          }
+          hydrateAuthState(normalized);
         });
         supabaseSubscription = listener?.subscription || null;
       }
@@ -326,6 +338,7 @@ async function init() {
     console.warn('[AuthManager] Supabase Auth no disponible, usando modo local:', error);
   }
 
+  // Supabase no configurado: modo local/demo (sin redirección)
   const localSession = readLocalSession();
   hydrateAuthState(localSession);
   return localSession;

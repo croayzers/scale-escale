@@ -1779,6 +1779,111 @@ input[type=range]::-webkit-slider-thumb {
 .account-pop-btn:hover { background: rgba(0,0,0,0.06); }
 .account-pop-btn.danger:hover { background: rgba(185,28,28,0.08); color: #b91c1c; }
 
+/* ── Suite Scale (account popover) ── */
+.account-pop-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.07);
+  margin: 4px 0;
+}
+.account-pop-suite-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  opacity: .4;
+  padding: 6px 12px 4px;
+  font-weight: 600;
+}
+.account-pop-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+.suite-app-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 120ms;
+  font-family: inherit;
+}
+.suite-app-chip:hover { background: rgba(0,0,0,0.06); }
+.suite-app-chip.is-current { opacity: .45; cursor: default; pointer-events: none; }
+.suite-app-chip.is-active { background: rgba(0,0,0,0.07); }
+.suite-app-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.suite-app-name {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: .75;
+  line-height: 1;
+}
+.suite-app-detail {
+  margin: 0 8px 8px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.035);
+  border: 1px solid rgba(0,0,0,0.07);
+  animation: suite-detail-in 150ms ease;
+}
+@keyframes suite-detail-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.suite-app-detail-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.suite-app-detail-desc {
+  font-size: 11.5px;
+  opacity: .58;
+  margin-bottom: 9px;
+  line-height: 1.4;
+}
+.suite-app-detail-warn {
+  font-size: 11px;
+  color: #92400e;
+  background: rgba(245,158,11,.1);
+  border-radius: 6px;
+  padding: 5px 8px;
+  margin-bottom: 9px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.4;
+}
+.suite-app-detail-go {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: .02em;
+  transition: opacity 120ms;
+}
+.suite-app-detail-go:hover { opacity: .8; }
+
 /* ============== AUTH + LICENSE ============== */
 .hdr-account {
   max-width: 240px;

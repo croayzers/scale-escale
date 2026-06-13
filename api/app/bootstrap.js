@@ -3,8 +3,11 @@ const { normalizePlanCode, planName } = require('../../lib/plans');
 const { resolveAuthenticatedContext } = require('../../lib/supabase');
 const { publicConfig, supabaseProjectUrl, env } = require('../../lib/env');
 
+// Si ya es URL completa (desde public.companies.logo_url) la devuelve tal cual.
+// Si es ruta relativa (legado de escale.empresa_config.logo_url) construye la URL.
 function buildLogoUrl(logoPath) {
   if (!logoPath) return null;
+  if (/^https?:\/\//i.test(logoPath)) return logoPath;
   const base = supabaseProjectUrl();
   if (!base) return null;
   const bucket = env('ESCALE_SUPABASE_BUCKET_LOGOS', 'company-logos');
@@ -60,9 +63,15 @@ module.exports = async function handler(req, res) {
     const access = await resolveAuthenticatedContext(accessToken, company);
     const planCode = normalizePlanCode(access?.organization?.current_tier_code || access?.planCode || basePlanCode);
     const org = access?.organization || null;
+    // logo_url (URL completa en public.companies) tiene prioridad sobre logo_path (ruta relativa en escale config)
+    const logoUrl = org?.logo_url || buildLogoUrl(org?.logo_path) || null;
     const orgFull = org ? {
       ...org,
-      logoUrl: buildLogoUrl(org.logo_path)
+      logoUrl,
+      billing_email: org.billing_email || null,
+      phone:         org.phone         || null,
+      website:       org.website       || null,
+      cif:           org.cif           || null
     } : null;
 
     return json(res, 200, {

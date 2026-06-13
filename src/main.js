@@ -14,6 +14,7 @@ import { ShareManager } from './io/ShareManager.js';
 import { Dock } from './ui/Dock.js';
 import { CatalogModal } from './ui/CatalogModal.js';
 import { HeaderActionMenus } from './ui/HeaderActionMenus.js';
+import { AppLauncher } from './ui/AppLauncher.js';
 import { ZoneManager } from './ui/ZoneManager.js';
 import { PlansModal } from './ui/PlansModal.js';
 import { TextSanitizer } from './ui/TextSanitizer.js';
@@ -93,6 +94,7 @@ async function bootstrap() {
   collapseHeader();
   await safeInit('TemplateManager', () => TemplateManager.init());
   await safeInit('HeaderActionMenus', () => HeaderActionMenus.init());
+  safeInit('AppLauncher', () => AppLauncher.init());
   await safeInit('PlansModal', () => PlansModal.init());
   await safeInit('ZoneManager', () => ZoneManager.init());
   await safeInit('InventoryPanel', () => InventoryPanel.init());
