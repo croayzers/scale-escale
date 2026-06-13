@@ -4052,7 +4052,7 @@ body.format-mode-active #btn-format-tool {
   }
 
   /* Ajustar canvas y dock para la barra móvil */
-  #scene-canvas { top: 50px !important; height: calc(100dvh - 50px) !important; }
+  #scene-canvas { top: 52px !important; height: calc(100dvh - 52px) !important; }
 
   /* Header: scrollable sin barra, tap targets mayores (legacy, ya no necesario pero por si acaso) */
   .hdr-chip, .hdr-icon, .hdr-seg { min-width: 40px; min-height: 38px; }

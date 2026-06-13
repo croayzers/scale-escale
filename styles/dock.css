@@ -1,15 +1,7 @@
 /* ═══════════ HEADER + DOCK estilo macOS ═══════════ */
 
 .glass-mac {
-  background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 0.5px solid rgba(0,0,0,0.08);
-  border-radius: 14px;
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.9) inset,
-    0 8px 24px -8px rgba(0,0,0,0.18),
-    0 24px 48px -16px rgba(0,0,0,0.22);
+  background: var(--surface-bg, rgba(255,255,255,0.72));
 }
 
 /* ── Header chips ── */
@@ -341,9 +333,19 @@ body.placement-pending #scene-canvas {
 /* Empty hint se oculta cuando hay items */
 body.has-items #empty-hint { display: none; }
 
-/* ── Centrado forzado del header ── */
+/* ── Header ── */
 #header-mac {
-  height: 44px;
+  height: 52px !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.1)) !important;
+  box-shadow: none !important;
+  background: var(--surface, #fff) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;

@@ -84,7 +84,11 @@ body::after {
 
 #scene-canvas {
   position: fixed;
-  inset: 0;
+  top: 52px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100dvh - 52px);
   z-index: 2;
   touch-action: none;
 }
