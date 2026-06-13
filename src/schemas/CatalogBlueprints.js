@@ -311,6 +311,19 @@ const SCHEMA_CATALOG = {
     personItem('tecnico_sonido', 'Tecnico sonido', { color: '#1F2937', accentColor: '#38BDF8' })
   ],
   hospitality: [
+    {
+      id: 'gueridon',
+      name: 'Gueridon',
+      category: 'hospitality',
+      type: 'barraLibre',
+      dims: { length: 1.0, width: 0.6, height: 0.9 },
+      color: '#1a1a1c',
+      labelText: '',
+      cubiteras: 1,
+      pax: 0,
+      icon: 'wine',
+      defaultRotation: 0,
+    },
     rectItem('barra_recta', 'Barra recta', 'hospitality', { width: 0.8, length: 3.2, height: 1.05, color: '#1F2937', icon: 'glass-water' }),
     roundItem('barra_curva', 'Barra curva', 'hospitality', { diameter: 3.2, height: 1.05, color: '#1F2937', icon: 'glass-water' }),
     rectItem('nevera_industrial', 'Nevera industrial', 'hospitality', { width: 0.9, length: 1.4, height: 2.1, color: '#CBD5E1', icon: 'refrigerator' }),
