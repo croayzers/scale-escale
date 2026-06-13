@@ -5,7 +5,7 @@ export const INVENTORY_GROUPS = [
   },
   {
     label: 'Sillas',
-    types: ['sillaCatering', 'sillaLineal']
+    types: ['sillaCatering', 'sillaLineal', '_sillaMesa']
   },
   {
     label: 'Barra y buffet',
@@ -28,6 +28,8 @@ export const INVENTORY_GROUPS = [
 ];
 
 const EXCLUDED_TYPES = new Set(['room', 'poste', 'arbusto', 'arbol', 'cableLuces', 'ambiente']);
+
+const MESA_TYPES = new Set(['mesa', 'mesaRect', 'mesaImperial', 'mesaCocktail', 'mesaCurva', 'mesaSerpentina']);
 
 export function isInventoryTracked(itemOrType) {
   const type = typeof itemOrType === 'string' ? itemOrType : itemOrType?.type;
@@ -60,6 +62,7 @@ export function getInventoryLabel(item) {
 
 export function buildInventoryLines(items) {
   const lines = new Map();
+  let totalSillasMesa = 0;
 
   items.filter(isInventoryTracked).forEach(item => {
     const key = getInventoryLabel(item);
@@ -67,7 +70,22 @@ export function buildInventoryLines(items) {
     line.count += 1;
     line.pax += (item.chairs || 0) + (item.type === 'barraLibre' ? (item.pax || 0) : 0);
     lines.set(key, line);
+
+    // Acumular sillas de mesas como material separado
+    if (MESA_TYPES.has(item.type) && item.chairs > 0) {
+      totalSillasMesa += item.chairs;
+    }
   });
+
+  // Línea virtual de sillas de mesa (material a presupuestar)
+  if (totalSillasMesa > 0) {
+    lines.set('_sillaMesa', {
+      label: 'Silla de mesa',
+      type: '_sillaMesa',
+      count: totalSillasMesa,
+      pax: 0,
+    });
+  }
 
   return [...lines.values()];
 }
