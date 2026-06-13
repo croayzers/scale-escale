@@ -234,8 +234,8 @@ async function renderTemplateList(kind, filter = '') {
       _localFallbackButton(listEl, kind,
         needle ? `Sin resultados de empresa para "${filter}"`
                : `No hay plantillas ${kind === 'base' ? 'base' : 'planning'} en tu organización todavía.`);
-      // Si además hay carpeta local con plantillas, mostrarlas debajo.
-      if (dirHandle) _appendLocalItems(listEl, kind, needle);
+      // Si además hay carpeta local con plantillas, mostrarlas debajo (con botón "Subir todas").
+      if (dirHandle) _appendLocalItems(listEl, kind, needle, true);
       return;
     }
 
@@ -267,10 +267,21 @@ function _appendLocalItems(listEl, kind, needle, withHeader = false) {
   const all = cachedTemplates[kind] || [];
   const items = needle ? all.filter(t => t.name.toLowerCase().includes(needle)) : all;
   if (!items.length) return;
+  const puedeSubir = OrgContentManager.canSync() && _hasOrganization();
   if (withHeader) {
     const h = document.createElement('div');
     h.className = 'tpl-org-header';
-    h.innerHTML = '<i data-lucide="folder" style="width:11px;height:11px;opacity:.5"></i><span>Local</span>';
+    h.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px';
+    h.innerHTML = '<span style="display:flex;align-items:center;gap:4px"><i data-lucide="folder" style="width:11px;height:11px;opacity:.5"></i><span>Local</span></span>';
+    if (puedeSubir) {
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.className = 'tpl-upload-all';
+      up.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:10.5px;padding:2px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer';
+      up.innerHTML = '<i data-lucide="upload-cloud" style="width:11px;height:11px"></i> Subir todas';
+      up.addEventListener('click', e => { e.stopPropagation(); void importLocalToCloud(kind); });
+      h.appendChild(up);
+    }
     listEl.appendChild(h);
     if (window.lucide) lucide.createIcons({ nodes: [h] });
   }
@@ -283,6 +294,23 @@ function _appendLocalItems(listEl, kind, needle, withHeader = false) {
       : '';
     div.innerHTML = `<span class="tpl-item-name" title="${entry.name}">${entry.name}</span>${date ? `<span class="tpl-item-date">${date}</span>` : ''}`;
     div.addEventListener('click', () => handleTemplateItemClick(entry, kind));
+    // Botón rápido: subir esta plantilla local a la organización
+    if (puedeSubir) {
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.title = 'Subir a la empresa';
+      up.style.cssText = 'margin-left:auto;flex-shrink:0;background:transparent;border:none;color:inherit;opacity:.55;cursor:pointer;padding:2px 4px;display:flex';
+      up.innerHTML = '<i data-lucide="upload-cloud" style="width:13px;height:13px"></i>';
+      up.addEventListener('click', async e => {
+        e.stopPropagation();
+        try {
+          const data = JSON.parse(await (await entry.handle.getFile()).text());
+          await _syncTemplateToCloud(kind, data.name || entry.name, data);
+        } catch (err) { showToast('⚠ Error al subir: ' + (err.message || err)); }
+      });
+      div.appendChild(up);
+      if (window.lucide) lucide.createIcons({ nodes: [up] });
+    }
     listEl.appendChild(div);
   });
 }
@@ -643,6 +671,47 @@ async function _syncTemplateToCloud(kind, name, data) {
   }
 }
 
+// Sube TODAS las plantillas de la carpeta local a la organización en la nube.
+// Útil para migrar archivos .escale.json que ya tenías en disco.
+async function importLocalToCloud(kind) {
+  if (!OrgContentManager.canSync()) {
+    showToast('⚠ Inicia sesión para subir a la organización');
+    return;
+  }
+  if (!_hasOrganization()) {
+    showToast('⚠ No se encontró organización para tu cuenta');
+    return;
+  }
+  if (!dirHandle) {
+    await pickFolder();
+    if (!dirHandle) return;
+  } else {
+    await scanFolder();
+  }
+  const items = cachedTemplates[kind] || [];
+  if (!items.length) {
+    showToast(`No hay plantillas ${kind === 'base' ? 'base' : 'planning'} en la carpeta local`);
+    return;
+  }
+  showToast(`Subiendo ${items.length} plantilla(s) a la empresa…`);
+  let ok = 0, skip = 0, err = 0;
+  for (const entry of items) {
+    try {
+      const data = JSON.parse(await (await entry.handle.getFile()).text());
+      const name = data.name || entry.name;
+      const result = await OrgContentManager.saveTemplate({ name, kind, data });
+      if (result?.skipped) skip++;
+      else if (result) ok++;
+      else err++;
+    } catch (e) {
+      console.warn('[TemplateManager] importLocalToCloud:', entry.filename, e?.message);
+      err++;
+    }
+  }
+  showToast(`Subidas ${ok} · omitidas ${skip}${err ? ` · errores ${err}` : ''}`);
+  renderTemplateList(kind);
+}
+
 async function _applyCloudTemplate(id, name, kind) {
   const row = await OrgContentManager.loadTemplate(id);
   if (!row?.data) { showToast('⚠ No se pudo cargar la plantilla de empresa'); return; }
@@ -935,7 +1004,7 @@ export const TemplateManager = {
   init,
   save, saveAsBase, savePlanning,
   load,
-  pickFolder, refreshFolderState,
+  pickFolder, refreshFolderState, importLocalToCloud,
   serialize, applyTemplate, applyBaseTemplate, applyPlanningTemplate,
   showToast, closePillPanels, renderTemplateList,
   getCurrentTemplateMeta, setCurrentTemplateMeta,
