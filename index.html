@@ -1660,6 +1660,81 @@
 </div>
 
 <!-- Modal datos del documento (datos que rellenan los PDF) -->
+<!-- Modal cuestionario exportación -->
+<div id="export-meta-modal" class="modal-bg" role="dialog" aria-modal="true">
+  <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
+    <div class="flex items-start justify-between mb-5">
+      <div>
+        <div class="mono text-[10px] tracking-widest uppercase mb-1" style="color:var(--muted)">Exportar</div>
+        <h3 class="display-font text-3xl leading-tight">Datos del documento</h3>
+        <p class="text-[12px] mt-1" style="color:var(--muted)">Los campos marcados con * son obligatorios. Se guardarán el plano y los elementos como plantilla de tu empresa.</p>
+      </div>
+    </div>
+
+    <div id="emm-error" class="company-missing-banner hidden mb-4"></div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Nombre empresa *</span>
+        <input id="emm-org" type="text" class="input-field" placeholder="Tu empresa…"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Email *</span>
+        <input id="emm-email" type="email" class="input-field" placeholder="contacto@empresa.com"/>
+      </label>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Cliente</span>
+        <input id="emm-cliente" type="text" class="input-field" placeholder="Nombre del cliente…"/>
+      </label>
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Tipo de plano</span>
+        <select id="emm-tipo" class="input-field">
+          <option value="">Seleccionar…</option>
+          <option value="Banquete">Banquete</option>
+          <option value="Cóctel">Cóctel</option>
+          <option value="Conferencia">Conferencia</option>
+          <option value="Exposición">Exposición</option>
+          <option value="Boda">Boda</option>
+          <option value="Corporativo">Corporativo</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </label>
+    </div>
+    <label class="block mb-3">
+      <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Lugar del evento *</span>
+      <input id="emm-lugar" type="text" class="input-field" placeholder="Ej: Can Cristóbal, Hotel Vela…"/>
+    </label>
+
+    <div class="rule mb-3"></div>
+
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <label class="block">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Color corporativo *</span>
+        <div class="flex items-center gap-2">
+          <input id="emm-color" type="color" value="#2563EB" style="width:38px;height:32px;border:none;border-radius:6px;padding:2px;cursor:pointer;background:none"/>
+          <span class="text-[11px]" style="color:var(--muted)">Secundario: negro</span>
+        </div>
+      </label>
+      <div id="emm-logo-drop">
+        <span class="mono text-[10px] uppercase tracking-widest block mb-1" style="color:var(--muted)">Logo (opcional)</span>
+        <div class="flex items-center gap-2">
+          <button id="emm-logo-btn" type="button" class="btn ghost text-[11px]" style="padding:4px 10px">Subir logo</button>
+          <img id="emm-logo-preview" src="" alt="logo" style="height:24px;display:none;border-radius:4px"/>
+          <span id="emm-logo-label" class="text-[11px]" style="color:var(--muted)">Sin logo</span>
+        </div>
+        <input id="emm-logo-file" type="file" accept="image/*" class="hidden"/>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button id="emm-cancel" class="btn ghost">Cancelar</button>
+      <button id="emm-confirm" class="btn primary"><i data-lucide="check" class="w-4 h-4"></i><span>Confirmar y exportar</span></button>
+    </div>
+  </div>
+</div>
+
 <div id="pdf-data-modal" class="modal-bg">
   <div class="glass p-7 max-w-lg w-full mx-6" style="border-radius:14px">
     <div class="flex items-start justify-between mb-4">

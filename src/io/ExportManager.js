@@ -6,13 +6,13 @@ import {
 } from '../core/InventoryRules.js';
 import { InventoryPanel } from '../ui/InventoryPanel.js';
 import { DashboardSync } from './DashboardSync.js';
-import { CompanyManager } from './CompanyManager.js';
 import { SceneManager } from '../scene/SceneManager.js';
 import { UIManager } from '../ui/UIManager.js';
 import { CloudSync } from '../services/CloudSync.js';
 import { AnalyticsManager } from '../services/AnalyticsManager.js';
 import { SubscriptionManager } from '../services/SubscriptionManager.js';
 import { PlanningRegistry } from './PlanningRegistry.js';
+import { ExportMetaModal } from '../ui/ExportMetaModal.js';
 
 let areaSelecting = false;
 let areaStart = null;
@@ -129,14 +129,14 @@ function openModal(options = {}) {
 
   if (!SubscriptionManager.ensureFeature(exportIntent.featureKey)) return;
 
-  // Gate: si faltan datos de empresa, abrimos primero ese modal
-  CompanyManager.requireReady(() => {
+  // Cuestionario de metadatos antes de exportar
+  ExportMetaModal.open(() => {
     void AnalyticsManager.track('export_modal_opened', {
       planCode: SubscriptionManager.currentPlanCode(),
       exportKind: exportIntent.kind
     });
     document.getElementById('export-modal')?.classList.add('visible');
-  }, { hint: '⚡ Para exportar el documento correctamente rellena los campos obligatorios: Nombre de empresa y Lugar del evento.' });
+  });
 }
 
 function closeModal() {
@@ -756,10 +756,7 @@ async function composePrintCanvas(imageDataUrl, view) {
 }
 
 function printPng({ view = '2d' } = {}) {
-  CompanyManager.requireReady(
-    () => _startPrintPngWithOverlay({ view }),
-    { hint: '⚡ Para exportar el documento correctamente rellena los campos obligatorios: Nombre de empresa y Lugar del evento.' }
-  );
+  ExportMetaModal.open(() => _startPrintPngWithOverlay({ view }));
 }
 
 function _startPrintPngWithOverlay({ view = '2d' } = {}) {

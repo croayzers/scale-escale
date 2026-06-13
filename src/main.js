@@ -38,6 +38,7 @@ import { SavedGroupPanel }     from './ui/SavedGroupPanel.js';
 import { OrgContentManager }  from './services/OrgContentManager.js';
 import { MeasureManager }     from './ui/MeasureManager.js';
 import { PlanSaveModal }      from './ui/PlanSaveModal.js';
+import { ExportMetaModal }   from './ui/ExportMetaModal.js';
 import { PredictiveArray }    from './ui/PredictiveArray.js';
 import { SplashScreen, collapseDock, collapseHeader } from './ui/SplashScreen.js';
 import { ContextSpawnMenu }  from './ui/ContextSpawnMenu.js';
@@ -102,7 +103,8 @@ async function bootstrap() {
   safeInit('SavedGroupPanel', () => SavedGroupPanel.init());
   safeInit('MessageManager', () => MessageManager.init());
   safeInit('FeedbackModal',  () => FeedbackModal.init());
-  safeInit('PlanSaveModal',  () => PlanSaveModal.init());
+  safeInit('PlanSaveModal',    () => PlanSaveModal.init());
+  safeInit('ExportMetaModal', () => ExportMetaModal.init());
   AppBridge.init();
 
   // ── WallPainter: mostrar demo antes de activar ──────────────────────────────

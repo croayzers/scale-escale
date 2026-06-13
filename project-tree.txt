@@ -182,6 +182,7 @@ PROJECT STRUCTURE
 │       ├── CollabPresenceBar.js
 │       ├── ContextSpawnMenu.js
 │       ├── Dock.js
+│       ├── ExportMetaModal.js
 │       ├── FeedbackModal.js
 │       ├── HeaderActionMenus.js
 │       ├── InventoryPanel.js
