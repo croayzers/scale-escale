@@ -37,9 +37,9 @@ function _closePopup() {
 }
 
 function _outsideClick(e) {
-  if (_popup && !_popup.contains(e.target) && e.target !== _btn) {
+  if (_popup && !_popup.contains(e.target) && !_btn?.contains(e.target)) {
     _closePopup();
-    document.removeEventListener('mousedown', _outsideClick);
+    document.removeEventListener('pointerdown', _outsideClick, true);
   }
 }
 
@@ -186,7 +186,7 @@ function _buildButton() {
   btn.addEventListener('click', () => {
     if (_open) {
       _closePopup();
-      document.removeEventListener('mousedown', _outsideClick);
+      document.removeEventListener('pointerdown', _outsideClick, true);
       return;
     }
     _open = true;
@@ -201,7 +201,8 @@ function _buildButton() {
     const left = Math.max(8, rect.right - 240);
     popup.style.left = `${left}px`;
 
-    setTimeout(() => document.addEventListener('mousedown', _outsideClick), 0);
+    // capture:true para recibir antes que el canvas de Three.js
+    setTimeout(() => document.addEventListener('pointerdown', _outsideClick, true), 0);
   });
 
   return btn;

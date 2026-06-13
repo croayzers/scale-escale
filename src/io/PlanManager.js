@@ -37,11 +37,11 @@ function init() {
   });
   // 'Compartir con empresa' reemplazado por el flujo automático post-calibración
   // El botón #plan-drop-org permanece oculto (hidden) en el HTML
-  document.addEventListener('click', e => {
+  document.addEventListener('pointerdown', e => {
     if (!e.target.closest('#upload-plan-dropdown') && !e.target.closest('#btn-upload-plan')) {
       closePlanDropdown();
     }
-  });
+  }, true);
 
   document.getElementById('file-plan-img')?.addEventListener('change', handleImageFile);
   document.getElementById('file-plan-pdf')?.addEventListener('change', handlePdfFile);

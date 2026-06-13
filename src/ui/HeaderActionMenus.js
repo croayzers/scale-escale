@@ -287,9 +287,8 @@ function init() {
     });
   });
 
-  // pointerdown (no click): cerrar solo si la pulsación empieza fuera del menú,
-  // para no cerrarlo al arrastrar dentro de un input numérico y soltar fuera.
-  document.addEventListener('pointerdown', onDocumentPointerDown);
+  // capture:true para recibir antes que el canvas de Three.js (que puede hacer stopPropagation)
+  document.addEventListener('pointerdown', onDocumentPointerDown, true);
   document.addEventListener('escale:scene-overlay-open', event => {
     if (event.detail?.kind !== 'header') closeMenus();
   });
