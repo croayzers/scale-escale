@@ -436,7 +436,10 @@ function moveFreeBarsToHospitality(data) {
 
 const DEPRECATED_IDS = new Set([
   'mesa_serpentina', 'maceta_ambiente', 'letrero_tumbado', 'alfombra_musicos',
-  'musica', 'lampara_ambiente'
+  'musica', 'lampara_ambiente',
+  // mesas duplicadas/ocultas
+  'mesa_cuadrada_2x3', 'mesa_redonda_18', 'mesa_redonda_15', 'mesa_napoleon_20',
+  'mesa_plegable', 'mesa_curva_90',
 ]);
 
 function removeDeprecatedDefinitions(data) {
