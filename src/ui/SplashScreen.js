@@ -4,11 +4,12 @@
    luego hacen fade revelando la cuadrícula de la escena.
    ───────────────────────────────────────────────────────── */
 
-const HOLD_MS   = 400;   // espera antes de arrancar
-const EXPLODE_MS = 600;  // duración explosión inicial
-const SETTLE_MS  = 900;  // duración convergencia al grid
-const HOLD2_MS   = 500;  // pausa mostrando grid formado
-const FADE_MS    = 700;  // fade out al revelar la escena
+const HOLD_MS    = 400;   // espera antes de arrancar
+const EXPLODE_MS = 600;   // duración explosión inicial
+const SETTLE_MS  = 900;   // duración convergencia al grid
+const LINES_MS   = 700;   // duración crecimiento de líneas
+const HOLD2_MS   = 400;   // pausa final con grid completo
+const FADE_MS    = 700;   // fade out al revelar la escena
 
 /* ════════════════════════════════════════════════════════
    DOCK / HEADER — colapsar al inicio → expandir tras anim
@@ -100,98 +101,137 @@ function _runParticleAnim(canvas, onComplete) {
   const H = canvas.height = window.innerHeight;
   const ctx = canvas.getContext('2d');
 
-  // Color de puntos: blanco sobre fondo transparente
-  // (el fondo de la escena se ve detrás del canvas)
   const DOT_COLOR  = '#1a1a1c';
+  const LINE_COLOR = '#1a1a1c';
   const DOT_RADIUS = 1.8;
 
-  // Cuadrícula objetivo (igual que la rejilla de la escena)
-  const CELL = 52;  // px entre puntos (aprox. escala escena a pantalla)
+  // Doble de puntos → celda la mitad
+  const CELL = 26;
   const cols = Math.ceil(W / CELL) + 2;
   const rows = Math.ceil(H / CELL) + 2;
-  const offsetX = ((W % CELL) / 2);
-  const offsetY = ((H % CELL) / 2);
+  const offsetX = (W % CELL) / 2;
+  const offsetY = (H % CELL) / 2;
 
-  // Generar posiciones destino
+  // Grid de posiciones destino (índice por [r][c] para vecinos)
+  const grid = [];   // grid[r][c] = { tx, ty }
   const targets = [];
   for (let r = 0; r < rows; r++) {
+    grid[r] = [];
     for (let c = 0; c < cols; c++) {
-      targets.push({
-        tx: offsetX + c * CELL,
-        ty: offsetY + r * CELL,
-      });
+      const pt = { tx: offsetX + c * CELL, ty: offsetY + r * CELL, r, c };
+      grid[r][c] = pt;
+      targets.push(pt);
     }
   }
 
   const N = targets.length;
-
-  // Cada partícula: posición actual + velocidad inicial aleatoria
   const cx = W / 2, cy = H / 2;
-  const particles = targets.map(({ tx, ty }) => {
-    // Posición inicial: explosión desde el centro con ángulo aleatorio
+
+  // Partículas: explosión desde el centro
+  const particles = targets.map(pt => {
     const angle = Math.random() * Math.PI * 2;
     const dist  = 60 + Math.random() * Math.max(W, H) * 0.55;
     return {
-      x:  cx + Math.cos(angle) * dist,
-      y:  cy + Math.sin(angle) * dist,
-      tx, ty,
-      // opacidad inicial baja, sube al converger
+      x: cx + Math.cos(angle) * dist,
+      y: cy + Math.sin(angle) * dist,
+      tx: pt.tx, ty: pt.ty,
+      r: pt.r,   c: pt.c,
       opacity: 0.05 + Math.random() * 0.2,
     };
   });
 
+  // Índice rápido: [r][c] → partícula
+  const pGrid = [];
+  for (let r = 0; r < rows; r++) pGrid[r] = [];
+  particles.forEach(p => { pGrid[p.r][p.c] = p; });
+
   const t0 = performance.now();
-  const totalAnim = EXPLODE_MS + SETTLE_MS + HOLD2_MS; // ms hasta fade
+  const T_SETTLE_END = EXPLODE_MS + SETTLE_MS;
+  const T_LINES_END  = T_SETTLE_END + LINES_MS;
+  const T_HOLD_END   = T_LINES_END + HOLD2_MS;
   let raf;
 
-  // Easing suave
-  function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+  function easeOutExpo(t)    { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
   function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+  function easeOutCubic(t)   { return 1 - Math.pow(1 - t, 3); }
 
   function tick() {
     raf = requestAnimationFrame(tick);
     const elapsed = performance.now() - t0;
-
     ctx.clearRect(0, 0, W, H);
 
-    // Fase 1: explosión (0 → EXPLODE_MS) — partículas ya están dispersas, solo ajustamos opacidad
-    // Fase 2: convergencia (EXPLODE_MS → EXPLODE_MS+SETTLE_MS)
-    // Fase 3: hold (grid completo visible)
-
-    let settleProgress = 0;
-    let globalOpacity  = 1;
+    let settleP = 0, globalOp = 1, linesP = 0;
 
     if (elapsed < EXPLODE_MS) {
-      // Fase explosión: puntos aparecen en sus posiciones dispersas
-      settleProgress = 0;
-      globalOpacity  = easeOutExpo(elapsed / EXPLODE_MS);
-    } else if (elapsed < EXPLODE_MS + SETTLE_MS) {
-      // Fase convergencia: mueven hacia target
-      settleProgress = easeInOutCubic((elapsed - EXPLODE_MS) / SETTLE_MS);
-      globalOpacity  = 1;
-    } else if (elapsed < totalAnim) {
-      // Hold: grid completo
-      settleProgress = 1;
-      globalOpacity  = 1;
+      settleP  = 0;
+      globalOp = easeOutExpo(elapsed / EXPLODE_MS);
+      linesP   = 0;
+    } else if (elapsed < T_SETTLE_END) {
+      settleP  = easeInOutCubic((elapsed - EXPLODE_MS) / SETTLE_MS);
+      globalOp = 1;
+      linesP   = 0;
+    } else if (elapsed < T_LINES_END) {
+      settleP  = 1;
+      globalOp = 1;
+      linesP   = easeOutCubic((elapsed - T_SETTLE_END) / LINES_MS);
+    } else if (elapsed < T_HOLD_END) {
+      settleP  = 1;
+      globalOp = 1;
+      linesP   = 1;
     } else {
-      // Terminado
       cancelAnimationFrame(raf);
       ctx.clearRect(0, 0, W, H);
       onComplete?.();
       return;
     }
 
-    ctx.fillStyle = DOT_COLOR;
+    // ── Líneas (se dibujan antes para quedar debajo de los puntos) ──
+    if (linesP > 0) {
+      ctx.strokeStyle = LINE_COLOR;
+      ctx.lineWidth   = 0.5;
 
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const p = pGrid[r][c];
+          if (!p) continue;
+          const px = p.tx, py = p.ty;
+
+          // Derecha
+          if (c + 1 < cols) {
+            const q = pGrid[r][c + 1];
+            if (q) {
+              const qx = q.tx;
+              ctx.globalAlpha = 0.18 * linesP;
+              ctx.beginPath();
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + (qx - px) * linesP, py);
+              ctx.stroke();
+            }
+          }
+          // Abajo
+          if (r + 1 < rows) {
+            const q = pGrid[r + 1][c];
+            if (q) {
+              const qy = q.ty;
+              ctx.globalAlpha = 0.18 * linesP;
+              ctx.beginPath();
+              ctx.moveTo(px, py);
+              ctx.lineTo(px, py + (qy - py) * linesP);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    // ── Puntos ──
+    ctx.fillStyle = DOT_COLOR;
     for (let i = 0; i < N; i++) {
       const p = particles[i];
-      const x = p.x + (p.tx - p.x) * settleProgress;
-      const y = p.y + (p.ty - p.y) * settleProgress;
-
-      // Opacidad: combina la global con la individual, más alta al converger
-      const dotOpacity = (p.opacity + settleProgress * (1 - p.opacity)) * globalOpacity;
-
-      ctx.globalAlpha = dotOpacity;
+      const x = p.x + (p.tx - p.x) * settleP;
+      const y = p.y + (p.ty - p.y) * settleP;
+      const dotOp = (p.opacity + settleP * (1 - p.opacity)) * globalOp;
+      ctx.globalAlpha = dotOp;
       ctx.beginPath();
       ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
       ctx.fill();
