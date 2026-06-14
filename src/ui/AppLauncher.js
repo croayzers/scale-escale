@@ -1,26 +1,56 @@
 import { AuthManager } from '../services/AuthManager.js';
 
-const SCALE_APPS = [
-  { id: 'lscale', nombre: 'L-Scale', emoji: '📦', color: '#f97316' },
-  { id: 'pscale', nombre: 'P-Scale', emoji: '👥', color: '#6366f1' },
-  { id: 'sscale', nombre: 'S-Scale', emoji: '📱', color: '#8b5cf6' },
-  { id: 'escale', nombre: 'E-Scale', emoji: '🏛️', color: '#10b981' },
-  { id: 'fscale', nombre: 'F-Scale', emoji: '💰', color: '#f59e0b' },
-  { id: 'rscale', nombre: 'R-Scale', emoji: '📊', color: '#ef4444' },
+const APP_ID = 'escale';   // qué app SOMOS (no abre en pestaña nueva)
+
+// Fallback si la tabla apps_registry no responde (offline / sin sesión).
+// La fuente de verdad es public.apps_registry en Supabase.
+const FALLBACK_APPS = [
+  { id: 'lscale', nombre: 'L-Scale', emoji: '📦', color: '#f97316', url_prod: 'https://logistics.thescaleapps.com', url_dev: 'http://localhost:5182', activa: true,  orden: 10 },
+  { id: 'pscale', nombre: 'P-Scale', emoji: '👥', color: '#6366f1', url_prod: 'https://people.thescaleapps.com',    url_dev: 'http://localhost:5181', activa: true,  orden: 20 },
+  { id: 'sscale', nombre: 'S-Scale', emoji: '📱', color: '#8b5cf6', url_prod: 'https://social.thescaleapps.com',    url_dev: 'http://localhost:3001', activa: true,  orden: 30 },
+  { id: 'escale', nombre: 'E-Scale', emoji: '🏛️', color: '#10b981', url_prod: 'https://events.thescaleapps.com',    url_dev: 'http://localhost:5173', activa: true,  orden: 40 },
+  { id: 'fscale', nombre: 'F-Scale', emoji: '💰', color: '#f59e0b', url_prod: 'https://finance.thescaleapps.com',   url_dev: null,                    activa: false, orden: 50 },
+  { id: 'rscale', nombre: 'R-Scale', emoji: '📊', color: '#ef4444', url_prod: 'https://reports.thescaleapps.com',   url_dev: null,                    activa: false, orden: 60 },
 ];
 
-function getUrls() {
+let _appsCache = null;   // catálogo cargado (de Supabase o fallback)
+
+function _portalIsProd() {
   const portal = AuthManager.getPortalUrl?.() ?? 'https://thescaleapps.com';
-  const prod = portal.includes('thescaleapps.com');
-  return {
-    portal,
-    lscale: prod ? 'https://logistics.thescaleapps.com' : 'http://localhost:5174',
-    pscale: prod ? 'https://people.thescaleapps.com'    : 'http://localhost:5181',
-    sscale: prod ? 'https://social.thescaleapps.com'    : 'http://localhost:3001',
-    escale: null,
-    fscale: prod ? 'https://finance.thescaleapps.com'   : null,
-    rscale: prod ? 'https://reports.thescaleapps.com'   : null,
-  };
+  return portal.includes('thescaleapps.com');
+}
+
+// URL efectiva de una app según el entorno (prod vs dev).
+function _appUrl(app) {
+  const prod = _portalIsProd();
+  const url = prod ? app.url_prod : (app.url_dev ?? app.url_prod);
+  return (app.activa && url) ? url : null;
+}
+
+// Lee el catálogo de Supabase una vez; cae al fallback si algo falla.
+async function _loadApps() {
+  if (_appsCache) return _appsCache;
+  try {
+    const sb = AuthManager.getSupabaseClient?.();
+    if (sb) {
+      const { data, error } = await sb
+        .from('apps_registry')
+        .select('id,nombre,emoji,color,url_prod,url_dev,activa,orden')
+        .order('orden', { ascending: true });
+      if (!error && Array.isArray(data) && data.length) {
+        _appsCache = data;
+        return _appsCache;
+      }
+    }
+  } catch (err) {
+    console.warn('[AppLauncher] apps_registry no disponible, usando fallback:', err?.message);
+  }
+  _appsCache = [...FALLBACK_APPS].sort((a, b) => a.orden - b.orden);
+  return _appsCache;
+}
+
+function _portalUrl() {
+  return AuthManager.getPortalUrl?.() ?? 'https://thescaleapps.com';
 }
 
 let _popup = null;
@@ -43,8 +73,8 @@ function _outsideClick(e) {
   }
 }
 
-function _buildPopup() {
-  const urls = getUrls();
+async function _buildPopup() {
+  const apps = await _loadApps();
   const popup = document.createElement('div');
   popup.id = 'app-launcher-popup';
   popup.style.cssText = [
@@ -72,9 +102,9 @@ function _buildPopup() {
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:10px';
 
-  SCALE_APPS.forEach(app => {
-    const url = urls[app.id];
-    const isCurrent = app.id === 'escale';
+  apps.forEach(app => {
+    const isCurrent = app.id === APP_ID;
+    const url = isCurrent ? null : _appUrl(app);
     const cell = document.createElement('a');
     cell.href = url || '#';
     if (!isCurrent && url) cell.target = '_blank';
@@ -122,7 +152,7 @@ function _buildPopup() {
   divider.style.cssText = 'border-top:1px solid var(--border,rgba(255,255,255,.1));padding-top:8px';
 
   const portalLink = document.createElement('a');
-  portalLink.href = urls.portal;
+  portalLink.href = _portalUrl();
   portalLink.target = '_blank';
   portalLink.rel = 'noreferrer';
   portalLink.style.cssText = [
@@ -183,7 +213,7 @@ function _buildButton() {
   ).join('');
   btn.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">${circles}</svg>`;
 
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     if (_open) {
       _closePopup();
       document.removeEventListener('pointerdown', _outsideClick, true);
@@ -191,7 +221,9 @@ function _buildButton() {
     }
     _open = true;
     btn.classList.add('is-active');
-    const popup = _buildPopup();
+    const popup = await _buildPopup();
+    // Si se cerró mientras cargaba el catálogo, abortar.
+    if (!_open) return;
     document.body.appendChild(popup);
     _popup = popup;
 
