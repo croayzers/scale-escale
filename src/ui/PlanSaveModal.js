@@ -10,6 +10,7 @@
 import { AppState } from '../core/AppState.js';
 import { OrgContentManager } from '../services/OrgContentManager.js';
 import { HeaderActionMenus } from './HeaderActionMenus.js';
+import { NotifEmitter } from '../services/NotifEmitter.js';
 
 /* ─── Ciudades europeas para el datalist ─── */
 const EU_CITIES = [
@@ -197,6 +198,12 @@ async function save() {
       document.dispatchEvent(new CustomEvent('escale:toast', {
         detail: { msg: `Plano "${nombre}" guardado y compartido con la empresa`, kind: 'success' }
       }));
+      // Notificación in-app a la empresa (campanita de L/P/S-Scale)
+      NotifEmitter.emitirNotificacion({
+        tipo: 'plano',
+        titulo: 'Se creó un nuevo plano',
+        recursoLabel: lugar || ciudad || nombre,
+      });
     }
   } catch (err) {
     console.error('[PlanSaveModal] Error guardando plano:', err);

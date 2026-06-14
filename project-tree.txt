@@ -168,6 +168,7 @@ PROJECT STRUCTURE
 │   │   ├── CollabInteractions.js
 │   │   ├── CollabManager.js
 │   │   ├── MessageManager.js
+│   │   ├── NotifEmitter.js
 │   │   ├── OrgContentManager.js
 │   │   ├── ServiceConfig.js
 │   │   ├── SubscriptionManager.js
