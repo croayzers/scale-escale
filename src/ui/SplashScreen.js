@@ -342,14 +342,17 @@ export function start(onDone) {
       const gsap = window.gsap;
       const afterFade = () => {
         canvas.remove();
-        _expandDock();
-        _expandHeader();
         // Panel de inicio siempre, excepto si hay un callback externo
         // (flujo welcome/collab que ya gestiona su propio modal)
         if (onDone) {
+          _expandDock();
+          _expandHeader();
           onDone();
         } else {
-          _showStartPanel();
+          _showStartPanel(() => {
+            _expandDock();
+            _expandHeader();
+          });
         }
       };
 
