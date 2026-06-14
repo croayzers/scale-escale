@@ -42,7 +42,8 @@ PROJECT STRUCTURE
 │   ├── brand.json
 │   ├── logo.png
 │   ├── Logo_horizontal.png
-│   └── logo_txt.png
+│   ├── logo_txt.png
+│   └── scale-iso.png
 ├── config/
 │   └── app.config.json
 ├── dashboard_api.py
