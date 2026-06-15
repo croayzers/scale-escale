@@ -8,7 +8,9 @@ function markButtons(root = document) {
 
   buttons.forEach(button => {
     const unlocked = true;
-    const forceBadge = button.dataset.proBadge !== 'off';
+    // ⚠️ Badges PRO ocultos (2026-06-15): fase gratuita, todo desbloqueado.
+    // Reactivar: const forceBadge = button.dataset.proBadge !== 'off';
+    const forceBadge = false;
 
     button.classList.toggle('pro-button', forceBadge);
     button.classList.toggle('pro-locked', forceBadge && !unlocked);

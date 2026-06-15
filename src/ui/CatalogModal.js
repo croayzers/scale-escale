@@ -187,6 +187,10 @@ function getCategoryLabel(key) {
 }
 
 function isCategoryProLocked(key) {
+  // ⚠️ GATING DESACTIVADO (2026-06-15): fase gratuita, nada bloqueado.
+  // Reactivar: borra el return false y deja el cuerpo original.
+  return false;
+  // eslint-disable-next-line no-unreachable
   const cat = CATALOG_CATEGORIES.find(c => c.key === key);
   if (!cat?.pro) return false;
   const code = SubscriptionManager.currentPlanCode();
