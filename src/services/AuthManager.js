@@ -1,140 +1,18 @@
 import { AppState } from '../core/AppState.js';
 import { ServiceConfig } from './ServiceConfig.js';
 
-const LOCAL_AUTH_KEY = 'escale_auth_local';
-const LOCAL_AUTH_USERS_KEY = 'escale_auth_users_local';
-const GOOGLE_DOMAINS = new Set(['gmail.com', 'googlemail.com']);
-const MICROSOFT_DOMAINS = new Set(['outlook.com', 'hotmail.com', 'live.com', 'msn.com']);
-
 let currentSession = null;
 let supabaseClient = null;
 let supabaseSubscription = null;
 
-function cleanEmail(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
 function cleanText(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
-}
-
-function extractDomain(email) {
-  const normalized = cleanEmail(email);
-  const at = normalized.indexOf('@');
-  return at > 0 ? normalized.slice(at + 1) : '';
 }
 
 function providerLabel(provider) {
   if (provider === 'google') return 'Google';
   if (provider === 'azure' || provider === 'microsoft') return 'Microsoft';
   return 'correo';
-}
-
-function uidFromEmail(email, provider) {
-  const base = `${provider}:${cleanEmail(email)}`;
-  let hash = 0;
-  for (let index = 0; index < base.length; index += 1) {
-    hash = ((hash << 5) - hash) + base.charCodeAt(index);
-    hash |= 0;
-  }
-  return `local-${Math.abs(hash)}`;
-}
-
-function buildLocalSession(email, provider = 'email', options = {}) {
-  const normalizedEmail = cleanEmail(email);
-  const normalizedProvider = provider === 'microsoft' ? 'azure' : provider;
-  const fullName = cleanText(options.fullName);
-
-  return {
-    local: true,
-    provider: normalizedProvider,
-    access_token: '',
-    user: {
-      id: uidFromEmail(normalizedEmail, normalizedProvider),
-      email: normalizedEmail,
-      app_metadata: { provider: normalizedProvider },
-      user_metadata: fullName ? { fullName } : {}
-    }
-  };
-}
-
-function saveLocalSession(session) {
-  try {
-    if (!session?.user?.email) {
-      localStorage.removeItem(LOCAL_AUTH_KEY);
-      return;
-    }
-
-    localStorage.setItem(LOCAL_AUTH_KEY, JSON.stringify({
-      email: session.user.email,
-      provider: session.provider || session.user?.app_metadata?.provider || 'email',
-      fullName: cleanText(session.user?.user_metadata?.fullName)
-    }));
-  } catch (error) {
-    console.warn('[AuthManager] No se pudo persistir la sesion local:', error);
-  }
-}
-
-function readLocalSession() {
-  try {
-    const raw = localStorage.getItem(LOCAL_AUTH_KEY);
-    if (!raw) return null;
-    const payload = JSON.parse(raw);
-    if (!payload?.email) return null;
-    return buildLocalSession(payload.email, payload.provider || 'email', {
-      fullName: payload.fullName || ''
-    });
-  } catch (error) {
-    console.warn('[AuthManager] No se pudo leer la sesion local:', error);
-    return null;
-  }
-}
-
-function readLocalUsers() {
-  try {
-    const raw = localStorage.getItem(LOCAL_AUTH_USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (error) {
-    console.warn('[AuthManager] No se pudo leer el indice local de accesos:', error);
-    return [];
-  }
-}
-
-function writeLocalUsers(users) {
-  try {
-    localStorage.setItem(LOCAL_AUTH_USERS_KEY, JSON.stringify(users.slice(0, 24)));
-  } catch (error) {
-    console.warn('[AuthManager] No se pudo persistir el indice local de accesos:', error);
-  }
-}
-
-function findLocalAccount(email) {
-  const normalizedEmail = cleanEmail(email);
-  if (!normalizedEmail) return null;
-  return readLocalUsers().find(user => cleanEmail(user?.email) === normalizedEmail) || null;
-}
-
-function upsertLocalAccount(account = {}) {
-  const normalizedEmail = cleanEmail(account.email);
-  if (!normalizedEmail) return null;
-
-  const normalizedProvider = account.provider === 'microsoft' ? 'azure' : (account.provider || 'email');
-  const now = new Date().toISOString();
-  const users = readLocalUsers().filter(user => cleanEmail(user?.email) !== normalizedEmail);
-  const existing = findLocalAccount(normalizedEmail);
-  const next = {
-    email: normalizedEmail,
-    provider: normalizedProvider,
-    fullName: cleanText(account.fullName || existing?.fullName || ''),
-    password: normalizedProvider === 'email'
-      ? String(account.password ?? existing?.password ?? '')
-      : String(existing?.password ?? ''),
-    createdAt: existing?.createdAt || now,
-    updatedAt: now
-  };
-  users.unshift(next);
-  writeLocalUsers(users);
-  return next;
 }
 
 function exposeTokenGetter() {
@@ -286,9 +164,7 @@ function hydrateAuthState(session) {
   AppState.company.authEmail = user?.email || '';
   AppState.company.authProvider = provider || '';
   AppState.company.authDisplayName = fullName;
-  AppState.company.authStatus = user
-    ? (session?.local ? 'authenticated_local' : 'authenticated')
-    : 'anonymous';
+  AppState.company.authStatus = user ? 'authenticated' : 'anonymous';
 
   exposeTokenGetter();
 
@@ -297,90 +173,10 @@ function hydrateAuthState(session) {
       userId: AppState.company.authUserId,
       email: AppState.company.authEmail,
       provider: AppState.company.authProvider,
-      local: Boolean(session?.local),
+      local: false,
       fullName
     }
   }));
-}
-
-async function init() {
-  try {
-    const client = getSupabaseClient();
-    if (client) {
-      const { data, error } = await client.auth.getSession();
-      if (error) console.warn('[AuthManager] No se pudo recuperar la sesion Supabase:', error.message);
-
-      const cloudSession = normalizeSupabaseSession(data?.session);
-
-      if (!cloudSession) {
-        // Sin sesión en Supabase → redirigir al portal para autenticar
-        redirectToPortalLogin(window.location.href);
-        return null;
-      }
-
-      hydrateAuthState(cloudSession);
-
-      if (!supabaseSubscription) {
-        const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-          const normalized = normalizeSupabaseSession(session);
-          if (!normalized) {
-            redirectToPortalLogin(window.location.href);
-            return;
-          }
-          hydrateAuthState(normalized);
-        });
-        supabaseSubscription = listener?.subscription || null;
-      }
-
-      return currentSession;
-    }
-  } catch (error) {
-    console.warn('[AuthManager] Supabase Auth no disponible, usando modo local:', error);
-  }
-
-  // Supabase no configurado: modo local/demo (sin redirección)
-  const localSession = readLocalSession();
-  hydrateAuthState(localSession);
-  return localSession;
-}
-
-function suggestProvider(email) {
-  const normalized = cleanEmail(email);
-  const domain = extractDomain(normalized);
-
-  if (!normalized || !domain) {
-    return {
-      primaryProvider: 'email',
-      domain: '',
-      title: 'Pon tu correo para continuar',
-      description: 'Luego podras elegir Google o entrar con correo.'
-    };
-  }
-
-  if (GOOGLE_DOMAINS.has(domain)) {
-    return {
-      primaryProvider: 'google',
-      domain,
-      title: 'Cuenta Google detectada',
-      description: 'Usa Google si ese correo es el que sueles utilizar con E-scale.'
-    };
-  }
-
-  if (MICROSOFT_DOMAINS.has(domain)) {
-    return {
-      primaryProvider: 'email',
-      domain,
-      title: 'Correo detectado',
-      description: 'Microsoft queda oculto por ahora. Puedes entrar con correo o usar Google.'
-    };
-  }
-
-  return {
-    primaryProvider: 'email',
-    domain,
-    title: `Dominio ${domain} detectado`,
-    description: 'Si ya usaste este dominio en este equipo, recuperaremos los datos guardados.'
-  };
 }
 
 function getPortalUrl() {
@@ -397,98 +193,44 @@ function redirectToPortalLogin(returnUrl) {
   window.location.href = `${portal}/login?returnUrl=${encodeURIComponent(back)}`;
 }
 
-async function mockSignIn(provider, email, options = {}) {
-  const normalizedEmail = cleanEmail(email);
-  const normalizedProvider = provider === 'microsoft' ? 'azure' : provider;
-  const fullName = cleanText(options.fullName);
-  const password = String(options.password || '');
-  const createAccount = Boolean(options.createAccount);
-
-  if (!normalizedEmail) throw new Error('Necesitas indicar un correo.');
-
-  // ─── Supabase email auth ──────────────────────────────────
-  if (normalizedProvider === 'email') {
-    const client = getSupabaseClient();
-    if (client) {
-      if (createAccount) {
-        // El alta vive en el portal Scale — redirigir en vez de crear cuenta aquí
-        redirectToPortalLogin();
-        return { data: null, error: null, redirecting: true };
-      } else {
-        const { data, error } = await client.auth.signInWithPassword({
-          email: normalizedEmail,
-          password
-        });
-        if (error) throw new Error('Usuario o contraseña incorrectos.');
-        const session = normalizeSupabaseSession(data.session);
-        saveLocalSession(session);
-        hydrateAuthState(session);
-        return { data: { session }, error: null };
-      }
-    }
-  }
-
-  // ─── Fallback local (sin Supabase) ───────────────────────
-  const storedAccount = findLocalAccount(normalizedEmail);
-
-  if (normalizedProvider === 'email') {
-    if (createAccount) {
-      if (!password) {
-        throw new Error('Escribe una contraseña para crear la cuenta.');
-      }
-      if (storedAccount?.password && storedAccount.password !== password) {
-        throw new Error('Ya existe una cuenta local con ese correo. Inicia sesion para continuar.');
-      }
-      upsertLocalAccount({ email: normalizedEmail, provider: normalizedProvider, fullName, password });
-    } else {
-      if (!storedAccount) {
-        throw new Error('Usuario o contraseña incorrectos.');
-      }
-      if (storedAccount.password) {
-        if (!password || storedAccount.password !== password) {
-          throw new Error('Usuario o contraseña incorrectos.');
-        }
-      }
-    }
-  } else if (createAccount || storedAccount || fullName) {
-    upsertLocalAccount({ email: normalizedEmail, provider: normalizedProvider, fullName });
-  }
-
-  const account = findLocalAccount(normalizedEmail);
-  const session = buildLocalSession(normalizedEmail, normalizedProvider, {
-    fullName: fullName || account?.fullName || ''
-  });
-
-  saveLocalSession(session);
-  hydrateAuthState(session);
-  return { data: { session }, error: null };
-}
-
-async function signInWithGoogle(options = {}) {
+// E-Scale no tiene login propio: la sesión vive en el portal Scale y se
+// comparte vía cookie (createCookieStorage). Si no hay sesión, se redirige
+// al portal a autenticar; al volver, la cookie ya está puesta.
+async function init() {
   const client = getSupabaseClient();
-  if (client) {
-    const redirectTo = options.redirectTo || `${window.location.origin}${window.location.pathname}`;
-    const { data, error } = await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        }
-      }
-    });
-    if (error) throw error;
-    return { data, error: null, redirecting: true };
+  if (!client) {
+    console.warn('[AuthManager] Supabase no configurado: revisa ServiceConfig.');
+    hydrateAuthState(null);
+    return null;
   }
 
-  const email = cleanEmail(options.email);
-  if (!email) throw new Error('En modo local necesitas indicar un correo para simular Google.');
-  return mockSignIn('google', email, options);
+  const { data, error } = await client.auth.getSession();
+  if (error) console.warn('[AuthManager] No se pudo recuperar la sesion Supabase:', error.message);
+
+  const session = normalizeSupabaseSession(data?.session);
+  if (!session) {
+    redirectToPortalLogin(window.location.href);
+    return null;
+  }
+
+  hydrateAuthState(session);
+
+  if (!supabaseSubscription) {
+    const { data: listener } = client.auth.onAuthStateChange((_event, rawSession) => {
+      const normalized = normalizeSupabaseSession(rawSession);
+      if (!normalized) {
+        redirectToPortalLogin(window.location.href);
+        return;
+      }
+      hydrateAuthState(normalized);
+    });
+    supabaseSubscription = listener?.subscription || null;
+  }
+
+  return currentSession;
 }
 
 async function signOut() {
-  saveLocalSession(null);
   try {
     await getSupabaseClient()?.auth?.signOut();
   } catch (error) {
@@ -507,14 +249,10 @@ function isAuthenticated() {
 
 export const AuthManager = {
   init,
-  suggestProvider,
-  mockSignIn,
-  signInWithGoogle,
   signOut,
   getSession,
   isAuthenticated,
   providerLabel,
-  findLocalAccount,
   redirectToPortalLogin,
   getPortalUrl,
   getSupabaseClient: () => supabaseClient

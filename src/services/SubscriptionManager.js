@@ -71,18 +71,6 @@ function emitLicenseState(detail = {}) {
   }));
 }
 
-function applyLocalAuthProfile(reason = 'local_profile') {
-  const planCode = currentPlanCode() || 'free_lite';
-  const plan = setPlan(planCode, {
-    subscriptionStatus: AppState.company.subscriptionStatus || 'Perfil local',
-    licenseSource: reason,
-    licenseNeedsInvite: false,
-    cloudSyncStatus: 'local_only'
-  });
-  emitLicenseState({ source: reason });
-  return plan;
-}
-
 function applyAnonymousFallback(reason = 'needs_auth') {
   const plan = setPlan('free_lite', {
     organizationId: '',
@@ -285,10 +273,6 @@ function bindAuthListeners() {
       void hydrateFromCloud('auth_changed');
       return;
     }
-    if (AppState.company.authStatus === 'authenticated_local') {
-      applyLocalAuthProfile();
-      return;
-    }
     applyAnonymousFallback('needs_auth');
   });
 }
@@ -301,7 +285,6 @@ async function init() {
   bindAuthListeners();
 
   if (!ServiceConfig.hasFeature('cloudSync')) return currentPlan();
-  if (AppState.company.authStatus === 'authenticated_local') return applyLocalAuthProfile();
   return await hydrateFromCloud('init');
 }
 

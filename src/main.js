@@ -851,7 +851,7 @@ async function bootstrap() {
 
   // Auto-login: esperar 2s (loader visible), cerrar loader y lanzar splash
   const hasSession = AuthManager.isAuthenticated?.() ||
-    ['authenticated', 'authenticated_local'].includes(AppState.company?.authStatus);
+    AppState.company?.authStatus === 'authenticated';
   if (!welcomeUnlocked && !isCollabInvite && hasSession) {
     setTimeout(() => {
       const loaderEl = document.getElementById('app-loader');
