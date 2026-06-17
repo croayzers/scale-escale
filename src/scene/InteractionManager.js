@@ -841,6 +841,10 @@ function onContextMenu(e) {
   }
   setPointer(e);
   const item = getIntersectedItem();
+  // Click derecho sobre una zona: no hacer nada (ni menú, ni selección, ni spawn).
+  if (item && item.type === 'zone') {
+    return;
+  }
   if (!item) {
     hideContextMenu();
     // Raycast al suelo Y=0 y mostrar menú de spawn rápido

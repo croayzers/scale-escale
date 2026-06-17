@@ -1442,7 +1442,7 @@ function drawCotas() {
 }
 
 function moveCotaFor(itemId, x, z) {
-  if (!_appState?.showCotas) return;
+  if (!_appState?.showCotas && !_appState?.showRotulos) return;
   cotasGroup.children.forEach(node => {
     if (node.userData.itemId === itemId) {
       node.position.x = x;
