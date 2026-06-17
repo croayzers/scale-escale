@@ -28,6 +28,7 @@ let placementPreview = null;
 let placementPreviewItem = null;
 let multiPlacementPreviews = []; // array de { group, relX, relZ } para preview de grupo
 let hoveredItemId = null;
+const HOVER_HEX = 0x60a5fa;   // azul (blue-400) para el resaltado al pasar el ratón
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -1066,17 +1067,17 @@ function _applyItemHover(itemId, on) {
   if (on && isSelected) return; // selección tiene prioridad visual
 
   group.traverse(child => {
-    // Strokes en vista top
+    // Strokes en vista top — azul al pasar el ratón (se distingue del fondo)
     if (child.isLine && child.userData?.isTopStroke && child.material) {
-      child.material.color.setHex(on ? 0xffffff : 0x111111);
-      child.material.opacity = on ? 0.9 : 0.48;
+      child.material.color.setHex(on ? HOVER_HEX : 0x111111);
+      child.material.opacity = on ? 0.95 : 0.48;
       child.material.needsUpdate = true;
     }
-    // Emissive sutil en vista ISO
+    // Emissive azulado en vista ISO
     if (child.isMesh && child.material && 'emissive' in child.material
         && child.userData?.baseColor !== undefined && !isSelected) {
-      child.material.emissive = new THREE.Color(on ? 0xffffff : 0x000000);
-      child.material.emissiveIntensity = on ? 0.10 : 0;
+      child.material.emissive = new THREE.Color(on ? HOVER_HEX : 0x000000);
+      child.material.emissiveIntensity = on ? 0.18 : 0;
       child.material.needsUpdate = true;
     }
   });
@@ -1101,11 +1102,11 @@ function highlightSelection() {
     const layerLocked  = lm ? !lm.isItemEditable(it) && !isLocked : false;
     const isCarpa      = it && isCarpaType(it.type);
 
-    // Sincronizar strokes de hover (top view)
+    // Sincronizar strokes de hover (top view) — azul
     g.traverse(child => {
       if (!child.isLine || !child.userData?.isTopStroke || !child.material) return;
-      child.material.color.setHex(isHovered ? 0xffffff : 0x111111);
-      child.material.opacity = isHovered ? 0.9 : 0.48;
+      child.material.color.setHex(isHovered ? HOVER_HEX : 0x111111);
+      child.material.opacity = isHovered ? 0.95 : 0.48;
       child.material.needsUpdate = true;
     });
 
@@ -1128,7 +1129,7 @@ function highlightSelection() {
           return;
         }
 
-        // ── Emissive highlight (blue select, yellow mark, white hover) ──
+        // ── Emissive highlight (blue select, yellow mark, blue hover) ──
         if ('emissive' in material && material.emissive) {
           let emColor = 0x000000;
           let emIntensity = 0;
@@ -1139,8 +1140,8 @@ function highlightSelection() {
             emColor = 0xd4ff3a; // yellow-lime
             emIntensity = 0.18;
           } else if (isHovered) {
-            emColor = 0xffffff; // white hover
-            emIntensity = 0.10;
+            emColor = HOVER_HEX; // azul hover (blue-400)
+            emIntensity = 0.18;
           }
           material.emissive = new THREE.Color(emColor);
           material.emissiveIntensity = emIntensity;
