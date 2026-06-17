@@ -69,13 +69,6 @@ function _setShadows(enabled) {
   if (chk) chk.checked = enabled;
 }
 
-function _setCotas(visible) {
-  AppState.showCotas = visible;
-  SceneManager.redrawCotas();
-  const chk = document.getElementById('smp-cotas');
-  if (chk) chk.checked = visible;
-}
-
 function _openPanel() {
   const panel = document.getElementById('scene-mode-panel');
   if (!panel) return;
@@ -96,8 +89,6 @@ function _openPanel() {
     if (val)   val.textContent = `${_lightDeg}°`;
     const chkS = document.getElementById('smp-shadows');
     if (chkS)  chkS.checked = AppState.shadows ?? true;
-    const chkC = document.getElementById('smp-cotas');
-    if (chkC)  chkC.checked = AppState.showCotas ?? false;
     if (window.lucide) lucide.createIcons({ nodes: [panel] });
   }
 }
@@ -128,8 +119,6 @@ export const SceneModeManager = {
         if (val)   val.textContent = `${_lightDeg}°`;
         const chkS = document.getElementById('smp-shadows');
         if (chkS) chkS.checked = AppState.shadows ?? true;
-        const chkC = document.getElementById('smp-cotas');
-        if (chkC) chkC.checked = AppState.showCotas ?? false;
       } else {
         _applyNightMode(!_nightMode);
       }
@@ -166,20 +155,62 @@ export const SceneModeManager = {
       }
     });
 
-    // Cotas elementos
-    document.getElementById('smp-cotas-elements')?.addEventListener('change', e => {
-      AppState.showCotas = e.target.checked;
-      SceneManager.redrawCotas();
-    });
-
     // Cotas plano y medidas
     document.getElementById('smp-cotas-plan')?.addEventListener('change', e => {
       AppState.showPlanCotas = e.target.checked;
       document.dispatchEvent(new CustomEvent('escale:plan-cotas-changed', { detail: { visible: e.target.checked } }));
     });
 
+    _initLabelsPanel();
+
     // Estado inicial
     _applyLightAngle(45);
     _applySky('blue');
   }
 };
+
+// ── Panel Etiquetas (Rótulos / Cotas) — botón propio bajo btn-scene-mode ──
+function _initLabelsPanel() {
+  const btn   = document.getElementById('btn-labels-mode');
+  const panel = document.getElementById('labels-mode-panel');
+  if (!btn || !panel) return;
+
+  const chkR = document.getElementById('lmp-rotulos');
+  const chkC = document.getElementById('lmp-cotas');
+
+  const sync = () => {
+    if (chkR) chkR.checked = AppState.showRotulos ?? true;
+    if (chkC) chkC.checked = AppState.showCotas ?? false;
+    btn.classList.toggle('active', !!(AppState.showRotulos || AppState.showCotas));
+  };
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = panel.style.display !== 'none' && panel.style.display !== '';
+    panel.style.display = open ? 'none' : 'flex';
+    if (!open) { sync(); if (window.lucide) lucide.createIcons({ nodes: [panel] }); }
+  });
+
+  document.getElementById('lmp-close')?.addEventListener('click', () => {
+    panel.style.display = 'none';
+  });
+
+  chkR?.addEventListener('change', e => {
+    AppState.showRotulos = e.target.checked;
+    SceneManager.redrawCotas();
+    sync();
+  });
+  chkC?.addEventListener('change', e => {
+    AppState.showCotas = e.target.checked;
+    SceneManager.redrawCotas();
+    sync();
+  });
+
+  document.addEventListener('pointerdown', e => {
+    if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  sync();
+}

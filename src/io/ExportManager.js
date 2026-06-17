@@ -587,9 +587,8 @@ function setExportCamera(view) {
 }
 
 function enableExportCotas() {
+  AppState.showRotulos = true;
   AppState.showCotas = true;
-  const toggle = document.getElementById('cotas-toggle');
-  if (toggle) toggle.checked = true;
   SceneManager.drawCotas();
 }
 

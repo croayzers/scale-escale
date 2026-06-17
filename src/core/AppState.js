@@ -77,7 +77,8 @@ export const AppState = {
   selectedIds: new Set(),     // multiselección
   nextId: 1,
   camera: 'top',
-  showCotas: false,
+  showCotas: false,    // medidas/dimensiones de los elementos ("2m", "2.0×4.0m")
+  showRotulos: true,   // rótulos + pax de los elementos ("Mesa 1 - 10p")
   shadows: true,
   showDemos: true,
   measure: { active: false, p1: null },

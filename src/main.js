@@ -644,14 +644,8 @@ async function bootstrap() {
     });
   }
 
-  const cotasToggle = document.getElementById('cotas-toggle');
-  if (cotasToggle) {
-    cotasToggle.checked = AppState.showCotas;
-    cotasToggle.addEventListener('change', () => {
-      AppState.showCotas = cotasToggle.checked;
-      SceneManager.redrawCotas();
-    });
-  }
+  // Rótulos y cotas se gestionan desde el panel "Etiquetas" (btn-labels-mode)
+  // en SceneModeManager. Ver AppState.showRotulos / AppState.showCotas.
 
   const shadowsToggle = document.getElementById('shadows-toggle');
   if (shadowsToggle) {

@@ -587,9 +587,35 @@
 <button id="btn-scene-mode" class="layers-fab scene-mode-fab" title="Modo día / noche">
   <i data-lucide="moon" class="w-4 h-4"></i>
 </button>
-<button id="btn-fullscreen" class="layers-fab" style="top:132px;z-index:30" title="Pantalla completa">
+<button id="btn-labels-mode" class="layers-fab labels-mode-fab" title="Rótulos y cotas">
+  <i data-lucide="tag" class="w-4 h-4"></i>
+</button>
+<button id="btn-fullscreen" class="layers-fab" style="top:172px;z-index:30" title="Pantalla completa">
   <i data-lucide="maximize" class="w-4 h-4"></i>
 </button>
+
+<div id="labels-mode-panel" class="scene-mode-panel glass-mac" style="display:none" aria-label="Rótulos y cotas">
+  <div class="smp-header">
+    <span class="smp-title">Etiquetas</span>
+    <button id="lmp-close" class="hdr-icon" title="Cerrar"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+  </div>
+  <!-- Rótulos -->
+  <div class="smp-section smp-row">
+    <div class="smp-label"><i data-lucide="tag" class="w-3.5 h-3.5"></i> Rótulos</div>
+    <label class="smp-toggle">
+      <input id="lmp-rotulos" type="checkbox" checked/>
+      <span class="smp-toggle-track"></span>
+    </label>
+  </div>
+  <!-- Cotas -->
+  <div class="smp-section smp-row">
+    <div class="smp-label"><i data-lucide="ruler" class="w-3.5 h-3.5"></i> Cotas</div>
+    <label class="smp-toggle">
+      <input id="lmp-cotas" type="checkbox"/>
+      <span class="smp-toggle-track"></span>
+    </label>
+  </div>
+</div>
 
 <div id="scene-mode-panel" class="scene-mode-panel glass-mac" style="display:none" aria-label="Modo escena">
   <div class="smp-header">
@@ -628,15 +654,6 @@
     <div class="smp-label"><i data-lucide="shadow" class="w-3.5 h-3.5"></i> Sombras ISO</div>
     <label class="smp-toggle">
       <input id="smp-shadows" type="checkbox" checked/>
-      <span class="smp-toggle-track"></span>
-    </label>
-  </div>
-
-  <!-- Cotas elementos -->
-  <div class="smp-section smp-row">
-    <div class="smp-label"><i data-lucide="box" class="w-3.5 h-3.5"></i> Cotas elementos</div>
-    <label class="smp-toggle">
-      <input id="smp-cotas-elements" type="checkbox"/>
       <span class="smp-toggle-track"></span>
     </label>
   </div>
@@ -776,10 +793,6 @@
         <label class="flex items-center justify-between mb-3 cursor-pointer">
           <span class="text-[13px]">Snap a rejilla</span>
           <input id="snap-toggle" type="checkbox" checked/>
-        </label>
-        <label class="flex items-center justify-between mb-3 cursor-pointer">
-          <span class="text-[13px]">Cotas visibles</span>
-          <input id="cotas-toggle" type="checkbox" checked/>
         </label>
         <label class="flex items-center justify-between mb-3 cursor-pointer">
           <span class="text-[13px]">Sombras (solo ISO)</span>

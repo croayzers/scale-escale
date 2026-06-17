@@ -3430,6 +3430,15 @@ body.zone-placing #scene-canvas {
   border-color: #0a0a0b;
 }
 
+/* Botón Etiquetas (rótulos/cotas) — debajo del de escena */
+.labels-mode-fab {
+  top: 132px !important;
+}
+#labels-mode-panel {
+  top: 132px;
+  right: 52px;
+}
+
 /* Panel modo escena */
 .scene-mode-panel {
   position: fixed;

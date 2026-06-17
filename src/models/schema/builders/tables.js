@@ -1,5 +1,5 @@
 import {
-  addBox, addCylinder, addLabel, addTopLabel, markMain,
+  addBox, addCylinder, markMain,
   makeStandardMaterial, makeTopFill, colorNumber, annularSectorShape
 } from './primitives.js';
 
@@ -24,7 +24,7 @@ export function buildRoundTable(item, view) {
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.045;
     group.add(ring);
-    addTopLabel(group, item.labelText, '#111827');
+    // El rótulo/pax/medida lo dibuja drawCotas() (toggles globales). No duplicar aquí.
     return group;
   }
 
@@ -60,7 +60,6 @@ export function buildRoundTable(item, view) {
   );
   base.position.y = 0.025;
   group.add(base);
-  addLabel(group, item.labelText, height + 0.45);
   return group;
 }
 
@@ -178,7 +177,6 @@ export function buildMesaPresi(item, view) {
     if (item.endFoot !== false) {
       const cf = makeChair('top'); cf.position.set(-endOffsetX, 0, 0); cf.rotation.y = -Math.PI / 2; group.add(cf);
     }
-    addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -204,7 +202,6 @@ export function buildMesaPresi(item, view) {
     const cf = makeChair(); cf.position.set(-endOffsetX, 0, 0); cf.rotation.y = -Math.PI / 2; group.add(cf);
   }
 
-  addLabel(group, item.labelText, H + 0.45);
   return group;
 }
 
@@ -222,7 +219,6 @@ export function buildMesaRect(item, view) {
     markMain(fill, color);
     group.add(fill);
     placeRectChairs(group, item, L, W, 'top');
-    addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -239,7 +235,6 @@ export function buildMesaRect(item, view) {
   group.add(cloth);
 
   placeRectChairs(group, item, L, W);
-  addLabel(group, item.labelText, H + 0.45);
   return group;
 }
 
@@ -305,7 +300,6 @@ export function buildMesaCocktail(item, view) {
     fill.position.y = 0.04;
     markMain(fill, color);
     group.add(fill);
-    addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -342,7 +336,6 @@ export function buildMesaCocktail(item, view) {
   base.castShadow = true;
   group.add(base);
 
-  addLabel(group, item.labelText, H + 0.35);
   return group;
 }
 
@@ -398,7 +391,6 @@ export function buildMesaCurva(item, view) {
     group.add(fill);
     if (dist === 'externa' || dist === 'ambas') placeChairs(rOut + 0.1, true, 'top');
     if (dist === 'interna' || dist === 'ambas') placeChairs(Math.max(0.1, rIn - 0.1), false, 'top');
-    addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -418,7 +410,6 @@ export function buildMesaCurva(item, view) {
   if (dist === 'externa' || dist === 'ambas') placeChairs(rOut + 0.1, true);
   if (dist === 'interna' || dist === 'ambas') placeChairs(Math.max(0.1, rIn - 0.1), false);
 
-  addLabel(group, item.labelText, H + 0.45);
   return group;
 }
 

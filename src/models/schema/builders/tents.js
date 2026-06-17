@@ -1,4 +1,4 @@
-import { markMain, makeTopFill, colorNumber, addLabel, addTopLabel } from './primitives.js';
+import { markMain, colorNumber } from './primitives.js';
 
 // ── Private geometry helpers ────────────────────────────────
 
@@ -195,7 +195,6 @@ export function buildCarpa(item, view) {
     }
   }
 
-  if (item.labelText) addLabel(group, item.labelText, eaveH + 1.2);
   return group;
 }
 
@@ -219,7 +218,6 @@ export function buildCarpaCuadrada(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -255,7 +253,6 @@ export function buildCarpaCuadrada(item, view) {
   apexSphere.position.copy(apex);
   group.add(apexSphere);
 
-  if (item.labelText) addLabel(group, item.labelText, ridgeH + 0.4);
   return group;
 }
 
@@ -279,7 +276,6 @@ export function buildCarpaStar(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -304,7 +300,6 @@ export function buildCarpaStar(item, view) {
     group.add(buildSailTriangle(outerPts[i], outerPts[(i + 1) % 6], center, tarpMat, tarpColor));
   }
 
-  if (item.labelText) addLabel(group, item.labelText, peakH + 0.4);
   return group;
 }
 
@@ -331,7 +326,6 @@ export function buildCarpaPabellon(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -375,7 +369,6 @@ export function buildCarpaPabellon(item, view) {
     group.add(t);
   });
 
-  if (item.labelText) addLabel(group, item.labelText, ridgeH + 0.4);
   return group;
 }
 
@@ -401,7 +394,6 @@ export function buildCarpaSailcloth(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -452,7 +444,6 @@ export function buildCarpaSailcloth(item, view) {
   sail.castShadow = true;
   group.add(sail);
 
-  if (item.labelText) addLabel(group, item.labelText, peakH + 0.4);
   return group;
 }
 
@@ -478,7 +469,6 @@ export function buildCarpaBeduina(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -541,7 +531,6 @@ export function buildCarpaBeduina(item, view) {
     });
   });
 
-  if (item.labelText) addLabel(group, item.labelText, peakH + 0.4);
   return group;
 }
 
@@ -565,7 +554,6 @@ export function buildCarpaTipi(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -603,7 +591,6 @@ export function buildCarpaTipi(item, view) {
     group.add(pole);
   }
 
-  if (item.labelText) addLabel(group, item.labelText, H * 1.1 + 0.4);
   return group;
 }
 
@@ -629,7 +616,6 @@ export function buildCarpaTransparente(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -684,7 +670,6 @@ export function buildCarpaTransparente(item, view) {
   glassGeo.computeVertexNormals();
   group.add(new THREE.Mesh(glassGeo, glassMat));
 
-  if (item.labelText) addLabel(group, item.labelText, ridgeH + 0.4);
   return group;
 }
 
@@ -710,7 +695,6 @@ export function buildCarpaDomo(item, view) {
   group.add(base);
 
   if (view === 'top') {
-    if (item.labelText) addTopLabel(group, item.labelText);
     return group;
   }
 
@@ -751,7 +735,6 @@ export function buildCarpaDomo(item, view) {
   doorFrame.position.set(0, doorH / 2, R - 0.025);
   group.add(doorFrame);
 
-  if (item.labelText) addLabel(group, item.labelText, H + 0.4);
   return group;
 }
 

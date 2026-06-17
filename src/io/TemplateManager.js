@@ -420,6 +420,7 @@ function buildData(kind, items, opts = {}) {
     camera:  AppState.camera,
     snap:    { ...AppState.snap },
     cotas:   AppState.showCotas,
+    rotulos: AppState.showRotulos,
     shadows: AppState.shadows
   };
 }
@@ -890,8 +891,9 @@ async function restorePlan(data) {
 function restoreSettings(data) {
   // El grid NO se restaura desde plantilla
   if (data.snap) { AppState.snap.enabled = data.snap.enabled ?? true; AppState.snap.spacing = data.snap.spacing ?? 0.25; }
-  if (data.cotas   !== undefined) AppState.showCotas = data.cotas;
-  if (data.shadows !== undefined) AppState.shadows   = data.shadows;
+  if (data.cotas   !== undefined) AppState.showCotas   = data.cotas;
+  if (data.rotulos !== undefined) AppState.showRotulos = data.rotulos;
+  if (data.shadows !== undefined) AppState.shadows     = data.shadows;
   const ni = document.getElementById('inventory-event-name');
   if (ni && data.name) ni.value = data.name;
   if (data.camera) {

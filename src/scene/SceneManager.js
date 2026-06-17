@@ -891,7 +891,7 @@ function spawn(item) {
   if (item.rotY) group.rotation.y = item.rotY;
   meshes.set(item.id, group);
   scene.add(group);
-  if (_appState?.showCotas) drawCotas();
+  if (_appState?.showCotas || _appState?.showRotulos) drawCotas();
   if (item.type === 'zone') rebuildGrids();
 }
 
@@ -1020,7 +1020,7 @@ function rotateItem(id, rotY) {
   g.rotation.y = rotY;
   const item = _appState?.items.find(i => i.id === id);
   if (item) item.rotY = rotY;
-  if (_appState?.showCotas) drawCotas();
+  if (_appState?.showCotas || _appState?.showRotulos) drawCotas();
 }
 
 function setHoveredItem(id) {
@@ -1251,31 +1251,33 @@ function drawCotas() {
     const c = cotasGroup.children.pop();
     disposeGroup(c);
   }
-  if (!_appState?.showCotas) return;
+  const showCotas   = !!_appState?.showCotas;    // medidas/dimensiones
+  const showRotulos = !!_appState?.showRotulos;   // rótulo + pax
+  // Si ambos están apagados, no hay nada que dibujar.
+  if (!showCotas && !showRotulos) return;
 
-  const COTAS_ALWAYS = ['mesa', 'buffet', 'carpa', 'mesaRect', 'mesaImperial',
+  const TEXT_TYPES = ['mesa', 'buffet', 'carpa', 'mesaRect', 'mesaImperial',
     'mesaCocktail', 'mesaCurva', 'mesaSerpentina', 'barraLibre',
     'carpaCuadrada', 'carpaStar',
     'carpaPabellon', 'carpaTransparente', 'carpaBeduina',
-    'carpaSailcloth', 'carpaTipi', 'carpaDomo', 'zone'];
+    'carpaSailcloth', 'carpaTipi', 'carpaDomo', 'zone',
+    'arbusto', 'arbol', 'cableLuces', 'room', 'sillaCatering',
+    'sillaLineal', 'poste', 'ambiente'];
 
   _appState.items.forEach(item => {
     if (isChairCategoryItem(item)) return;
-    if (!COTAS_ALWAYS.includes(item.type) && !item.showLabel) return;
+    if (!TEXT_TYPES.includes(item.type)) return;
 
     if (isZoneItem(item)) {
+      if (!showRotulos && !showCotas) return;
       cotasGroup.add(createZoneCotasGroup(item));
       return;
     }
 
-    let label, kind, yOffset;
-
-    // Antepone el rótulo de la mesa (item.labelText) a la cantidad de pax:
-    // "Mesa 1 - 10p". Si no hay rótulo, deja solo el pax.
-    const withRotulo = (paxLabel) => {
-      const rotulo = String(item.labelText || '').trim();
-      return rotulo ? `${rotulo} - ${paxLabel}` : paxLabel;
-    };
+    // Cada tipo aporta dos partes independientes:
+    //   pax    → identidad/capacidad ("10p", "cocktail"…) → se muestra con Rótulos
+    //   medida → dimensiones ("2m", "2.0×4.0m"…)           → se muestra con Cotas
+    let pax = '', medida = '', kind, yOffset;
 
     switch (item.type) {
       case 'carpa':
@@ -1285,88 +1287,98 @@ function drawCotas() {
       case 'carpaSailcloth': {
         const L = item.dims.length ?? item.dims.size ?? 0;
         const W = item.dims.width  ?? item.dims.size ?? 0;
-        label = `${L.toFixed(1)}×${W.toFixed(1)}m · ${(L*W).toFixed(0)}m²`;
+        medida = `${L.toFixed(1)}×${W.toFixed(1)}m · ${(L*W).toFixed(0)}m²`;
         kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 4.5;
         break;
       }
       case 'carpaCuadrada': {
         const S = item.dims.size ?? 6;
-        label = `${S.toFixed(1)}×${S.toFixed(1)}m · ${(S*S).toFixed(0)}m²`;
+        medida = `${S.toFixed(1)}×${S.toFixed(1)}m · ${(S*S).toFixed(0)}m²`;
         kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 4.8;
         break;
       }
       case 'carpaStar': {
         const S = item.dims.size ?? 8;
-        label = `Ø ${S.toFixed(1)}m · star`;
+        medida = `Ø ${S.toFixed(1)}m · star`;
         kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : 5.2;
         break;
       }
       case 'carpaTipi': {
         const D = item.dims.diameter ?? 6;
-        label = `Ø ${D.toFixed(1)}m · tipi`;
+        medida = `Ø ${D.toFixed(1)}m · tipi`;
         kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
         break;
       }
       case 'carpaDomo': {
         const D = item.dims.diameter ?? 8;
-        label = `Ø ${D.toFixed(1)}m · domo`;
+        medida = `Ø ${D.toFixed(1)}m · domo`;
         kind = 'carpa'; yOffset = _appState.camera === 'top' ? 0.5 : (item.dims.height + 0.6);
         break;
       }
-      case 'mesa':
-        label = withRotulo(`${item.chairs}p`);
+      case 'mesa': {
+        pax = `${item.chairs}p`;
+        const d = item.dims?.diameter;
+        if (typeof d === 'number') medida = `${d.toFixed(1).replace(/\.0$/, '')}m`;
         kind = 'mesa'; yOffset = 1.55;
         break;
+      }
       case 'arbusto':
-        label = `${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
+        medida = `${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
         kind = 'green'; yOffset = item.dims.height + 0.4;
         break;
       case 'arbol':
-        label = `H ${item.dims.height.toFixed(1)}m · Ø ${item.dims.crownWidth.toFixed(1)}m`;
+        medida = `H ${item.dims.height.toFixed(1)}m · Ø ${item.dims.crownWidth.toFixed(1)}m`;
         kind = 'green'; yOffset = item.dims.height + 0.4;
         break;
       case 'cableLuces': {
         const total = (item.count * item.spacing).toFixed(2);
-        label = `${item.count} luces · ${total}m`;
+        medida = `${item.count} luces · ${total}m`;
         kind = 'lights'; yOffset = item.height + 0.4;
         break;
       }
       case 'room':
-        label = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
+        medida = `${item.dims.length.toFixed(1)}×${item.dims.width.toFixed(1)}×${item.dims.height.toFixed(1)}m`;
         kind = 'room'; yOffset = item.dims.height + 0.4;
         break;
       case 'sillaCatering':
-        label = `Silla · ${item.subtype}`;
+        pax = `Silla · ${item.subtype}`;
         kind = 'mesa'; yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
         break;
       case 'sillaLineal': {
         const n = item.count ?? 6;
         const span = (n - 1) * (item.gap ?? 0.55);
-        label = `${n} sillas · ${span.toFixed(2)}m`;
+        pax = `${n} sillas`;
+        medida = `${span.toFixed(2)}m`;
         kind = 'mesa'; yOffset = (item.dims?.totalHeight ?? 0.9) + 0.3;
         break;
       }
       case 'mesaRect':
-      case 'mesaImperial':
-        label = withRotulo(`${item.chairs}p`);
+      case 'mesaImperial': {
+        pax = `${item.chairs}p`;
+        const L = item.dims?.length, W = item.dims?.width;
+        if (typeof L === 'number' && typeof W === 'number') medida = `${L.toFixed(1)}×${W.toFixed(1)}m`;
         kind = 'mesa'; yOffset = 1.55;
         break;
-      case 'mesaCocktail':
-        label = withRotulo('cocktail');
+      }
+      case 'mesaCocktail': {
+        pax = 'cocktail';
+        const d = item.dims?.diameter;
+        if (typeof d === 'number') medida = `Ø ${d.toFixed(1)}m`;
         kind = 'mesa'; yOffset = (item.dims.height || 1.1) + 0.3;
         break;
+      }
       case 'mesaCurva':
       case 'mesaSerpentina':
-        label = withRotulo(`${item.chairs}p`);
+        pax = `${item.chairs}p`;
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'poste':
-        label = `Ø ${(item.dims.diameter*100).toFixed(0)}cm · H ${item.dims.height.toFixed(1)}m`;
+        medida = `Ø ${(item.dims.diameter*100).toFixed(0)}cm · H ${item.dims.height.toFixed(1)}m`;
         kind = 'carpa'; yOffset = item.dims.height + 0.4;
         break;
       case 'barraLibre': {
         const n = item.cubiteras ?? 1;
-        label = `${item.dims.length.toFixed(1)}m · ${n} cubiter${n>1?'as':'a'}`;
+        medida = `${item.dims.length.toFixed(1)}m · ${n} cubiter${n>1?'as':'a'}`;
         kind = 'buffet'; yOffset = (item.dims.height ?? 0.9) + 0.5;
         break;
       }
@@ -1374,7 +1386,7 @@ function drawCotas() {
         const subLabel = item.subtype === 'alfombra' ? `${item.dims.length}×${item.dims.width}m`
                        : item.subtype === 'planta'   ? `H ${item.dims.height}m`
                        : `Spot · H ${item.dims.height}m`;
-        label = item.subtype === 'alfombra' && typeof item.dims?.diameter === 'number'
+        medida = item.subtype === 'alfombra' && typeof item.dims?.diameter === 'number'
           ? `Ø ${item.dims.diameter}m`
           : subLabel;
         kind = 'lights';
@@ -1382,9 +1394,18 @@ function drawCotas() {
         break;
       }
       default:
-        label = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;
+        medida = `${item.dims.length.toFixed(2)}m · ${(item.subtype || '').toUpperCase()}`;
         kind = 'buffet'; yOffset = 2.55;
     }
+
+    // Composición final: Rótulo - Pax - Medida (cada parte según su flag).
+    const parts = [];
+    const rotulo = String(item.labelText || '').trim();
+    if (showRotulos && rotulo) parts.push(rotulo);
+    if (showRotulos && pax)    parts.push(pax);
+    if (showCotas   && medida) parts.push(medida);
+    const label = parts.join(' - ');
+    if (!label) return;
 
     const sprite = makeTextSprite(label, kind);
     sprite.position.set(item.x, yOffset, item.z);
