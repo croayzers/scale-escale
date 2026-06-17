@@ -198,8 +198,8 @@ function startZonePlacement(freeform = false) {
   document.getElementById('cam-top')?.classList.add('active');
   document.getElementById('cam-iso')?.classList.remove('active');
   showZoneTip(freeform
-    ? `✦ ${zonePlacement.name} · Marca los vértices · doble clic o Enter para cerrar`
-    : `✦ ${zonePlacement.name} · Clic en el primer punto`);
+    ? `✦ ${zonePlacement.name} · Con Alt pulsado movimiento libre`
+    : `✦ ${zonePlacement.name} · Con Alt pulsado movimiento libre`);
   if (freeform) showZoneBanner('Marca los vértices · doble clic para terminar la zona');
   setPlacementStatus();
 }
@@ -279,9 +279,7 @@ function handleCanvasPointerDown(point) {
     }
     verts.push({ x: point.x, z: point.z });
     zonePlacement.current = { x: point.x, z: point.z };
-    updateZoneTip(verts.length < 3
-      ? `✦ ${zonePlacement.name} · ${verts.length} vértice(s) · sigue marcando`
-      : `✦ ${zonePlacement.name} · ${verts.length} vértices · doble clic o clic en el inicio para cerrar`);
+    updateZoneTip(`✦ ${zonePlacement.name} · Con Alt pulsado movimiento libre`);
     updateZoneBanner(verts.length < 3
       ? 'Marca los vértices · doble clic para terminar la zona'
       : 'Doble clic, Enter o clic en el inicio para terminar la zona');
@@ -293,7 +291,7 @@ function handleCanvasPointerDown(point) {
   if (!zonePlacement.anchor) {
     zonePlacement.anchor = { x: point.x, z: point.z };
     zonePlacement.current = { x: point.x, z: point.z };
-    updateZoneTip(`✦ ${zonePlacement.name} · Clic en la esquina opuesta`);
+    updateZoneTip(`✦ ${zonePlacement.name} · Con Alt pulsado movimiento libre`);
     updatePreview();
     setPlacementStatus();
     return true;
