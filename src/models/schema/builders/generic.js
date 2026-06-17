@@ -336,19 +336,29 @@ export function buildText2D(item) {
   const worldW = worldH * aspect;
 
   const texture = new THREE.CanvasTexture(canvas);
-  const mat = new THREE.MeshBasicMaterial({
+
+  // Cara visible: PlaneGeometry con depthTest:false para verse siempre encima del plano
+  const matFace = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
     depthTest: false,
     depthWrite: false,
     side: THREE.DoubleSide
   });
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldH), mat);
-  plane.rotation.x = -Math.PI / 2;
-  plane.position.y = 0.06;
-  plane.renderOrder = 80;
-  plane.userData.skipTopStroke = true;
-  markMain(plane, color);
-  group.add(plane);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldH), matFace);
+  face.rotation.x = -Math.PI / 2;
+  face.position.y = 0.08;
+  face.renderOrder = 100;
+  face.userData.skipTopStroke = true;
+
+  // Caja invisible para raycasting (PlaneGeometry tiene problemas de colisión con el ray)
+  const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(worldW, 0.05, worldH), hitMat);
+  hit.position.y = 0.08;
+  hit.userData.skipTopStroke = true;
+
+  markMain(hit, color);
+  group.add(face);
+  group.add(hit);
   return group;
 }

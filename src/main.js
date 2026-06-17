@@ -26,7 +26,6 @@ import { SubscriptionManager } from './services/SubscriptionManager.js';
 import { AnalyticsManager } from './services/AnalyticsManager.js';
 import { SupportManager } from './services/SupportManager.js';
 import { MessageManager } from './services/MessageManager.js';
-import { FeedbackModal } from './ui/FeedbackModal.js';
 import { AppBridge } from './core/AppBridge.js';
 import { CollabManager }       from './services/CollabManager.js';
 import { CollabInviteModal }   from './ui/CollabInviteModal.js';
@@ -102,7 +101,6 @@ async function bootstrap() {
   safeInit('SavedGroupLibrary', () => SavedGroupLibrary.load());
   safeInit('SavedGroupPanel', () => SavedGroupPanel.init());
   safeInit('MessageManager', () => MessageManager.init());
-  safeInit('FeedbackModal',  () => FeedbackModal.init());
   safeInit('PlanSaveModal',    () => PlanSaveModal.init());
   safeInit('ExportMetaModal', () => ExportMetaModal.init());
   AppBridge.init();
@@ -627,10 +625,6 @@ async function bootstrap() {
   });
   document.getElementById('settings-done')?.addEventListener('click', () => {
     settingsModal?.classList.remove('visible');
-  });
-  document.getElementById('btn-open-feedback')?.addEventListener('click', () => {
-    settingsModal?.classList.remove('visible');
-    FeedbackModal.open();
   });
 
   document.addEventListener('escale:scene-overlay-open', event => {

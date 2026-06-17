@@ -2182,7 +2182,7 @@ function rotateSelectionStep() {
 
   if (!ids.length) return;
 
-  const step = Math.PI / 12;
+  const step = Math.PI / 36;
   AppState.pushHistory();
 
   ids.forEach(id => {
