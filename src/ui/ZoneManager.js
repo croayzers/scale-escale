@@ -204,10 +204,27 @@ function startZonePlacement(freeform = false) {
   setPlacementStatus();
 }
 
+// Quita vértices consecutivos casi idénticos (los genera el doble clic de cierre,
+// que dispara 2 pointerdown en el mismo punto antes del dblclick).
+function dedupeVertices(verts, eps = 0.05) {
+  const out = [];
+  for (const v of verts) {
+    const last = out[out.length - 1];
+    if (last && Math.hypot(v.x - last.x, v.z - last.z) < eps) continue;
+    out.push(v);
+  }
+  // También colapsa el último contra el primero (cierre sobre el inicio).
+  if (out.length > 1) {
+    const a = out[0], b = out[out.length - 1];
+    if (Math.hypot(a.x - b.x, a.z - b.z) < eps) out.pop();
+  }
+  return out;
+}
+
 // Cierra la zona libre con los vértices marcados (≥3).
 function finishFreeformZone() {
   if (!zonePlacement?.freeform) return false;
-  const verts = zonePlacement.vertices || [];
+  const verts = dedupeVertices(zonePlacement.vertices || []);
   if (verts.length < 3) { return false; }
   const zone = buildPolyZoneItem(verts);
   const placed = AppState.add(zone);

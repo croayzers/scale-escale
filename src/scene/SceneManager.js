@@ -725,7 +725,10 @@ function addFlatPolygon(group, pts, color, fillOpacity, borderColor) {
   group.add(makeLine(outline, borderColor));
 }
 
-// Grid recortado al polígono: dibuja líneas de la rejilla solo dentro del contorno.
+// Grid recortado al polígono: dibuja líneas de la rejilla solo dentro del
+// contorno. Calcula las intersecciones exactas de cada línea con los bordes del
+// polígono (scanline), de modo que las líneas terminan limpias justo en el
+// borde — sin dientes ni desbordes, e independiente del paso de la rejilla.
 function makeZonePolyGrid(item, pts) {
   const group = new THREE.Group();
   const cfg = item.gridConfig;
@@ -738,26 +741,50 @@ function makeZonePolyGrid(item, pts) {
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   pts.forEach(([x, z]) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); });
 
+  const n = pts.length;
   const verts = [];
-  const inside = (x, z) => pointInPoly(x, z, pts);
-  const x0 = Math.ceil(minX / step) * step;
-  for (let x = x0; x <= maxX; x += step) {
-    let zStart = null;
-    for (let z = minZ; z <= maxZ; z += step / 2) {
-      if (inside(x, z)) { if (zStart === null) zStart = z; }
-      else if (zStart !== null) { verts.push(x, 0, zStart, x, 0, z); zStart = null; }
+  const EPS = 1e-6;
+
+  // Intersecciones de la recta vertical x=c con los bordes del polígono → lista de z.
+  const crossingsAtX = (c) => {
+    const zs = [];
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = pts[i][0], zi = pts[i][1], xj = pts[j][0], zj = pts[j][1];
+      if ((xi <= c && xj > c) || (xj <= c && xi > c)) {
+        const t = (c - xi) / (xj - xi);
+        zs.push(zi + t * (zj - zi));
+      }
     }
-    if (zStart !== null) verts.push(x, 0, zStart, x, 0, maxZ);
+    return zs.sort((a, b) => a - b);
+  };
+  // Intersecciones de la recta horizontal z=c → lista de x.
+  const crossingsAtZ = (c) => {
+    const xs = [];
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = pts[i][0], zi = pts[i][1], xj = pts[j][0], zj = pts[j][1];
+      if ((zi <= c && zj > c) || (zj <= c && zi > c)) {
+        const t = (c - zi) / (zj - zi);
+        xs.push(xi + t * (xj - xi));
+      }
+    }
+    return xs.sort((a, b) => a - b);
+  };
+
+  const x0 = Math.ceil(minX / step) * step;
+  for (let x = x0; x <= maxX + EPS; x += step) {
+    const zs = crossingsAtX(x);
+    for (let k = 0; k + 1 < zs.length; k += 2) {
+      if (zs[k + 1] - zs[k] > EPS) verts.push(x, 0, zs[k], x, 0, zs[k + 1]);
+    }
   }
   const z0 = Math.ceil(minZ / step) * step;
-  for (let z = z0; z <= maxZ; z += step) {
-    let xStart = null;
-    for (let x = minX; x <= maxX; x += step / 2) {
-      if (inside(x, z)) { if (xStart === null) xStart = x; }
-      else if (xStart !== null) { verts.push(xStart, 0, z, x, 0, z); xStart = null; }
+  for (let z = z0; z <= maxZ + EPS; z += step) {
+    const xs = crossingsAtZ(z);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      if (xs[k + 1] - xs[k] > EPS) verts.push(xs[k], 0, z, xs[k + 1], 0, z);
     }
-    if (xStart !== null) verts.push(xStart, 0, z, maxX, 0, z);
   }
+
   if (!verts.length) return group;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));

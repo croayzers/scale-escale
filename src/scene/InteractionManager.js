@@ -614,7 +614,7 @@ function onPointerDown(e) {
 
   if (ZoneManager.isPlacementActive()) {
     if (isViewer()) return;
-    const point = getDragPoint();
+    const point = applySnap(getDragPoint());
     if (point) ZoneManager.handleCanvasPointerDown(point);
     return;
   }
@@ -739,7 +739,7 @@ function onPointerMove(e) {
   }
 
   if (ZoneManager.isPlacementActive()) {
-    const point = getDragPoint();
+    const point = applySnap(getDragPoint());
     if (point) ZoneManager.handleCanvasPointerMove(point);
     return;
   }
