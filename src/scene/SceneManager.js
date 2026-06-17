@@ -1270,6 +1270,13 @@ function drawCotas() {
 
     let label, kind, yOffset;
 
+    // Antepone el rótulo de la mesa (item.labelText) a la cantidad de pax:
+    // "Mesa 1 - 10p". Si no hay rótulo, deja solo el pax.
+    const withRotulo = (paxLabel) => {
+      const rotulo = String(item.labelText || '').trim();
+      return rotulo ? `${rotulo} - ${paxLabel}` : paxLabel;
+    };
+
     switch (item.type) {
       case 'carpa':
       case 'carpaPabellon':
@@ -1307,9 +1314,7 @@ function drawCotas() {
         break;
       }
       case 'mesa':
-        label = item.subtype === 'presi'
-          ? `${item.chairs}p`
-          : `${item.chairs}p`;
+        label = withRotulo(`${item.chairs}p`);
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'arbusto':
@@ -1343,16 +1348,16 @@ function drawCotas() {
       }
       case 'mesaRect':
       case 'mesaImperial':
-        label = `${item.chairs}p`;
+        label = withRotulo(`${item.chairs}p`);
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'mesaCocktail':
-        label = `cocktail`;
+        label = withRotulo('cocktail');
         kind = 'mesa'; yOffset = (item.dims.height || 1.1) + 0.3;
         break;
       case 'mesaCurva':
       case 'mesaSerpentina':
-        label = `${item.chairs}p`;
+        label = withRotulo(`${item.chairs}p`);
         kind = 'mesa'; yOffset = 1.55;
         break;
       case 'poste':
@@ -1405,13 +1410,20 @@ function moveCotaFor(itemId, x, z) {
 function makeTextSprite(text, kind = 'mesa') {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  canvas.width = 640; canvas.height = 144;
+  const font = 'bold 48px "JetBrains Mono", monospace';
+
+  // Ancho del canvas adaptado al texto para no recortar rótulos largos
+  // (ej. "Mesa 1 - 10p"), manteniendo un mínimo de 640px.
+  ctx.font = font;
+  const measured = ctx.measureText(text).width;
+  canvas.width = Math.max(640, Math.ceil(measured + 80));
+  canvas.height = 144;
 
   // Sin fondo — solo texto
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Texto principal
-  ctx.font = 'bold 48px "JetBrains Mono", monospace';
+  // Texto principal (reasignar font tras cambiar el tamaño del canvas)
+  ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
@@ -1428,7 +1440,8 @@ function makeTextSprite(text, kind = 'mesa') {
   const texture = new THREE.CanvasTexture(canvas);
   const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(4.5, 1.0, 1);
+  // Escala X proporcional al ancho del canvas para no deformar el texto
+  sprite.scale.set(4.5 * (canvas.width / 640), 1.0, 1);
   sprite.position.y = 0.15;
   sprite.renderOrder = 999;
   return sprite;

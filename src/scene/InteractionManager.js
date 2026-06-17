@@ -176,8 +176,27 @@ function setPointer(e) {
   pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 }
 
+// Tolerancia de click en píxeles: muestrea varios rayos alrededor del puntero
+// para que objetos pequeños (sillas, copas, focos…) y siluetas planas en vista
+// cenital sean fáciles de coger sin tener que apuntar al píxel exacto.
+const PICK_TOLERANCE_PX = 9;
+const _pickOffsets = [
+  [0, 0],
+  [PICK_TOLERANCE_PX, 0], [-PICK_TOLERANCE_PX, 0],
+  [0, PICK_TOLERANCE_PX], [0, -PICK_TOLERANCE_PX],
+  [PICK_TOLERANCE_PX, PICK_TOLERANCE_PX], [-PICK_TOLERANCE_PX, -PICK_TOLERANCE_PX],
+  [PICK_TOLERANCE_PX, -PICK_TOLERANCE_PX], [-PICK_TOLERANCE_PX, PICK_TOLERANCE_PX],
+];
+const _samplePointer = new THREE.Vector2();
+
+function resolveItemFromMesh(mesh) {
+  let obj = mesh;
+  while (obj && (!obj.userData || (obj.userData.id === undefined && obj.userData.rootId === undefined))) obj = obj.parent;
+  const resolvedId = obj?.userData?.id ?? obj?.userData?.rootId;
+  return resolvedId !== undefined ? AppState.items.find(i => i.id === resolvedId) : null;
+}
+
 function getIntersectedItem() {
-  raycaster.setFromCamera(pointer, SceneManager.activeCam);
   const meshArray = [];
   SceneManager.meshes.forEach((g) => {
     g.traverse(child => {
@@ -189,28 +208,38 @@ function getIntersectedItem() {
       }
     });
   });
-  const intersects = raycaster.intersectObjects(meshArray, false);
-  if (intersects.length === 0) return null;
+  if (!meshArray.length) return null;
 
-  const resolveItem = (mesh) => {
-    let obj = mesh;
-    while (obj && (!obj.userData || (obj.userData.id === undefined && obj.userData.rootId === undefined))) obj = obj.parent;
-    const resolvedId = obj?.userData?.id ?? obj?.userData?.rootId;
-    return resolvedId !== undefined ? AppState.items.find(i => i.id === resolvedId) : null;
-  };
+  // Las carpas tienen una huella enorme (suelo + techo) que tapa a los objetos
+  // colocados dentro. Un objeto NO-carpa siempre gana sobre una carpa, sin
+  // importar la distancia, para poder seleccionar/mover lo que está dentro.
+  const isCarpa = (item) => String(item?.type || '').startsWith('carpa');
 
-  let firstNonCarpa = null, firstCarpa = null;
-  for (const hit of intersects) {
-    const item = resolveItem(hit.object);
-    // Las zonas deshabilitadas siguen siendo seleccionables (para abrir su menú de
-    // modificación); no se mueven porque están bloqueadas. El resto de items
-    // deshabilitados sí se ignoran.
-    if (!item || (item.disabled && item.type !== 'zone')) continue;
-    if (!String(item.type || '').startsWith('carpa') && !firstNonCarpa) firstNonCarpa = item;
-    if (String(item.type || '').startsWith('carpa') && !firstCarpa) firstCarpa = item;
-    if (firstNonCarpa) break;
+  let bestNonCarpa = null, bestNonCarpaDist = Infinity;
+  let bestCarpa = null, bestCarpaDist = Infinity;
+
+  const halfW = window.innerWidth / 2;
+  const halfH = window.innerHeight / 2;
+
+  for (const [dx, dy] of _pickOffsets) {
+    _samplePointer.x = pointer.x + dx / halfW;
+    _samplePointer.y = pointer.y - dy / halfH;
+    raycaster.setFromCamera(_samplePointer, SceneManager.activeCam);
+    const intersects = raycaster.intersectObjects(meshArray, false);
+    for (const hit of intersects) {
+      const item = resolveItemFromMesh(hit.object);
+      if (!item || (item.disabled && item.type !== 'zone')) continue;
+      if (isCarpa(item)) {
+        if (hit.distance < bestCarpaDist) { bestCarpa = item; bestCarpaDist = hit.distance; }
+      } else {
+        if (hit.distance < bestNonCarpaDist) { bestNonCarpa = item; bestNonCarpaDist = hit.distance; }
+      }
+    }
+    // El rayo central (primer offset) es exacto: si acierta un no-carpa, listo.
+    if (dx === 0 && dy === 0 && bestNonCarpa) return bestNonCarpa;
   }
-  return firstNonCarpa || firstCarpa;
+
+  return bestNonCarpa || bestCarpa;
 }
 
 function getDragPoint() {
