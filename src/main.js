@@ -38,6 +38,8 @@ import { OrgContentManager }  from './services/OrgContentManager.js';
 import { MeasureManager }     from './ui/MeasureManager.js';
 import { PlanSaveModal }      from './ui/PlanSaveModal.js';
 import { ExportMetaModal }   from './ui/ExportMetaModal.js';
+import { ToolHub }           from './ui/ToolHub.js';
+import { toolsRegistry }     from './tools/toolsRegistry.js';
 import { PredictiveArray }    from './ui/PredictiveArray.js';
 import { SplashScreen, collapseDock, collapseHeader } from './ui/SplashScreen.js';
 import { ContextSpawnMenu }  from './ui/ContextSpawnMenu.js';
@@ -841,13 +843,24 @@ async function bootstrap() {
   const hasSession = AuthManager.isAuthenticated?.() ||
     AppState.company?.authStatus === 'authenticated';
   if (!welcomeUnlocked && !isCollabInvite && hasSession) {
+    // Hub de herramientas: capa previa al editor. Al elegir "Planos" se arranca el
+    // editor 3D con SplashScreen.start() (sin cambiar su comportamiento, solo difiriéndolo).
+    const launchHub = () => {
+      void toolsRegistry; // registro consumido por ToolHub
+      ToolHub.show({
+        planos: () => SplashScreen.start(),
+        qr: () => {
+          import('./tools/qr/QRTool.js').then(m => m.QRTool.open({ onHome: () => location.reload() }));
+        },
+      });
+    };
     setTimeout(() => {
       const loaderEl = document.getElementById('app-loader');
       if (loaderEl) {
         loaderEl.classList.add('al-fade');
-        setTimeout(() => { loaderEl.remove(); SplashScreen.start(); }, 500);
+        setTimeout(() => { loaderEl.remove(); launchHub(); }, 500);
       } else {
-        SplashScreen.start();
+        launchHub();
       }
     }, 2000);
   }

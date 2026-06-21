@@ -1,0 +1,239 @@
+/* toolhub.css — Hub de herramientas (capa previa al editor 3D). */
+
+/* Overlay a pantalla completa, por encima del welcome-modal (z-200). */
+.th-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  overflow-y: auto;
+  animation: th-fade-in 0.32s ease both;
+}
+
+/* Rejilla blueprint sutil, coherente con el body de E-scale. */
+.th-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(10, 10, 11, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 11, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+@keyframes th-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.th-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 920px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---- Cabecera ---- */
+.th-head {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.th-logo {
+  height: 40px;
+  object-fit: contain;
+  opacity: 0.9;
+  margin-bottom: 22px;
+}
+
+.th-title {
+  font-family: var(--brand-display-font);
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--ink);
+}
+
+.th-subtitle {
+  font-family: var(--brand-mono-font);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+/* ---- Rejilla de tarjetas ---- */
+.th-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 18px;
+}
+
+/* ---- Tarjeta ---- */
+.th-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  text-align: left;
+  padding: 22px 20px 20px;
+  background: #ffffff;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  cursor: pointer;
+  overflow: hidden;
+  font-family: var(--brand-body-font);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.th-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--th-color);
+  box-shadow: 0 14px 32px rgba(10, 10, 11, 0.1);
+}
+
+.th-card:focus-visible {
+  outline: 2px solid var(--th-color);
+  outline-offset: 2px;
+}
+
+/* Detalle de color superior por tarjeta. */
+.th-card-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--th-color);
+  opacity: 0.85;
+}
+
+.th-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  color: var(--th-color);
+  background: color-mix(in srgb, var(--th-color) 12%, transparent);
+}
+
+.th-card-icon i,
+.th-card-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.th-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.th-card-name {
+  font-family: var(--brand-display-font);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.th-card-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---- Tarjeta "Próximamente" ---- */
+.th-card--soon {
+  cursor: not-allowed;
+  background: var(--paper-2);
+  opacity: 0.72;
+}
+
+.th-card--soon:hover {
+  transform: none;
+  border-color: var(--hairline);
+  box-shadow: none;
+}
+
+.th-card--soon .th-card-bar {
+  background: var(--muted);
+  opacity: 0.4;
+}
+
+.th-card--soon .th-card-icon {
+  color: var(--muted);
+  background: rgba(106, 106, 110, 0.12);
+}
+
+.th-card--soon .th-card-name {
+  color: var(--muted);
+}
+
+.th-card-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-family: var(--brand-mono-font);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(10, 10, 11, 0.06);
+  border: 1px solid var(--hairline);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* ---- Botón flotante "Inicio" ---- */
+.th-home-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 320;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px 8px 11px;
+  background: #ffffff;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  font-family: var(--brand-body-font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(10, 10, 11, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.th-home-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand-primary);
+  box-shadow: 0 8px 20px rgba(10, 10, 11, 0.12);
+}
+
+.th-home-btn i,
+.th-home-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-width: 540px) {
+  .th-title { font-size: 34px; }
+  .th-grid { grid-template-columns: 1fr; }
+}
