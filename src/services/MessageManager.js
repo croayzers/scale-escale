@@ -103,7 +103,12 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+let _initialized = false;
+
 async function checkAndShowOnLoad() {
+  // Idempotente: el editor y ToolHeader pueden invocarlo; solo corre una vez.
+  if (_initialized) return;
+  _initialized = true;
   const cfg = await loadConfig();
   const messages = cfg.messages || {};
 

@@ -4310,3 +4310,80 @@ body.format-mode-active #btn-format-tool {
 .wall-ctx-danger { color: #ef4444 !important; }
 .wall-ctx-danger:hover { background: rgba(239,68,68,0.08) !important; }
 
+/* ═══════════════════════════════════════════════════════════════════
+   TOOL HEADER — header estándar y reutilizable de las herramientas del hub
+   (src/ui/ToolHeader.js). Reutiliza .hdr-chip / .hdr-sep / .header-brand*.
+   ═══════════════════════════════════════════════════════════════════ */
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  padding: 0 12px;
+  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  font-family: 'Inter Tight', sans-serif;
+}
+
+.tool-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 6px;
+  flex-shrink: 0;
+}
+
+.tool-header-logo {
+  width: auto;
+  height: 26px;
+  max-width: 130px;
+  object-fit: contain;
+}
+
+.tool-header-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* Contenedor donde AppLauncher se autoinyecta y donde viven chat/IA/cuenta.
+   Empuja las acciones hacia la derecha, deja "Inicio" pegado al borde. */
+.tool-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.tool-header-home {
+  flex-shrink: 0;
+}
+
+.tool-header-ai.is-pulsing {
+  animation: tool-header-ai-pulse 1.4s ease;
+}
+
+@keyframes tool-header-ai-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(16, 185, 129, 0); }
+  35% { box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.55); }
+}
+
+.tool-header-account-label {
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  max-width: 104px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-header-account-meta {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--muted, #9ca3af);
+}
+

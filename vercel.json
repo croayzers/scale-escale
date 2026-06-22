@@ -14,10 +14,16 @@
     "api/plans/[action].js":       { "memory": 256, "maxDuration": 15 },
     "api/collab/[action].js":      { "memory": 256, "maxDuration": 15 },
     "api/org/[action].js":         { "memory": 256, "maxDuration": 10 },
+    "api/q/[code].js":             { "memory": 256, "maxDuration": 10 },
+    "api/qr/create.js":            { "memory": 256, "maxDuration": 10 },
+    "api/qr/list.js":              { "memory": 256, "maxDuration": 10 },
+    "api/qr/update.js":            { "memory": 256, "maxDuration": 10 },
+    "api/qr/stats.js":             { "memory": 256, "maxDuration": 15 },
     "api/public-config.js":        { "memory": 256, "maxDuration": 10 }
   },
   "rewrites": [
     { "source": "/api/email/:action", "destination": "/api/email" },
+    { "source": "/q/:code", "destination": "/api/q/:code" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "headers": [
@@ -25,8 +31,8 @@
       "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PATCH, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
     },
     {

@@ -18,32 +18,42 @@
   flex-direction: column;
 }
 
-/* Cabecera */
-.qrtool-overlay .qrt-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 24px;
+/* Header estándar (ToolHeader) montado en #qrt-header-host:
+   hereda el estilo .tool-header de components.css; solo aseguramos el borde
+   inferior para separar del contenido sobre el fondo papel. */
+.qrtool-overlay #qrt-header-host .tool-header {
   border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
 }
-.qrtool-overlay .qrt-logo { height: 30px; object-fit: contain; opacity: 0.9; }
 
-.qrtool-overlay .qrt-home {
+/* Navegación de vistas (Crear QR / Mis QR) */
+.qrtool-overlay .qrt-viewnav {
+  display: flex;
+  gap: 4px;
+  padding: 10px 24px 0;
+  width: min(960px, 100%);
+  margin: 0 auto;
+}
+.qrtool-overlay .qrt-viewtab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   padding: 9px 16px;
-  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
-  border-radius: 999px;
+  border: none;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--ink, #0a0a0b);
+  color: var(--muted, #6a6a6e);
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
-.qrtool-overlay .qrt-home:hover { background: var(--ink, #0a0a0b); color: var(--paper, #f5f3ee); transform: translateY(-1px); }
-.qrtool-overlay .qrt-home i { width: 15px; height: 15px; }
+.qrtool-overlay .qrt-viewtab i { width: 15px; height: 15px; }
+.qrtool-overlay .qrt-viewtab:hover { color: var(--ink, #0a0a0b); }
+.qrtool-overlay .qrt-viewtab.is-active {
+  color: var(--ink, #0a0a0b);
+  border-bottom-color: var(--ink, #0a0a0b);
+}
 
 /* Cuerpo: formulario + preview */
 .qrtool-overlay .qrt-body {
@@ -54,8 +64,9 @@
   align-content: start;
   width: min(960px, 100%);
   margin: 0 auto;
-  padding: 32px 24px 48px;
+  padding: 20px 24px 48px;
 }
+.qrtool-overlay .qrt-body-single { grid-template-columns: 1fr; }
 @media (max-width: 760px) {
   .qrtool-overlay .qrt-body { grid-template-columns: 1fr; }
 }
@@ -247,3 +258,327 @@
 .qrtool-overlay .qrt-empty p { font-size: 12.5px; margin: 10px 0 0; }
 
 .qrtool-overlay .qrt-downloads { display: flex; gap: 10px; }
+
+/* ── Segmented Estático/Dinámico ──────────────────────────────────────────── */
+.qrtool-overlay .qrt-segment {
+  display: inline-flex;
+  gap: 0;
+  padding: 3px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 999px;
+  background: var(--paper, #f5f3ee);
+  margin-bottom: 8px;
+}
+.qrtool-overlay .qrt-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, #6a6a6e);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.qrtool-overlay .qrt-seg i { width: 14px; height: 14px; }
+.qrtool-overlay .qrt-seg.is-active { background: var(--ink, #0a0a0b); color: var(--paper, #f5f3ee); }
+.qrtool-overlay .qrt-mode-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted, #6a6a6e);
+  margin: 0 0 16px;
+}
+
+/* ── Caducidad (dinámico) ──────────────────────────────────────────────────── */
+.qrtool-overlay .qrt-expiry {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 16px;
+}
+.qrtool-overlay .qrt-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding-bottom: 9px;
+}
+.qrtool-overlay .qrt-check input { width: 15px; height: 15px; cursor: pointer; }
+.qrtool-overlay .qrt-expiry-days { display: flex; flex-direction: column; gap: 5px; }
+.qrtool-overlay .qrt-expiry-days > span {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted, #6a6a6e);
+}
+.qrtool-overlay .qrt-expiry-days.is-disabled { opacity: 0.4; }
+.qrtool-overlay .qrt-expiry-days select { width: 90px; }
+
+/* ── Botón pequeño + enlace corto ──────────────────────────────────────────── */
+.qrtool-overlay .qrt-btn-sm { padding: 7px 12px; font-size: 12px; flex: 0 0 auto; }
+.qrtool-overlay .qrt-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 10px;
+  background: var(--paper, #f5f3ee);
+}
+.qrtool-overlay .qrt-link-row i { width: 14px; height: 14px; color: var(--muted, #6a6a6e); flex: 0 0 auto; }
+.qrtool-overlay .qrt-link-row code {
+  flex: 1;
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── MIS QR ─────────────────────────────────────────────────────────────────── */
+.qrtool-overlay .qrt-mine-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.qrtool-overlay .qrt-mine-head .qrt-title { margin-bottom: 0; }
+.qrtool-overlay .qrt-mine-list { display: flex; flex-direction: column; gap: 10px; }
+.qrtool-overlay .qrt-mine-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 12px;
+  background: var(--paper, #f5f3ee);
+}
+.qrtool-overlay .qrt-mine-main { min-width: 0; flex: 1; }
+.qrtool-overlay .qrt-mine-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.qrtool-overlay .qrt-mine-target {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted, #6a6a6e);
+  margin-bottom: 4px;
+}
+.qrtool-overlay .qrt-mine-target i { width: 13px; height: 13px; flex: 0 0 auto; }
+.qrtool-overlay .qrt-mine-target span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrtool-overlay .qrt-mine-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted, #6a6a6e);
+}
+.qrtool-overlay .qrt-mine-meta code {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 10.5px;
+}
+.qrtool-overlay .qrt-mine-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.qrtool-overlay .qrt-icbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink, #0a0a0b);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.qrtool-overlay .qrt-icbtn i { width: 15px; height: 15px; }
+.qrtool-overlay .qrt-icbtn:hover { background: var(--ink, #0a0a0b); color: var(--paper, #f5f3ee); border-color: var(--ink, #0a0a0b); }
+
+/* Badges de estado */
+.qrtool-overlay .qrt-badge {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.qrtool-overlay .qrt-badge-on  { background: rgba(21, 128, 61, 0.12); color: #15803d; }
+.qrtool-overlay .qrt-badge-off { background: rgba(106, 106, 110, 0.15); color: #6a6a6e; }
+.qrtool-overlay .qrt-badge-exp { background: rgba(185, 28, 28, 0.12); color: #b91c1c; }
+
+@media (max-width: 600px) {
+  .qrtool-overlay .qrt-mine-row { flex-direction: column; align-items: stretch; }
+  .qrtool-overlay .qrt-mine-actions { flex-wrap: wrap; }
+}
+
+/* ── PANEL DE STATS ──────────────────────────────────────────────────────────── */
+.qrtool-overlay .qrt-stats-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  background: rgba(10, 10, 11, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 32px 16px;
+}
+.qrtool-overlay .qrt-stats-card {
+  width: min(820px, 100%);
+  background: #fff;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 16px;
+  padding: 24px;
+}
+.qrtool-overlay .qrt-stats-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.qrtool-overlay .qrt-stats-title {
+  font-family: var(--brand-display-font, 'Fraunces', serif);
+  font-size: 22px;
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+.qrtool-overlay .qrt-stats-kpis { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.qrtool-overlay .qrt-kpi {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--paper, #f5f3ee);
+}
+.qrtool-overlay .qrt-kpi-num {
+  display: block;
+  font-family: var(--brand-display-font, 'Fraunces', serif);
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 500;
+}
+.qrtool-overlay .qrt-kpi-lbl {
+  font-size: 11px;
+  color: var(--muted, #6a6a6e);
+  margin-top: 4px;
+  display: block;
+}
+.qrtool-overlay .qrt-stats-block { margin-bottom: 20px; }
+.qrtool-overlay .qrt-stats-sub {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted, #6a6a6e);
+  margin-bottom: 10px;
+}
+.qrtool-overlay .qrt-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+@media (max-width: 560px) { .qrtool-overlay .qrt-stats-grid { grid-template-columns: 1fr; } }
+.qrtool-overlay .qrt-stats-empty { font-size: 12px; color: var(--muted, #6a6a6e); margin: 4px 0; }
+
+/* Barras horizontales (device/os/browser/country) */
+.qrtool-overlay .qrt-bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.qrtool-overlay .qrt-bar-label {
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qrtool-overlay .qrt-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--paper-2, #ebe7df);
+  overflow: hidden;
+}
+.qrtool-overlay .qrt-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink, #0a0a0b);
+}
+.qrtool-overlay .qrt-bar-val { font-size: 11px; text-align: right; color: var(--muted, #6a6a6e); }
+
+/* Mini-gráfica de barras verticales por día */
+.qrtool-overlay .qrt-daychart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  padding: 8px 4px 0;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 10px;
+  background: var(--paper, #f5f3ee);
+  overflow-x: auto;
+}
+.qrtool-overlay .qrt-daycol {
+  flex: 1 0 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+.qrtool-overlay .qrt-daybar {
+  width: 100%;
+  max-width: 28px;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: var(--ink, #0a0a0b);
+}
+.qrtool-overlay .qrt-dayx { font-size: 9px; color: var(--muted, #6a6a6e); white-space: nowrap; }
+
+/* Tabla de últimos escaneos */
+.qrtool-overlay .qrt-stats-tablewrap { overflow-x: auto; border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12)); border-radius: 10px; }
+.qrtool-overlay .qrt-stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.qrtool-overlay .qrt-stats-table th {
+  text-align: left;
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #6a6a6e);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  background: var(--paper, #f5f3ee);
+}
+.qrtool-overlay .qrt-stats-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.08));
+  white-space: nowrap;
+}
+.qrtool-overlay .qrt-stats-table tr:last-child td { border-bottom: none; }
+.qrtool-overlay .qrt-stats-table .qrt-ref {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

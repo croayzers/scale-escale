@@ -597,7 +597,12 @@ function saveDocumentData(patch = {}) {
   return AppState.company;
 }
 
+let _initialized = false;
+
 function init() {
+  // Idempotente: el editor 3D y ToolHeader pueden llamarlo; solo cablea una vez.
+  if (_initialized) return;
+  _initialized = true;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -1197,6 +1202,7 @@ function _showInviteFeedback(msg, kind) {
 
 export const CompanyManager = {
   init,
+  isInitialized: () => _initialized,
   openModal,
   requireReady,
   requestAfterWelcome: () => {},
