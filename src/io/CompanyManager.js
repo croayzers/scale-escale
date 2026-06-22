@@ -309,21 +309,27 @@ function syncAuthUi() {
 }
 
 function syncAccountChip() {
-  const button = document.getElementById('btn-account');
-  const label = document.getElementById('account-chip-label');
-  const meta = document.getElementById('account-chip-meta');
-  if (!button || !label || !meta) return;
+  // Puede haber MÁS de un chip de cuenta en el DOM a la vez: el del editor 3D
+  // (index.html, oculto al entrar por el Hub) y el que monta ToolHeader en cada
+  // herramienta (QR, …). Comparten ids, así que getElementById solo alcanzaría
+  // al primero — por eso el chip del QR se quedaba en "Acceder/Licencia" aunque
+  // la sesión sí estuviera activa. Sincronizamos TODOS.
+  const buttons = document.querySelectorAll('#btn-account');
+  if (!buttons.length) return;
 
-  if (AuthManager.isAuthenticated()) {
-    label.textContent = cleanText(AppState.company.authDisplayName) || AppState.company.authEmail || 'Cuenta local';
-    meta.textContent = SubscriptionManager.currentPlan().name;
-    button.classList.add('is-connected');
-    return;
-  }
+  const authed = AuthManager.isAuthenticated();
+  const label = authed
+    ? (cleanText(AppState.company.authDisplayName) || AppState.company.authEmail || 'Cuenta local')
+    : 'Acceder';
+  const meta = authed ? SubscriptionManager.currentPlan().name : 'Licencia';
 
-  label.textContent = 'Acceder';
-  meta.textContent = 'Licencia';
-  button.classList.remove('is-connected');
+  buttons.forEach(button => {
+    button.querySelector('#account-chip-label, .tool-header-account-label')
+      ?.replaceChildren(document.createTextNode(label));
+    button.querySelector('#account-chip-meta, .tool-header-account-meta')
+      ?.replaceChildren(document.createTextNode(meta));
+    button.classList.toggle('is-connected', authed);
+  });
 }
 
 function syncCompanyButton() {
@@ -628,10 +634,16 @@ function init() {
   DashboardSync.flushPending(); // falla silenciosamente si el server local no está activo
 
   document.getElementById('btn-company')?.addEventListener('click', () => openModal());
-  document.getElementById('btn-account')?.addEventListener('click', e => {
+  // Delegación: el chip de cuenta del editor 3D existe desde el arranque, pero el
+  // de cada herramienta (QR, …) lo monta ToolHeader MÁS TARDE. Escuchamos en
+  // document para que cualquier #btn-account — actual o futuro — responda con un
+  // único listener (init() es idempotente y solo corre una vez).
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#btn-account');
+    if (!btn) return;
     e.stopPropagation();
     if (hasRecoveredIdentity()) {
-      _toggleAccountPopover();
+      _toggleAccountPopover(btn);
     } else {
       openAccessModal();
     }
@@ -723,7 +735,7 @@ function init() {
   });
   document.addEventListener('click', e => {
     const pop = document.getElementById('account-popover');
-    if (pop && !pop.contains(e.target) && e.target.id !== 'btn-account') {
+    if (pop && !pop.contains(e.target) && !e.target.closest('#btn-account')) {
       _closeAccountPopover();
     }
   });
@@ -841,7 +853,7 @@ function _renderSuiteDetail() {
 }
 
 /* ─── Account popover ─── */
-function _toggleAccountPopover() {
+function _toggleAccountPopover(anchorBtn) {
   const pop = document.getElementById('account-popover');
   if (!pop) return;
   const isHidden = pop.classList.contains('hidden');
@@ -849,8 +861,9 @@ function _toggleAccountPopover() {
     // Rellenar email
     const emailEl = document.getElementById('account-pop-email');
     if (emailEl) emailEl.textContent = AppState.company.authEmail || AppState.company.authDisplayName || '';
-    // Posicionar
-    const btn = document.getElementById('btn-account');
+    // Posicionar respecto al chip realmente pulsado (el del editor está oculto
+    // y fuera de pantalla cuando estamos en una herramienta como el QR).
+    const btn = anchorBtn || document.getElementById('btn-account');
     const rect = btn?.getBoundingClientRect();
     if (rect) {
       pop.style.top  = `${rect.bottom + 6}px`;
