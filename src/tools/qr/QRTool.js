@@ -19,6 +19,10 @@
 
 import { ToolHeader } from '../../ui/ToolHeader.js';
 import { QRCopilot } from './QRCopilot.js';
+import { AppState } from '../../core/AppState.js';
+import { CompanyManager } from '../../io/CompanyManager.js';
+import { QR_TEMPLATES, getTemplate, defaultPartsState } from './qrTemplates.js';
+import { composeToCanvas, composeToSVG, loadImage } from './qrCompositor.js';
 
 const QR_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js';
 
@@ -141,7 +145,10 @@ function fmtDay(iso) {
 // ── Estado ────────────────────────────────────────────────────────────────────
 
 const OVERLAY_ID = 'qrtool-overlay';
-const QR_SIZE = 288;
+const QR_SIZE = 288;          // lado del módulo QR pelado (canvas oculto)
+const COMPOSE_PREVIEW = 320;  // lado del lienzo de previsualización compuesto
+const COMPOSE_EXPORT = 1024;  // lado del lienzo de export (PNG)
+const PREVIEW_DEBOUNCE = 260; // ms para el render automático en directo
 
 const state = {
   view: 'create',        // 'create' | 'mine'
@@ -153,7 +160,36 @@ const state = {
   expiryDays: 7,
   onHome: null,
   mineLoaded: false,
+
+  // ── DISEÑO de la composición (nuevo) ───────────────────────────────────────
+  template: 'none',      // id de plantilla activa (qrTemplates.js)
+  parts: defaultPartsState(getTemplate('none')), // { [partId]: { on, stroke, fill } }
+  bgColor: '#ffffff',    // color de fondo del lienzo
+  bgImage: null,         // data URL de imagen de fondo (o null)
+  topLogo: false,        // mostrar logo de empresa arriba del marco
+  logoInQr: false,       // insertar logo en el centro del QR (fuerza ECC=H)
+
+  _debounceTimer: null,  // temporizador del preview en directo
+  _composing: false,     // guardia anti-reentrada de la composición
 };
+
+// Devuelve el logo de empresa (URL o data URL) o '' si no hay.
+function companyLogo() {
+  return AppState?.company?.logo || '';
+}
+
+// Abre el modal de empresa para que el usuario cargue su logo; cuando se cierra
+// (o cuando el logo termina de cargarse) reintenta y refresca el preview.
+function promptCompanyLogo() {
+  const onLoaded = () => { syncLogoControls(); schedulePreview(true); };
+  document.addEventListener('escale:company-logo-loaded', onLoaded, { once: true });
+  document.addEventListener('escale:company-modal-closed', () => {
+    document.removeEventListener('escale:company-logo-loaded', onLoaded);
+    syncLogoControls();
+    schedulePreview(true);
+  }, { once: true });
+  try { CompanyManager.openModal(); } catch (e) { console.warn('[QRTool] No se pudo abrir el modal de empresa:', e); }
+}
 
 // Catálogo de tipos por modo.
 const STATIC_TYPES = [
@@ -264,6 +300,95 @@ function typeTabsHTML() {
     .join('');
 }
 
+// Selector de plantillas (chips con icono).
+function templateChipsHTML() {
+  return QR_TEMPLATES.map((t) => `
+    <button class="qrt-tplchip ${t.id === state.template ? 'is-active' : ''}" data-qr-tpl="${t.id}" type="button" title="${t.label}">
+      <i data-lucide="${t.icon || 'square'}"></i><span>${t.label}</span>
+    </button>`).join('');
+}
+
+// Controles de las PARTES de la plantilla activa: toggle on/off + color stroke
+// y fill por parte (solo se muestran los colores que la parte usa).
+function partsControlsHTML() {
+  const tpl = getTemplate(state.template);
+  if (!tpl.parts || !tpl.parts.length) {
+    return '<p class="qrt-design-empty">Esta plantilla no tiene partes configurables.</p>';
+  }
+  return tpl.parts.map((part) => {
+    const st = state.parts[part.id] || { on: part.defaultOn !== false, stroke: part.stroke, fill: part.fill };
+    const strokeCtrl = part.stroke
+      ? `<label class="qrt-part-color" title="Color de borde">
+           <input type="color" data-qr-part-stroke="${part.id}" value="${st.stroke || part.stroke}"/>
+           <span>Borde</span>
+         </label>` : '';
+    const fillCtrl = part.fill
+      ? `<label class="qrt-part-color" title="Color de relleno">
+           <input type="color" data-qr-part-fill="${part.id}" value="${st.fill || part.fill}"/>
+           <span>Relleno</span>
+         </label>` : '';
+    return `
+      <div class="qrt-part-row ${st.on ? '' : 'is-off'}">
+        <label class="qrt-check qrt-part-toggle">
+          <input type="checkbox" data-qr-part-on="${part.id}" ${st.on ? 'checked' : ''}/>
+          <span>${part.label}</span>
+        </label>
+        <div class="qrt-part-colors">${strokeCtrl}${fillCtrl}</div>
+      </div>`;
+  }).join('');
+}
+
+// Panel de DISEÑO: plantillas + partes + logos + fondo. Plegable.
+function designPanelHTML() {
+  const hasLogo = Boolean(companyLogo());
+  return `
+    <section class="qrt-card qrt-design">
+      <div class="qrt-eyebrow">Diseño y marco</div>
+
+      <div class="qrt-design-group">
+        <div class="qrt-design-label">Plantilla</div>
+        <div class="qrt-tplchips" id="qrt-tplchips">${templateChipsHTML()}</div>
+      </div>
+
+      <div class="qrt-design-group" id="qrt-parts-group">
+        <div class="qrt-design-label">Partes del marco</div>
+        <div id="qrt-parts" class="qrt-parts">${partsControlsHTML()}</div>
+      </div>
+
+      <div class="qrt-design-group">
+        <div class="qrt-design-label">Logo de empresa</div>
+        <div id="qrt-logo-controls" class="qrt-logo-controls">
+          <label class="qrt-check">
+            <input type="checkbox" id="qrt-top-logo" ${state.topLogo ? 'checked' : ''} ${hasLogo ? '' : 'disabled'}/>
+            <span>Logo arriba del marco</span>
+          </label>
+          <label class="qrt-check">
+            <input type="checkbox" id="qrt-logo-in-qr" ${state.logoInQr ? 'checked' : ''} ${hasLogo ? '' : 'disabled'}/>
+            <span>Logo en el centro del QR</span>
+          </label>
+          <div id="qrt-no-logo" class="qrt-no-logo ${hasLogo ? 'hidden' : ''}">
+            <i data-lucide="image-off"></i>
+            <span>Tu empresa no tiene logo.</span>
+            <button id="qrt-load-logo" class="qrt-btn qrt-btn-ghost qrt-btn-sm" type="button"><i data-lucide="upload"></i>Cargar logo de empresa</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="qrt-design-group">
+        <div class="qrt-design-label">Fondo</div>
+        <div class="qrt-bg-controls">
+          <label class="qrt-color">
+            <span>Color</span>
+            <input id="qrt-bg-color" type="color" value="${state.bgColor}"/>
+          </label>
+          <button id="qrt-bg-img" class="qrt-btn qrt-btn-ghost qrt-btn-sm" type="button"><i data-lucide="image"></i>Imagen…</button>
+          <button id="qrt-bg-clear" class="qrt-btn qrt-btn-ghost qrt-btn-sm ${state.bgImage ? '' : 'hidden'}" type="button"><i data-lucide="x"></i>Quitar</button>
+          <input id="qrt-bg-file" type="file" accept="image/*" hidden/>
+        </div>
+      </div>
+    </section>`;
+}
+
 function createViewHTML() {
   return `
     <div class="qrt-body">
@@ -283,7 +408,7 @@ function createViewHTML() {
 
         <div class="qrt-row">
           <label class="qrt-color">
-            <span>Color</span>
+            <span>Color QR</span>
             <input id="qrt-color" type="color" value="${state.color}"/>
           </label>
           <button id="qrt-generate" class="qrt-btn qrt-btn-primary" type="button">
@@ -292,15 +417,20 @@ function createViewHTML() {
         </div>
 
         <div id="qrt-msg" class="qrt-msg" role="status"></div>
+
+        ${designPanelHTML()}
       </section>
 
       <section class="qrt-card qrt-preview">
-        <div class="qrt-eyebrow">Previsualización</div>
+        <div class="qrt-eyebrow">Previsualización en directo</div>
         <div class="qrt-canvas-wrap">
-          <canvas id="qrt-canvas" width="${QR_SIZE}" height="${QR_SIZE}"></canvas>
+          <!-- Canvas oculto: módulo QR pelado (fuente para la composición). -->
+          <canvas id="qrt-canvas" width="${QR_SIZE}" height="${QR_SIZE}" style="display:none"></canvas>
+          <!-- Canvas visible: composición completa (fondo + marco + QR + logos). -->
+          <canvas id="qrt-compose" width="${COMPOSE_PREVIEW}" height="${COMPOSE_PREVIEW}"></canvas>
           <div id="qrt-empty" class="qrt-empty">
             <i data-lucide="qr-code"></i>
-            <p>Rellena los datos y pulsa <strong>Generar</strong>.</p>
+            <p>Rellena los datos: el QR se actualiza solo.</p>
           </div>
         </div>
         <div id="qrt-link-row" class="qrt-link-row" style="display:none">
@@ -424,7 +554,14 @@ function renderFields() {
     const days = document.getElementById('qrt-dyn-days');
     days?.addEventListener('change', () => { state.expiryDays = Number(days.value) || 7; });
   }
+  // Preview EN DIRECTO: cualquier cambio en los campos refresca el QR (debounced).
+  host?.querySelectorAll('input, textarea, select').forEach((el) => {
+    el.addEventListener('input', () => schedulePreview());
+    if (el.tagName === 'SELECT') el.addEventListener('change', () => schedulePreview());
+  });
   refreshIcons(host);
+  // Render inicial del preview tras (re)pintar los campos.
+  schedulePreview();
 }
 
 // ── Estático: leer inputs y construir el texto ────────────────────────────────
@@ -485,33 +622,112 @@ function collectStaticText() {
 
 // ── Pintar un texto en el canvas ──────────────────────────────────────────────
 
+// Nivel de corrección de errores: 'H' cuando hay logo central (más redundancia),
+// 'M' en el resto. Subir a H reduce capacidad pero el logo tapa módulos.
+function currentECC() {
+  return state.logoInQr ? 'H' : 'M';
+}
+
+// Pinta el módulo QR pelado en el canvas oculto y luego compone la escena
+// completa (fondo + marco + QR + logos) sobre el canvas visible.
 async function paintQR(text) {
   let QRCode;
   try { QRCode = await loadQRLib(); }
   catch (e) { setMsg(e.message || 'No se pudo cargar la librería QR.', 'error'); return false; }
 
-  const canvas = document.getElementById('qrt-canvas');
+  const qrCanvas = document.getElementById('qrt-canvas');
   const empty = document.getElementById('qrt-empty');
+  // El módulo pelado se genera SIN margen para que el compositor controle la
+  // quiet zone (recuadro blanco bajo el QR). margin pequeño para nitidez.
   const opts = {
-    errorCorrectionLevel: 'M',
-    margin: 2,
+    errorCorrectionLevel: currentECC(),
+    margin: 1,
     width: QR_SIZE,
     color: { dark: state.color, light: '#ffffff' },
   };
-  return new Promise((resolve) => {
-    QRCode.toCanvas(canvas, text, opts, (err) => {
+
+  const drawn = await new Promise((resolve) => {
+    QRCode.toCanvas(qrCanvas, text, opts, (err) => {
       if (err) {
         setMsg('No se pudo generar el QR: ' + (err.message || err), 'error');
         return resolve(false);
       }
-      state.lastText = text;
-      if (empty) empty.style.display = 'none';
-      canvas.style.display = 'block';
-      document.getElementById('qrt-dl-png')?.removeAttribute('disabled');
-      document.getElementById('qrt-dl-svg')?.removeAttribute('disabled');
       resolve(true);
     });
   });
+  if (!drawn) return false;
+
+  state.lastText = text;
+  if (empty) empty.style.display = 'none';
+  document.getElementById('qrt-compose')?.style.setProperty('display', 'block');
+  document.getElementById('qrt-dl-png')?.removeAttribute('disabled');
+  document.getElementById('qrt-dl-svg')?.removeAttribute('disabled');
+
+  await composePreview();
+  return true;
+}
+
+// Compone la escena en el canvas visible (#qrt-compose) al tamaño de preview.
+async function composePreview() {
+  const compose = document.getElementById('qrt-compose');
+  const qrCanvas = document.getElementById('qrt-canvas');
+  if (!compose || !qrCanvas) return;
+
+  const topLogo = (state.topLogo && companyLogo()) ? await loadImage(companyLogo()) : null;
+  const centerLogo = (state.logoInQr && companyLogo()) ? await loadImage(companyLogo()) : null;
+  const bgImg = state.bgImage ? await loadImage(state.bgImage) : null;
+
+  await composeToCanvas(compose, {
+    qrCanvas,
+    templateId: state.template,
+    partsState: state.parts,
+    bgColor: state.bgColor,
+    bgImage: bgImg,
+    topLogo,
+    centerLogo,
+    size: COMPOSE_PREVIEW,
+  });
+}
+
+// ── Previsualización EN DIRECTO (debounced) ────────────────────────────────────
+
+// Recoge el texto actual del formulario sin marcar errores (modo "silencioso"
+// para el preview): si está vacío devuelve null para mostrar el placeholder.
+function collectPreviewText() {
+  if (state.mode === 'dynamic') {
+    // En dinámico el QR real codifica el código corto (se crea al pulsar). Para
+    // el preview en directo usamos el destino tecleado como placeholder visual.
+    const target = (document.getElementById('qrt-dyn-target')?.value || '').trim();
+    return target || null;
+  }
+  const { text } = collectStaticText();
+  return text || null;
+}
+
+// Muestra el placeholder y oculta la composición (contenido vacío).
+function showEmptyPreview() {
+  const compose = document.getElementById('qrt-compose');
+  const empty = document.getElementById('qrt-empty');
+  if (compose) compose.style.display = 'none';
+  if (empty) empty.style.display = 'block';
+  state.lastText = '';
+  document.getElementById('qrt-dl-png')?.setAttribute('disabled', '');
+  document.getElementById('qrt-dl-svg')?.setAttribute('disabled', '');
+}
+
+// Programa un render del preview con debounce. immediate=true lo hace ya.
+function schedulePreview(immediate = false) {
+  if (state._debounceTimer) { clearTimeout(state._debounceTimer); state._debounceTimer = null; }
+  const run = async () => {
+    if (state._composing) return;
+    const text = collectPreviewText();
+    if (!text) { showEmptyPreview(); return; }
+    state._composing = true;
+    try { await paintQR(text); }
+    finally { state._composing = false; }
+  };
+  if (immediate) { run(); return; }
+  state._debounceTimer = setTimeout(run, PREVIEW_DEBOUNCE);
 }
 
 // ── Acción Generar / Crear ────────────────────────────────────────────────────
@@ -526,6 +742,7 @@ async function generate() {
   const { text, error } = collectStaticText();
   if (error) { setMsg(error, 'warn'); return; }
   setMsg('Generando…');
+  // El preview ya está pintado en directo; esto confirma y deja todo listo.
   const ok = await paintQR(text);
   if (ok) setMsg('QR listo. Descárgalo en PNG o SVG.', 'ok');
 }
@@ -577,25 +794,78 @@ function qrShortUrl(code) {
 
 // ── Descargas ──────────────────────────────────────────────────────────────────
 
-function downloadPNG() {
-  const canvas = document.getElementById('qrt-canvas');
-  if (!canvas || !state.lastText) return;
-  canvas.toBlob((blob) => { if (blob) downloadBlob(blob, 'qr-escale.png'); }, 'image/png');
+// Exporta la COMPOSICIÓN completa (fondo + marco + QR + logos) a PNG grande,
+// componiendo en un canvas offscreen al tamaño de export.
+async function downloadPNG() {
+  const qrCanvas = document.getElementById('qrt-canvas');
+  if (!qrCanvas || !state.lastText) return;
+
+  const off = document.createElement('canvas');
+  const topLogo = (state.topLogo && companyLogo()) ? await loadImage(companyLogo()) : null;
+  const centerLogo = (state.logoInQr && companyLogo()) ? await loadImage(companyLogo()) : null;
+  const bgImg = state.bgImage ? await loadImage(state.bgImage) : null;
+
+  await composeToCanvas(off, {
+    qrCanvas,
+    templateId: state.template,
+    partsState: state.parts,
+    bgColor: state.bgColor,
+    bgImage: bgImg,
+    topLogo,
+    centerLogo,
+    size: COMPOSE_EXPORT,
+  });
+  off.toBlob((blob) => { if (blob) downloadBlob(blob, 'qr-escale.png'); }, 'image/png');
 }
 
+// Exporta la COMPOSICIÓN completa a SVG vectorial: marco SVG + QR como SVG
+// embebido + fondo y logos como <image> con data URL.
 async function downloadSVG() {
   if (!state.lastText) return;
   let QRCode;
   try { QRCode = await loadQRLib(); }
   catch (e) { setMsg(e.message || 'No se pudo cargar la librería QR.', 'error'); return; }
-  QRCode.toString(
-    state.lastText,
-    { type: 'svg', errorCorrectionLevel: 'M', margin: 2, color: { dark: state.color, light: '#ffffff' } },
-    (err, svg) => {
-      if (err || !svg) { setMsg('No se pudo generar el SVG.', 'error'); return; }
-      downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), 'qr-escale.svg');
-    }
-  );
+
+  const qrSVG = await new Promise((resolve) => {
+    QRCode.toString(
+      state.lastText,
+      { type: 'svg', errorCorrectionLevel: currentECC(), margin: 1, color: { dark: state.color, light: '#ffffff' } },
+      (err, svg) => resolve(err ? '' : svg)
+    );
+  });
+  if (!qrSVG) { setMsg('No se pudo generar el SVG.', 'error'); return; }
+
+  // Los logos y el fondo deben ir como data URL embebido en el SVG. Si el logo
+  // de empresa es una URL remota, lo convertimos a data URL vía canvas.
+  const topLogoUrl = (state.topLogo && companyLogo()) ? await toDataUrl(companyLogo()) : '';
+  const centerLogoUrl = (state.logoInQr && companyLogo()) ? await toDataUrl(companyLogo()) : '';
+  const bgImageUrl = state.bgImage || '';
+
+  const svg = composeToSVG({
+    qrSVG,
+    templateId: state.template,
+    partsState: state.parts,
+    bgColor: state.bgColor,
+    bgImageUrl,
+    topLogoUrl,
+    centerLogoUrl,
+  });
+  downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), 'qr-escale.svg');
+}
+
+// Convierte una URL/data URL de imagen a data URL (para embeber en SVG).
+async function toDataUrl(src) {
+  if (!src) return '';
+  if (src.startsWith('data:')) return src;
+  const img = await loadImage(src);
+  if (!img) return '';
+  try {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || img.width;
+    c.height = img.naturalHeight || img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return c.toDataURL('image/png');
+  } catch { return ''; } // canvas "tainted" (sin CORS) — se omite el logo en SVG
 }
 
 // Genera y descarga el PNG/SVG de un QR cualquiera (usado desde Mis QR).
@@ -869,7 +1139,7 @@ function bindCreateEvents(host) {
 
   host.querySelector('#qrt-color')?.addEventListener('input', (e) => {
     state.color = e.target.value;
-    if (state.lastText) paintQR(state.lastText);
+    schedulePreview();
   });
 
   host.querySelector('#qrt-generate')?.addEventListener('click', generate);
@@ -880,12 +1150,132 @@ function bindCreateEvents(host) {
     if (code) { try { await navigator.clipboard.writeText(code); } catch { /* noop */ } }
   });
 
+  bindDesignEvents(host);
+
   host.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
       e.preventDefault();
       generate();
     }
   });
+}
+
+// ── Eventos del panel de DISEÑO (plantillas, partes, logos, fondo) ─────────────
+
+function bindDesignEvents(host) {
+  // Selección de plantilla.
+  host.querySelectorAll('[data-qr-tpl]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.template = btn.dataset.qrTpl;
+      // Reinicia el estado de partes con los valores por defecto de la plantilla.
+      state.parts = defaultPartsState(getTemplate(state.template));
+      renderDesignPanel();
+      schedulePreview(true);
+    });
+  });
+
+  // Partes: toggle on/off + colores stroke/fill.
+  bindPartsControls(host);
+
+  // Logo de empresa arriba.
+  host.querySelector('#qrt-top-logo')?.addEventListener('change', (e) => {
+    if (e.target.checked && !companyLogo()) { e.target.checked = false; promptCompanyLogo(); return; }
+    state.topLogo = e.target.checked;
+    schedulePreview(true);
+  });
+
+  // Logo dentro del QR: fuerza ECC=H (gestionado en currentECC()).
+  host.querySelector('#qrt-logo-in-qr')?.addEventListener('change', (e) => {
+    if (e.target.checked && !companyLogo()) { e.target.checked = false; promptCompanyLogo(); return; }
+    state.logoInQr = e.target.checked;
+    if (state.logoInQr) setMsg('Logo central activo: subimos la corrección de errores a H (reduce capacidad).', 'ok');
+    schedulePreview(true);
+  });
+
+  // Botón "Cargar logo de empresa" cuando no hay logo.
+  host.querySelector('#qrt-load-logo')?.addEventListener('click', () => promptCompanyLogo());
+
+  // Fondo: color.
+  host.querySelector('#qrt-bg-color')?.addEventListener('input', (e) => {
+    state.bgColor = e.target.value;
+    schedulePreview();
+  });
+  // Fondo: imagen.
+  host.querySelector('#qrt-bg-img')?.addEventListener('click', () => {
+    host.querySelector('#qrt-bg-file')?.click();
+  });
+  host.querySelector('#qrt-bg-file')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1_000_000) { setMsg('La imagen de fondo es demasiado grande (máx. 1 MB).', 'warn'); e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      state.bgImage = ev.target.result;
+      host.querySelector('#qrt-bg-clear')?.classList.remove('hidden');
+      schedulePreview(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+  host.querySelector('#qrt-bg-clear')?.addEventListener('click', (e) => {
+    state.bgImage = null;
+    e.currentTarget.classList.add('hidden');
+    schedulePreview(true);
+  });
+}
+
+// Cablea los controles de cada parte (se rellama tras cambiar de plantilla).
+function bindPartsControls(host) {
+  host.querySelectorAll('[data-qr-part-on]').forEach((chk) => {
+    chk.addEventListener('change', () => {
+      const id = chk.dataset.qrPartOn;
+      if (!state.parts[id]) state.parts[id] = {};
+      state.parts[id].on = chk.checked;
+      chk.closest('.qrt-part-row')?.classList.toggle('is-off', !chk.checked);
+      schedulePreview(true);
+    });
+  });
+  host.querySelectorAll('[data-qr-part-stroke]').forEach((inp) => {
+    inp.addEventListener('input', () => {
+      const id = inp.dataset.qrPartStroke;
+      if (!state.parts[id]) state.parts[id] = {};
+      state.parts[id].stroke = inp.value;
+      schedulePreview();
+    });
+  });
+  host.querySelectorAll('[data-qr-part-fill]').forEach((inp) => {
+    inp.addEventListener('input', () => {
+      const id = inp.dataset.qrPartFill;
+      if (!state.parts[id]) state.parts[id] = {};
+      state.parts[id].fill = inp.value;
+      schedulePreview();
+    });
+  });
+}
+
+// Re-renderiza el panel de diseño completo (tras cambiar de plantilla) y vuelve
+// a cablear sus eventos. Sincroniza también los controles de logo.
+function renderDesignPanel() {
+  const old = document.querySelector('.qrt-design');
+  if (!old) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = designPanelHTML();
+  const fresh = wrap.firstElementChild;
+  old.replaceWith(fresh);
+  refreshIcons(fresh);
+  const host = document.getElementById('qrt-view');
+  if (host) bindDesignEvents(host);
+}
+
+// Sincroniza los toggles/aviso de logo según haya o no logo de empresa.
+function syncLogoControls() {
+  const hasLogo = Boolean(companyLogo());
+  const noLogo = document.getElementById('qrt-no-logo');
+  if (noLogo) noLogo.classList.toggle('hidden', hasLogo);
+  const top = document.getElementById('qrt-top-logo');
+  const inQr = document.getElementById('qrt-logo-in-qr');
+  if (top) top.disabled = !hasLogo;
+  if (inQr) inQr.disabled = !hasLogo;
 }
 
 function bindShellEvents(overlay) {
