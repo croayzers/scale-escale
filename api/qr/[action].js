@@ -56,13 +56,23 @@ async function requireContext(req) {
   return { companyId: access.organization?.id || null, userId: access.user.id };
 }
 
-// Clave de día en hora LOCAL (nunca toISOString().slice, que corre un día en husos +).
+// ── Criterio de hora: TODAS las agregaciones temporales son UTC ──────────────
+// El server de Vercel corre en UTC; usar getUTC* hace los resultados
+// reproducibles e independientes del host. La UI debe ROTULAR estas series como
+// hora UTC (byDay, byHour, byWeekday, byMonth, byHourWeekday van todas en UTC).
+// (No usamos toISOString().slice porque, aunque ya sería UTC, construimos las
+//  claves a mano para que día/hora/semana/mes compartan exactamente el mismo
+//  criterio.)
 function dayKey(date) {
   const d = new Date(date);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+function monthKey(date) {
+  const d = new Date(date);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 function bump(map, key) {
   const k = key || '—';
@@ -150,6 +160,16 @@ async function handleStats(req, res) {
   const byOs = {};
   const byBrowser = {};
   const byCountry = {};
+  const byCity = {};
+  const bySrc = {};
+  // Series temporales (todas en UTC, ver dayKey/monthKey arriba).
+  const byHour = new Array(24).fill(0);     // índice = hora 0–23 (UTC)
+  const byWeekday = new Array(7).fill(0);   // índice = día semana 0=domingo … 6=sábado (UTC)
+  const byMonth = {};                        // 'YYYY-MM' (UTC) → count
+  const byHourWeekday = {};                  // '<weekday>-<hour>' → count (heatmap)
+  // Únicos = nº de ip_hash NO-null distintos (los null = visitante desconocido,
+  // se ignoran del recuento de únicos). ip_hash NUNCA se devuelve al cliente.
+  const uniqueIps = new Set();
 
   for (const ev of events) {
     bump(byDay, dayKey(ev.scanned_at));
@@ -157,6 +177,19 @@ async function handleStats(req, res) {
     bump(byOs, ev.os);
     bump(byBrowser, ev.browser);
     bump(byCountry, ev.country);
+    bump(byCity, ev.city);
+    // src null → 'directo' (escaneo sin origen físico declarado).
+    bump(bySrc, ev.src || 'directo');
+
+    const d = new Date(ev.scanned_at);
+    const h = d.getUTCHours();
+    const wd = d.getUTCDay();
+    byHour[h] += 1;
+    byWeekday[wd] += 1;
+    bump(byMonth, monthKey(ev.scanned_at));
+    byHourWeekday[`${wd}-${h}`] = (byHourWeekday[`${wd}-${h}`] || 0) + 1;
+
+    if (ev.ip_hash) uniqueIps.add(ev.ip_hash);
   }
 
   const byDaySeries = Object.keys(byDay)
@@ -179,11 +212,20 @@ async function handleStats(req, res) {
     },
     stats: {
       total: events.length,
+      // Únicos: ip_hash no-null distintos (criterio de privacidad: el hash no sale).
+      unique: uniqueIps.size,
       byDay: byDaySeries,
       byDevice,
       byOs,
       byBrowser,
       byCountry,
+      byCity,
+      bySrc,
+      // Series temporales en UTC (ver comentario de dayKey). La UI debe rotular UTC.
+      byHour,            // array[24]: índice = hora 0–23 (UTC)
+      byWeekday,         // array[7]:  índice = día semana 0=dom … 6=sáb (UTC)
+      byMonth,           // { 'YYYY-MM': count } (UTC)
+      byHourWeekday,     // { '<weekday>-<hour>': count } p.ej. '1-14' = lunes 14h UTC
       recent: events.slice(0, 100).map((ev) => ({
         scanned_at: ev.scanned_at,
         country: ev.country,
@@ -192,7 +234,9 @@ async function handleStats(req, res) {
         os: ev.os,
         browser: ev.browser,
         referrer: ev.referrer,
-        lang: ev.lang
+        lang: ev.lang,
+        src: ev.src || null
+        // ip_hash NO se expone: solo se usa en servidor para contar unique.
       }))
     }
   });

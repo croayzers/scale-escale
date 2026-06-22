@@ -240,23 +240,30 @@ function _buildButton() {
   return btn;
 }
 
-function init() {
-  const headerInner = document.getElementById('header-inner');
+// init(host?) — inserta el botón de 9 puntos dentro de `host` (un #header-inner).
+// Si no se pasa host se usa document.getElementById('header-inner'). OJO: el
+// editor 3D (index.html) ya tiene su PROPIO #header-inner, así que cuando el
+// header de una herramienta se monta en un overlay hay DOS elementos con ese id;
+// getElementById devolvería el del editor. Por eso ToolHeader pasa SU host
+// explícitamente. La guardia de duplicado se hace dentro del host concreto.
+function init(host) {
+  const headerInner = host || document.getElementById('header-inner');
   if (!headerInner) return;
-  if (document.getElementById('btn-app-launcher')) return;
+  if (headerInner.querySelector('#btn-app-launcher')) return;
 
-  _btn = _buildButton();
+  const btn = _buildButton();
+  _btn = btn;
 
   // Insertar antes del primer separador o al final del header
   const sep = headerInner.querySelector('.hdr-sep');
   if (sep) {
-    headerInner.insertBefore(_btn, sep);
+    headerInner.insertBefore(btn, sep);
     // separador después del botón
     const newSep = document.createElement('div');
     newSep.className = 'hdr-sep';
     headerInner.insertBefore(newSep, sep);
   } else {
-    headerInner.appendChild(_btn);
+    headerInner.appendChild(btn);
   }
 }
 

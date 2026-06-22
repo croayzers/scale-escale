@@ -1208,5 +1208,9 @@ export const CompanyManager = {
   requestAfterWelcome: () => {},
   syncBrandUI,
   applyBrandColors,
-  saveDocumentData
+  saveDocumentData,
+  // Re-sincroniza el chip de cuenta con el estado ACTUAL (sesión + plan vigente).
+  // Idempotente: lo usa ToolHeader tras montar el header tarde (cuando los eventos
+  // de arranque de SubscriptionManager ya se dispararon y nadie repinta el chip).
+  syncAccountChip
 };

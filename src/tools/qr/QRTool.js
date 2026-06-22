@@ -228,7 +228,7 @@ function fieldsHTML() {
           <span>Caduca</span>
         </label>
         <label class="qrt-expiry-days ${state.expiry ? '' : 'is-disabled'}">
-          <span>Días (máx. 15)</span>
+          <span>Días (máx. 15) ${helpHTML('El QR deja de redirigir tras los días indicados (máx. 15).')}</span>
           <select id="qrt-dyn-days" class="qrt-input" ${state.expiry ? '' : 'disabled'}>
             ${Array.from({ length: 15 }, (_, i) => i + 1)
               .map((d) => `<option value="${d}" ${d === state.expiryDays ? 'selected' : ''}>${d}</option>`)
@@ -300,6 +300,17 @@ function typeTabsHTML() {
     .join('');
 }
 
+// Tooltip reutilizable "?": icono lucide help-circle junto a un título de sección.
+// Funciona on-hover y es accesible por focus/click (táctil): el texto vive en un
+// <span role="tooltip"> que se muestra vía CSS (:hover/:focus-within) y por la
+// clase .is-open que añadimos al hacer clic. tabindex=0 para foco por teclado.
+function helpHTML(text) {
+  return `<button type="button" class="qrt-help" data-qr-help aria-label="Ayuda" title="">
+    <i data-lucide="help-circle"></i>
+    <span class="qrt-help-bubble" role="tooltip">${escHtml(text)}</span>
+  </button>`;
+}
+
 // Selector de plantillas (chips con icono).
 function templateChipsHTML() {
   return QR_TEMPLATES.map((t) => `
@@ -346,17 +357,17 @@ function designPanelHTML() {
       <div class="qrt-eyebrow">Diseño y marco</div>
 
       <div class="qrt-design-group">
-        <div class="qrt-design-label">Plantilla</div>
+        <div class="qrt-design-label">Plantilla ${helpHTML('Marco decorativo alrededor del QR (estilo «SCAN HERE»). Elige uno o «Sin plantilla».')}</div>
         <div class="qrt-tplchips" id="qrt-tplchips">${templateChipsHTML()}</div>
       </div>
 
       <div class="qrt-design-group" id="qrt-parts-group">
-        <div class="qrt-design-label">Partes del marco</div>
+        <div class="qrt-design-label">Partes del marco ${helpHTML('Activa o desactiva cada parte del marco y personaliza su color de borde y relleno.')}</div>
         <div id="qrt-parts" class="qrt-parts">${partsControlsHTML()}</div>
       </div>
 
       <div class="qrt-design-group">
-        <div class="qrt-design-label">Logo de empresa</div>
+        <div class="qrt-design-label">Logo de empresa ${helpHTML('Coloca el logo de tu empresa en la parte superior del marco.')}</div>
         <div id="qrt-logo-controls" class="qrt-logo-controls">
           <label class="qrt-check">
             <input type="checkbox" id="qrt-top-logo" ${state.topLogo ? 'checked' : ''} ${hasLogo ? '' : 'disabled'}/>
@@ -364,7 +375,7 @@ function designPanelHTML() {
           </label>
           <label class="qrt-check">
             <input type="checkbox" id="qrt-logo-in-qr" ${state.logoInQr ? 'checked' : ''} ${hasLogo ? '' : 'disabled'}/>
-            <span>Logo en el centro del QR</span>
+            <span>Logo en el centro del QR ${helpHTML('Inserta un logo en el centro del QR. Subimos la corrección de errores para que siga escaneando, pero no abuses del tamaño.')}</span>
           </label>
           <div id="qrt-no-logo" class="qrt-no-logo ${hasLogo ? 'hidden' : ''}">
             <i data-lucide="image-off"></i>
@@ -375,7 +386,7 @@ function designPanelHTML() {
       </div>
 
       <div class="qrt-design-group">
-        <div class="qrt-design-label">Fondo</div>
+        <div class="qrt-design-label">Fondo ${helpHTML('Color o imagen de fondo de la composición. La imagen lleva un velo para no restar legibilidad al QR.')}</div>
         <div class="qrt-bg-controls">
           <label class="qrt-color">
             <span>Color</span>
@@ -396,9 +407,12 @@ function createViewHTML() {
         <div class="qrt-eyebrow">Generador de QR</div>
         <h1 class="qrt-title">Crea tu código QR</h1>
 
-        <div class="qrt-segment" role="tablist" aria-label="Tipo de QR">
-          <button class="qrt-seg" data-qr-mode="static" type="button"><i data-lucide="square"></i>Estático</button>
-          <button class="qrt-seg" data-qr-mode="dynamic" type="button"><i data-lucide="refresh-cw"></i>Dinámico</button>
+        <div class="qrt-seg-wrap">
+          <div class="qrt-segment" role="tablist" aria-label="Tipo de QR">
+            <button class="qrt-seg" data-qr-mode="static" type="button"><i data-lucide="square"></i>Estático</button>
+            <button class="qrt-seg" data-qr-mode="dynamic" type="button"><i data-lucide="refresh-cw"></i>Dinámico</button>
+          </div>
+          ${helpHTML('Estático incrusta el contenido en el QR (no se puede editar luego, funciona sin conexión). Dinámico guarda un enlace corto editable y mide los escaneos.')}
         </div>
         <p id="qrt-mode-hint" class="qrt-mode-hint"></p>
 
@@ -408,7 +422,7 @@ function createViewHTML() {
 
         <div class="qrt-row">
           <label class="qrt-color">
-            <span>Color QR</span>
+            <span>Color QR ${helpHTML('Color de los módulos del código. Mantén buen contraste con el fondo para que sea legible.')}</span>
             <input id="qrt-color" type="color" value="${state.color}"/>
           </label>
           <button id="qrt-generate" class="qrt-btn qrt-btn-primary" type="button">
@@ -919,10 +933,21 @@ function mineRowHTML(qr) {
         <button class="qrt-icbtn" data-act="stats"  title="Ver estadísticas"><i data-lucide="bar-chart-3"></i></button>
         <button class="qrt-icbtn" data-act="edit"   title="Editar destino"><i data-lucide="pencil"></i></button>
         <button class="qrt-icbtn" data-act="toggle" title="${qr.is_active ? 'Desactivar' : 'Activar'}"><i data-lucide="${qr.is_active ? 'toggle-right' : 'toggle-left'}"></i></button>
+        <button class="qrt-icbtn" data-act="src"    title="Etiquetar origen (?src=)"><i data-lucide="tag"></i></button>
         <button class="qrt-icbtn" data-act="copy"   title="Copiar enlace"><i data-lucide="copy"></i></button>
         <button class="qrt-icbtn" data-act="png"    title="Descargar PNG"><i data-lucide="image-down"></i></button>
         <button class="qrt-icbtn" data-act="svg"    title="Descargar SVG"><i data-lucide="file-down"></i></button>
       </div>
+    </div>
+    <!-- Fila de ETIQUETADO DE ORIGEN (?src=), plegable. El mismo QR dinámico
+         puede imprimirse en varios soportes con distinto ?src= para medir cuál
+         funciona (ver tarjeta "ROI del soporte físico" en las stats). El backend
+         ya captura ?src= en el redirector; aquí solo construimos el enlace. -->
+    <div class="qrt-src-row hidden" data-src-for="${qr.id}">
+      <i data-lucide="tag"></i>
+      <input class="qrt-input qrt-src-input" type="text" placeholder="origen (p.ej. entrada, folleto, pantalla)" maxlength="40" autocomplete="off"/>
+      <code class="qrt-src-preview">${escHtml(link)}</code>
+      <button class="qrt-btn qrt-btn-ghost qrt-btn-sm qrt-src-copy" type="button"><i data-lucide="copy"></i><span>Copiar</span></button>
     </div>`;
 }
 
@@ -958,9 +983,55 @@ async function loadMine() {
 
   list.querySelectorAll('.qrt-mine-row').forEach((row) => {
     const qr = rows.find((r) => r.id === row.dataset.qrId);
+    // La fila de origen (?src=) va justo DESPUÉS de .qrt-mine-row en el DOM.
+    const srcRow = row.nextElementSibling?.classList?.contains('qrt-src-row')
+      ? row.nextElementSibling : null;
     row.querySelectorAll('.qrt-icbtn').forEach((btn) => {
-      btn.addEventListener('click', () => handleMineAction(btn.dataset.act, qr));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();   // no disparar el clic de fila (abrir stats)
+        if (btn.dataset.act === 'src') { toggleSrcRow(srcRow); return; }
+        handleMineAction(btn.dataset.act, qr);
+      });
     });
+    // Cablea el etiquetado de origen (?src=) de esta fila.
+    if (srcRow && qr) bindSrcRow(srcRow, qr);
+    // Clic en la fila (fuera de los botones de acción) → abre estadísticas de ESE QR.
+    const main = row.querySelector('.qrt-mine-main');
+    if (main && qr) {
+      main.style.cursor = 'pointer';
+      main.title = 'Ver estadísticas';
+      main.addEventListener('click', () => openStats(qr));
+    }
+  });
+}
+
+// Muestra/oculta la fila de etiquetado de origen y enfoca el input al abrir.
+function toggleSrcRow(srcRow) {
+  if (!srcRow) return;
+  const hidden = srcRow.classList.toggle('hidden');
+  if (!hidden) srcRow.querySelector('.qrt-src-input')?.focus();
+}
+
+// Cablea el input "origen" + botón copiar de una fila: el preview se actualiza en
+// vivo con <enlace>?src=<origen saneado> y el botón copia ese enlace al portapapeles.
+function bindSrcRow(srcRow, qr) {
+  const base = qrShortUrl(qr.code);
+  const input = srcRow.querySelector('.qrt-src-input');
+  const preview = srcRow.querySelector('.qrt-src-preview');
+  const copyBtn = srcRow.querySelector('.qrt-src-copy');
+  const linkFor = () => {
+    const src = sanitizeSrc(input?.value || '');
+    return src ? `${base}?src=${src}` : base;
+  };
+  input?.addEventListener('input', () => { if (preview) preview.textContent = linkFor(); });
+  copyBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const link = linkFor();
+    try {
+      await navigator.clipboard.writeText(link);
+      const span = copyBtn.querySelector('span');
+      if (span) { span.textContent = 'Copiado'; setTimeout(() => { span.textContent = 'Copiar'; }, 1400); }
+    } catch { /* noop */ }
   });
 }
 
@@ -1023,6 +1094,132 @@ function dayChartHTML(series) {
 
 function deviceLabel(k) { return ({ mobile: 'Móvil', tablet: 'Tablet', desktop: 'Escritorio' })[k] || k; }
 
+// ── Series temporales: AHORA vienen agregadas del SERVIDOR (UTC) ───────────────
+// El endpoint /api/qr/stats agrega en servidor sobre TODOS los eventos (no solo
+// recent[]). Consumimos directamente: unique, byHour[24], byWeekday[7] (0=Dom),
+// byMonth{YYYY-MM}, byHourWeekday{wd-hour}, bySrc, byCity, byCountry, byOs.
+// TODAS las series temporales son UTC → lo rotulamos visiblemente en la UI.
+// Etiquetas en español; getHours/getDay NO se usan (los índices ya son UTC del
+// servidor), así que no hay riesgo de corrimiento de huso.
+
+const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const WEEKDAY_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+// Orden europeo de días (empieza en Lunes); el índice 0 del servidor es Domingo.
+const WEEKDAY_EU_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+// Normaliza byHour del servidor (array de 24 enteros) a [{ label, count }] 0-23h.
+function hourSeries(byHour) {
+  const arr = Array.isArray(byHour) ? byHour : [];
+  return Array.from({ length: 24 }, (_, h) => ({
+    label: `${String(h).padStart(2, '0')}h`,
+    count: Number(arr[h]) || 0,
+  }));
+}
+
+// Mini-gráfica de barras verticales genérica (reutiliza el estilo .qrt-daychart).
+// series: [{ label, count }]. Vacía si no hay escaneos.
+function vBarChartHTML(series) {
+  if (!series || !series.length) return '<p class="qrt-stats-empty">Sin escaneos todavía</p>';
+  const max = Math.max(...series.map((d) => d.count)) || 1;
+  return `<div class="qrt-daychart">${series.map((d) => `
+    <div class="qrt-daycol" title="${escHtml(d.label)}: ${d.count}">
+      <span class="qrt-daybar" style="height:${Math.max(4, Math.round((d.count / max) * 100))}%"></span>
+      <span class="qrt-dayx">${escHtml(d.label)}</span>
+    </div>`).join('')}</div>`;
+}
+
+// ── HEATMAP hora×día-semana (CSS puro, sin librerías) ─────────────────────────
+// byHourWeekday = { '<weekday>-<hour>': count } con weekday 0=Dom..6=Sáb, hora UTC.
+// Pintamos una rejilla 7 filas (Lun..Dom, orden europeo) × 24 columnas (0-23h).
+// Cada celda colorea su opacidad sobre el color brand en proporción al máximo.
+function heatmapHTML(byHourWeekday) {
+  const map = byHourWeekday || {};
+  let max = 0;
+  Object.values(map).forEach((v) => { if (Number(v) > max) max = Number(v); });
+  if (max <= 0) return '<p class="qrt-stats-empty">Sin escaneos todavía</p>';
+
+  // Cabecera de horas (cada 3h para no saturar en móvil).
+  const headCells = Array.from({ length: 24 }, (_, h) =>
+    `<span class="qrt-hm-h">${h % 3 === 0 ? h : ''}</span>`).join('');
+
+  const rows = WEEKDAY_EU_ORDER.map((wd) => {
+    const cells = Array.from({ length: 24 }, (_, h) => {
+      const n = Number(map[`${wd}-${h}`]) || 0;
+      // Opacidad mínima visible 0.08 cuando hay datos; 0 si la celda está vacía.
+      const op = n > 0 ? (0.12 + 0.88 * (n / max)).toFixed(3) : 0;
+      const title = `${WEEKDAY_FULL[wd]} ${String(h).padStart(2, '0')}h · ${n} escaneo${n === 1 ? '' : 's'} (UTC)`;
+      return `<span class="qrt-hm-cell" style="--hm:${op}" title="${escHtml(title)}"></span>`;
+    }).join('');
+    return `<div class="qrt-hm-row"><span class="qrt-hm-day">${WEEKDAY_LABELS[wd]}</span><div class="qrt-hm-cells">${cells}</div></div>`;
+  }).join('');
+
+  return `<div class="qrt-heatmap">
+    <div class="qrt-hm-row qrt-hm-head"><span class="qrt-hm-day"></span><div class="qrt-hm-cells qrt-hm-hours">${headCells}</div></div>
+    ${rows}
+  </div>`;
+}
+
+// ── DONA / DONUT (SVG puro, sin librerías) ────────────────────────────────────
+// data = { etiqueta: count }. Pinta sectores con stroke-dasharray sobre un círculo
+// y devuelve dona + leyenda con %. Paleta fija coherente (iOS/Android destacados).
+const DONUT_COLORS = ['#0a0a0b', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#dc2626', '#0891b2', '#6a6a6e'];
+// Colores de marca por SO conocido para destacar iOS vs Android.
+const OS_COLORS = { iOS: '#0a0a0b', Android: '#16a34a', Windows: '#2563eb', macOS: '#6a6a6e', Linux: '#d97706' };
+
+function donutHTML(data) {
+  const entries = Object.entries(data || {}).filter(([, v]) => Number(v) > 0).sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((s, [, v]) => s + Number(v), 0);
+  if (!total) return '<p class="qrt-stats-empty">Sin datos</p>';
+
+  // r=15.9155 → circunferencia = 100, así stroke-dasharray trabaja en "porcentaje".
+  // Cada sector usa dasharray "pct (100-pct)" y un dashoffset = -acumulado para
+  // encadenarlos. El grupo <g> se gira -90° en el SVG para empezar arriba (12h).
+  const R = 15.9155;
+  let acc = 0; // porcentaje acumulado de sectores ya pintados
+  const segs = entries.map(([k, v], i) => {
+    const pct = (Number(v) / total) * 100;
+    const color = OS_COLORS[k] || DONUT_COLORS[i % DONUT_COLORS.length];
+    const dash = `${pct.toFixed(3)} ${(100 - pct).toFixed(3)}`;
+    const seg = `<circle class="qrt-donut-seg" cx="21" cy="21" r="${R}" fill="none"
+      stroke="${color}" stroke-width="6" stroke-dasharray="${dash}" stroke-dashoffset="${(-acc).toFixed(3)}"></circle>`;
+    acc += pct;
+    return seg;
+  }).join('');
+
+  const legend = entries.map(([k, v], i) => {
+    const pct = Math.round((Number(v) / total) * 100);
+    const color = OS_COLORS[k] || DONUT_COLORS[i % DONUT_COLORS.length];
+    return `<div class="qrt-donut-leg">
+      <span class="qrt-donut-dot" style="background:${color}"></span>
+      <span class="qrt-donut-lbl">${escHtml(k)}</span>
+      <span class="qrt-donut-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // El grupo de sectores se gira -90° (empezar a las 12h); el texto central queda
+  // fuera del grupo para no rotar.
+  return `<div class="qrt-donut-wrap">
+    <svg class="qrt-donut" viewBox="0 0 42 42" role="img" aria-label="Reparto por sistema operativo">
+      <circle cx="21" cy="21" r="${R}" fill="none" stroke="var(--paper-2,#ebe7df)" stroke-width="6"></circle>
+      <g transform="rotate(-90 21 21)">${segs}</g>
+      <text x="21" y="20.5" class="qrt-donut-c-num">${total}</text>
+      <text x="21" y="25" class="qrt-donut-c-lbl">escaneos</text>
+    </svg>
+    <div class="qrt-donut-legend">${legend}</div>
+  </div>`;
+}
+
+// Sanea un valor de origen para usarlo en ?src=: minúsculas, sin espacios ni
+// caracteres raros, máx 40. Comentado por requisito.
+function sanitizeSrc(v) {
+  return String(v || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')          // espacios → guiones
+    .replace(/[^a-z0-9._-]/g, '')  // solo seguros para URL
+    .slice(0, 40);
+}
+
 async function openStats(qr) {
   const panel = document.getElementById('qrt-stats-panel');
   if (!panel) return;
@@ -1042,43 +1239,111 @@ async function openStats(qr) {
   }
 
   const s = data.stats || {};
+  // ── Campos del SERVIDOR (agregados sobre TODOS los eventos, UTC) ────────────
+  const total = Number(s.total) || 0;
+  const unique = Number(s.unique) || 0;
+  // Ratio Total/Único (retención): 1 decimal; '—' si no hay únicos.
+  const ratio = unique > 0 ? (total / unique).toFixed(1) : '—';
+  // Frase-insight automática según el ratio de reconsulta.
+  let insight = 'Aún sin datos suficientes.';
+  if (unique > 0) {
+    const r = total / unique;
+    if (r >= 2) insight = 'Contenido que reconsultan.';
+    else if (r >= 1.3) insight = 'Algo de recurrencia.';
+    else insight = 'Mayormente de un solo uso.';
+  }
+
+  const byHourSeries = hourSeries(s.byHour);
+
+  // Origen físico (?src=). 'directo' = escaneos sin etiquetar.
+  const bySrc = s.bySrc || {};
+  const srcKeys = Object.keys(bySrc);
+  const onlyDirect = srcKeys.length === 0 || (srcKeys.length === 1 && srcKeys[0] === 'directo');
+
   const recentRows = (s.recent || []).map((ev) => `
     <tr>
       <td>${fmtDate(ev.scanned_at)}</td>
       <td>${escHtml([ev.country, ev.city].filter(Boolean).join(' · ') || '—')}</td>
       <td>${escHtml(deviceLabel(ev.device_type) || '—')}</td>
       <td>${escHtml(ev.browser || '—')}</td>
-      <td class="qrt-ref">${escHtml(ev.referrer || '—')}</td>
+      <td>${escHtml(ev.src || 'directo')}</td>
     </tr>`).join('') || '<tr><td colspan="5" class="qrt-stats-empty">Sin escaneos todavía</td></tr>';
+
+  // Leyenda UTC reutilizable para las series temporales.
+  const utcTag = '<span class="qrt-utc">hora UTC</span>';
 
   panel.innerHTML = `
     <div class="qrt-stats-card">
       <div class="qrt-stats-head">
         <div>
-          <div class="qrt-eyebrow">Estadísticas</div>
+          <div class="qrt-eyebrow">Analíticas del QR</div>
           <h2 class="qrt-stats-title">${escHtml(qr.title || qr.code)}</h2>
         </div>
         <button class="qrt-icbtn" id="qrt-stats-close" title="Cerrar"><i data-lucide="x"></i></button>
       </div>
 
-      <div class="qrt-stats-kpis">
-        <div class="qrt-kpi"><span class="qrt-kpi-num">${s.total || 0}</span><span class="qrt-kpi-lbl">Escaneos totales</span></div>
-        <div class="qrt-kpi"><span class="qrt-kpi-num">${(s.byDay || []).length}</span><span class="qrt-kpi-lbl">Días con actividad</span></div>
-        <div class="qrt-kpi"><span class="qrt-kpi-num">${Object.keys(s.byCountry || {}).length}</span><span class="qrt-kpi-lbl">Países</span></div>
-      </div>
-
+      <!-- 1 · INTERÉS Y RETENCIÓN ─────────────────────────────────────────── -->
       <div class="qrt-stats-block">
-        <div class="qrt-stats-sub">Escaneos por día</div>
+        <div class="qrt-stats-sub">Interés y retención ${helpHTML('Total de escaneos frente a visitantes únicos. Un ratio alto significa que la gente vuelve a escanear.')}</div>
+        <div class="qrt-stats-kpis">
+          <div class="qrt-kpi"><span class="qrt-kpi-num">${total}</span><span class="qrt-kpi-lbl">Escaneos totales</span></div>
+          <div class="qrt-kpi"><span class="qrt-kpi-num">${unique}</span><span class="qrt-kpi-lbl">Visitantes únicos ${helpHTML('Visitantes distintos, por huella de IP anónima.')}</span></div>
+          <div class="qrt-kpi"><span class="qrt-kpi-num">${ratio}</span><span class="qrt-kpi-lbl">Escaneos / único</span></div>
+        </div>
+        <p class="qrt-insight"><i data-lucide="sparkles"></i> ${escHtml(insight)}</p>
+        <div class="qrt-stats-sub qrt-stats-sub-mini">Escaneos por día</div>
         ${dayChartHTML(s.byDay)}
       </div>
 
-      <div class="qrt-stats-grid">
-        <div class="qrt-stats-block"><div class="qrt-stats-sub">Dispositivo</div>${barListHTML(s.byDevice, { translate: deviceLabel })}</div>
-        <div class="qrt-stats-block"><div class="qrt-stats-sub">Sistema operativo</div>${barListHTML(s.byOs)}</div>
-        <div class="qrt-stats-block"><div class="qrt-stats-sub">Navegador</div>${barListHTML(s.byBrowser)}</div>
-        <div class="qrt-stats-block"><div class="qrt-stats-sub">País</div>${barListHTML(s.byCountry)}</div>
+      <!-- 2 · EL MOMENTO CLAVE (cuándo escanean) ───────────────────────────── -->
+      <div class="qrt-stats-block">
+        <div class="qrt-stats-sub">El momento clave ${utcTag} ${helpHTML('Cuándo te escanean, por hora y día — útil para lanzar ofertas o emails en el pico.')}</div>
+        ${heatmapHTML(s.byHourWeekday)}
+        <div class="qrt-stats-sub qrt-stats-sub-mini">Por hora del día ${utcTag}</div>
+        ${vBarChartHTML(byHourSeries)}
       </div>
 
+      <!-- 3 · ROI DEL SOPORTE FÍSICO (origen ?src=) ────────────────────────── -->
+      <div class="qrt-stats-block">
+        <div class="qrt-stats-sub">ROI del soporte físico ${helpHTML('Qué soporte físico funcionó; etiqueta cada impresión con ?src= en el enlace del QR.')}</div>
+        ${onlyDirect
+          ? `<p class="qrt-stats-note"><i data-lucide="info"></i> Añade <code>?src=entrada</code> (o folleto, pantalla…) al final del enlace del QR para medir qué soporte funciona. Puedes generar variantes desde "Mis QR".</p>`
+          : barListHTML(bySrc)}
+      </div>
+
+      <!-- 4 · PERFIL TÉCNICO (SO) ──────────────────────────────────────────── -->
+      <div class="qrt-stats-block">
+        <div class="qrt-stats-sub">Perfil técnico ${helpHTML('Reparto iOS/Android para decidir dónde optimizar.')}</div>
+        <div class="qrt-stats-grid">
+          <div>
+            <div class="qrt-stats-sub qrt-stats-sub-mini">Sistema operativo</div>
+            ${donutHTML(s.byOs)}
+          </div>
+          <div>
+            <div class="qrt-stats-sub qrt-stats-sub-mini">Dispositivo</div>
+            ${barListHTML(s.byDevice, { translate: deviceLabel })}
+            <div class="qrt-stats-sub qrt-stats-sub-mini" style="margin-top:12px">Navegador</div>
+            ${barListHTML(s.byBrowser)}
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 · GEOLOCALIZACIÓN ──────────────────────────────────────────────── -->
+      <div class="qrt-stats-block">
+        <div class="qrt-stats-sub">Geolocalización ${helpHTML('De dónde escanean: ciudades y países con más escaneos.')}</div>
+        <div class="qrt-stats-grid">
+          <div>
+            <div class="qrt-stats-sub qrt-stats-sub-mini">Top ciudades</div>
+            ${barListHTML(s.byCity)}
+          </div>
+          <div>
+            <div class="qrt-stats-sub qrt-stats-sub-mini">Top países</div>
+            ${barListHTML(s.byCountry)}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de últimos escaneos (con columna Origen) ──────────────────── -->
       <div class="qrt-stats-block">
         <div class="qrt-stats-sub">Últimos escaneos</div>
         <div class="qrt-stats-tablewrap">
@@ -1091,6 +1356,9 @@ async function openStats(qr) {
     </div>`;
   refreshIcons(panel);
   document.getElementById('qrt-stats-close')?.addEventListener('click', closeStats);
+  // El panel de stats es un overlay separado de #qrt-view, así que cableamos
+  // aquí sus tooltips "?" (bindHelpTooltips es idempotente por nodo).
+  bindHelpTooltips(panel);
   panel.addEventListener('click', (e) => { if (e.target === panel) closeStats(); }, { once: true });
 }
 
@@ -1151,12 +1419,36 @@ function bindCreateEvents(host) {
   });
 
   bindDesignEvents(host);
+  bindHelpTooltips(host);
 
   host.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
       e.preventDefault();
       generate();
     }
+  });
+}
+
+// Tooltips "?": en táctil/clic alternan la clase .is-open (en hover/focus se
+// muestran solo con CSS). Delegado en el host → cubre secciones re-renderizadas
+// (campos dinámicos, panel de diseño) sin volver a cablear. Evita que el clic
+// active el <input> del <label> que pueda contener el botón de ayuda.
+function bindHelpTooltips(host) {
+  if (host._qrHelpBound) return;
+  host._qrHelpBound = true;
+  host.addEventListener('click', (e) => {
+    const help = e.target.closest('[data-qr-help]');
+    if (help) {
+      e.preventDefault();
+      e.stopPropagation();
+      const wasOpen = help.classList.contains('is-open');
+      // Cierra cualquier otro tooltip abierto antes de abrir este.
+      host.querySelectorAll('[data-qr-help].is-open').forEach((el) => el.classList.remove('is-open'));
+      if (!wasOpen) help.classList.add('is-open');
+      return;
+    }
+    // Clic fuera de un tooltip → cierra los abiertos.
+    host.querySelectorAll('[data-qr-help].is-open').forEach((el) => el.classList.remove('is-open'));
   });
 }
 

@@ -25,6 +25,98 @@
   border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
 }
 
+/* FIX layout: dock.css declara `#header-inner { justify-content: center }` para
+   el header del editor 3D. Ese ID gana en especificidad a `.tool-header-inner`
+   y descoloca los chips (centrados/apilados arriba). Lo reanclamos a la derecha
+   dentro del overlay de la herramienta para que el header sea UNA sola fila:
+   marca+título a la izquierda → [9 puntos][chat][campana][IA][cuenta] a la
+   derecha → "Inicio" pegado al borde. */
+.qrtool-overlay #qrt-header-host #header-inner.tool-header-inner {
+  justify-content: flex-end;
+}
+
+/* AppLauncher (9 puntos): asegurar que el icono se ve sobre el fondo claro.
+   El SVG usa fill:currentColor; forzamos el color tinta de la app. */
+.qrtool-overlay #qrt-header-host #btn-app-launcher { color: var(--ink, #0a0a0b); }
+.qrtool-overlay #qrt-header-host #btn-app-launcher svg { color: inherit; }
+
+/* Campana de notificaciones: punto rojo de "sin leer". */
+.qrtool-overlay #qrt-header-host .tool-header-notif { position: relative; }
+.qrtool-overlay #qrt-header-host .tool-header-notif-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 1.5px var(--surface, #fff);
+}
+.qrtool-overlay #qrt-header-host .tool-header-notif-dot[hidden] { display: none; }
+
+/* Popover-feed de notificaciones (coherente con .hdr-popover del design-system). */
+.hdr-notif-popover {
+  z-index: 10001;
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+}
+.hdr-notif-popover .hdr-popover-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.1));
+}
+.hdr-notif-popover .hdr-popover-title {
+  font-family: var(--brand-display-font, 'Fraunces', serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #0a0a0b);
+}
+.hdr-notif-list { max-height: 360px; overflow-y: auto; }
+.hdr-notif-empty {
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted, #6a6a6e);
+}
+.hdr-notif-row {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--hairline, rgba(10, 10, 11, 0.07));
+}
+.hdr-notif-row:last-child { border-bottom: none; }
+.hdr-notif-icon {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--brand-primary, #2563eb);
+}
+.hdr-notif-icon i { width: 15px; height: 15px; }
+.hdr-notif-main { min-width: 0; flex: 1; }
+.hdr-notif-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #0a0a0b);
+  line-height: 1.3;
+}
+.hdr-notif-sub {
+  font-size: 11.5px;
+  color: var(--muted, #6a6a6e);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hdr-notif-meta {
+  font-size: 10.5px;
+  color: var(--muted, #6a6a6e);
+  margin-top: 3px;
+}
+
 /* Navegación de vistas (Crear QR / Mis QR) */
 .qrtool-overlay .qrt-viewnav {
   display: flex;
@@ -707,3 +799,237 @@
 }
 .qrtool-overlay .qrt-bg-controls .qrt-btn-sm { flex: 0 0 auto; }
 .qrtool-overlay .hidden { display: none !important; }
+
+/* ── Tooltips de ayuda "?" por apartado ─────────────────────────────────────── */
+.qrtool-overlay .qrt-seg-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.qrtool-overlay .qrt-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted, #6a6a6e);
+  cursor: help;
+  vertical-align: middle;
+  border-radius: 999px;
+  transition: color 0.15s;
+}
+.qrtool-overlay .qrt-help:hover,
+.qrtool-overlay .qrt-help:focus-visible { color: var(--ink, #0a0a0b); outline: none; }
+.qrtool-overlay .qrt-help i { width: 14px; height: 14px; }
+
+/* Burbuja del tooltip: oculta por defecto; visible en hover/focus-within o cuando
+   .is-open (clic/táctil). Texto en mayúsculas/minúsculas normal, no eyebrow. */
+.qrtool-overlay .qrt-help-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 240px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--ink, #0a0a0b);
+  color: var(--paper, #f5f3ee);
+  font-family: var(--brand-body-font, 'Inter Tight', system-ui, sans-serif);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 10px 28px -12px rgba(10, 10, 11, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.14s, transform 0.14s, visibility 0.14s;
+  z-index: 330;
+}
+.qrtool-overlay .qrt-help-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--ink, #0a0a0b);
+}
+.qrtool-overlay .qrt-help:hover .qrt-help-bubble,
+.qrtool-overlay .qrt-help:focus-within .qrt-help-bubble,
+.qrtool-overlay .qrt-help.is-open .qrt-help-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+/* En bordes laterales el max-width evita desbordes; si el "?" está muy a la
+   izquierda, la burbuja se mantiene centrada sobre el icono (suficiente para
+   estos textos cortos). */
+
+/* ── DASHBOARD DE ANALÍTICAS (tarjetas del panel openStats) ─────────────────── */
+
+/* Sub-título secundario dentro de una tarjeta (gráfica anidada). */
+.qrtool-overlay .qrt-stats-sub-mini { margin-top: 14px; }
+
+/* Etiqueta "hora UTC" junto a las series temporales. */
+.qrtool-overlay .qrt-utc {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--muted, #6a6a6e);
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 2px;
+}
+
+/* Frase-insight automática (retención). */
+.qrtool-overlay .qrt-insight {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink, #0a0a0b);
+}
+.qrtool-overlay .qrt-insight i { width: 15px; height: 15px; color: var(--brand-primary, #2563eb); flex: 0 0 auto; }
+
+/* Nota informativa (origen sin etiquetar). */
+.qrtool-overlay .qrt-stats-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 11px 13px;
+  border: 1px dashed var(--hairline, rgba(10, 10, 11, 0.2));
+  border-radius: 10px;
+  background: var(--paper, #f5f3ee);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted, #6a6a6e);
+}
+.qrtool-overlay .qrt-stats-note i { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; }
+.qrtool-overlay .qrt-stats-note code {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  background: #fff;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 5px;
+  padding: 0 4px;
+  color: var(--ink, #0a0a0b);
+}
+
+/* ── HEATMAP hora×día-semana (CSS puro) ─────────────────────────────────────── */
+.qrtool-overlay .qrt-heatmap {
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-radius: 10px;
+  background: var(--paper, #f5f3ee);
+  padding: 10px;
+  overflow-x: auto;
+}
+.qrtool-overlay .qrt-hm-row { display: flex; align-items: center; gap: 6px; }
+.qrtool-overlay .qrt-hm-row + .qrt-hm-row { margin-top: 3px; }
+.qrtool-overlay .qrt-hm-day {
+  flex: 0 0 28px;
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--muted, #6a6a6e);
+  text-align: right;
+}
+.qrtool-overlay .qrt-hm-cells {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  flex: 1;
+  min-width: 360px;
+}
+.qrtool-overlay .qrt-hm-cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  /* Base gris muy clara + color brand modulado por --hm (opacidad). */
+  background:
+    linear-gradient(rgba(37, 99, 235, var(--hm, 0)), rgba(37, 99, 235, var(--hm, 0))),
+    var(--paper-2, #ebe7df);
+}
+.qrtool-overlay .qrt-hm-head .qrt-hm-h {
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 8px;
+  color: var(--muted, #6a6a6e);
+  text-align: center;
+}
+.qrtool-overlay .qrt-hm-hours { align-items: end; }
+
+/* ── DONA / DONUT (SVG puro) ────────────────────────────────────────────────── */
+.qrtool-overlay .qrt-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.qrtool-overlay .qrt-donut {
+  width: 132px;
+  height: 132px;
+  flex: 0 0 auto;
+}
+.qrtool-overlay .qrt-donut-seg { transition: stroke-dasharray 0.3s; }
+.qrtool-overlay .qrt-donut-c-num {
+  font-family: var(--brand-display-font, 'Fraunces', serif);
+  font-size: 7px;
+  font-weight: 500;
+  fill: var(--ink, #0a0a0b);
+  text-anchor: middle;
+}
+.qrtool-overlay .qrt-donut-c-lbl {
+  font-size: 2.6px;
+  fill: var(--muted, #6a6a6e);
+  text-anchor: middle;
+  letter-spacing: 0.04em;
+}
+.qrtool-overlay .qrt-donut-legend { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; }
+.qrtool-overlay .qrt-donut-leg { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.qrtool-overlay .qrt-donut-dot { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.qrtool-overlay .qrt-donut-lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrtool-overlay .qrt-donut-pct { color: var(--muted, #6a6a6e); font-variant-numeric: tabular-nums; }
+
+/* ── Etiquetado de origen (?src=) en Mis QR ─────────────────────────────────── */
+.qrtool-overlay .qrt-src-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline, rgba(10, 10, 11, 0.12));
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: var(--paper, #f5f3ee);
+}
+.qrtool-overlay .qrt-src-row.hidden { display: none; }
+.qrtool-overlay .qrt-src-row > i { width: 14px; height: 14px; color: var(--muted, #6a6a6e); flex: 0 0 auto; }
+.qrtool-overlay .qrt-src-input { flex: 0 0 220px; max-width: 220px; }
+.qrtool-overlay .qrt-src-preview {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--brand-mono-font, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  color: var(--muted, #6a6a6e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qrtool-overlay .qrt-src-copy { flex: 0 0 auto; }
+@media (max-width: 600px) {
+  .qrtool-overlay .qrt-src-row { flex-wrap: wrap; }
+  .qrtool-overlay .qrt-src-input { flex: 1 1 100%; max-width: none; }
+}

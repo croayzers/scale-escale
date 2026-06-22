@@ -114,6 +114,23 @@ function firstLang(req) {
   return al ? al.slice(0, 35) : null;
 }
 
+// ── Origen fisico del escaneo (?src=) ────────────────────────────────────────
+// Lo añade quien genera el QR poniendo ?src=<origen> al final del enlace corto
+// (lo hace la UI: p.ej. /q/abc123?src=entrada). NO afecta a la redirección: el
+// QR redirige a su target_url normal. Saneado: string, trim, minúsculas, máx 40.
+function scanSrc(req) {
+  let raw = req.query?.src;
+  if (raw == null) {
+    // Fallback: parsear el query string de la URL cruda si Vercel no lo inyectó.
+    const qs = String(req.url || '').split('?')[1] || '';
+    const params = new URLSearchParams(qs);
+    raw = params.get('src');
+  }
+  if (raw == null) return null;
+  const s = String(raw).trim().toLowerCase().slice(0, 40);
+  return s || null;
+}
+
 // ── Registro de escaneo (no bloqueante) ──────────────────────────────────────
 async function recordScan(qr, req) {
   const ua = String(req.headers['user-agent'] || '') || null;
@@ -129,7 +146,8 @@ async function recordScan(qr, req) {
     os: detectOs(ua),
     browser: detectBrowser(ua),
     referrer: req.headers['referer'] || req.headers['referrer'] || null,
-    lang: firstLang(req)
+    lang: firstLang(req),
+    src: scanSrc(req)
   };
   await escaleRest('qr_scan_events', { method: 'POST', body: event });
 }
