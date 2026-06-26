@@ -649,7 +649,11 @@ async function uploadAndSetFile(file) {
     renderFields();
     schedulePreview(true);
   } catch (e) {
-    setMsg('No se pudo subir el archivo: ' + (e.message || e), 'error');
+    if (e.status === 401 || e.reason === 'auth_required') {
+      setMsg('Sesión expirada. Vuelve a iniciar sesión para subir archivos.', 'warn');
+    } else {
+      setMsg('No se pudo subir el archivo: ' + (e.reason || e.message), 'error');
+    }
   }
 }
 
