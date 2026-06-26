@@ -92,13 +92,22 @@ function _orgName() {
 }
 
 function _getPlanImage() {
-  // Devuelve el dataURL de la imagen del plano si está cargada
   try {
-    const src = AppState.plan?.texture?.image?.src;
+    const img = AppState.plan?.texture?.image;
+    const src = img?.src;
     if (src && src.startsWith('data:')) return src;
-    // Fallback: renderizar desde el canvas de Three.js
-    const canvas = document.getElementById('scene-canvas');
-    return canvas?.toDataURL?.('image/jpeg', 0.7) || null;
+    // Blob URL u otro: rasterizar via canvas 2D (WebGL toDataURL devuelve negro sin preserveDrawingBuffer)
+    if (img) {
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (w > 0 && h > 0) {
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0);
+        return c.toDataURL('image/jpeg', 0.82);
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -190,20 +199,19 @@ async function save() {
       lengthM:      AppState.plan.lengthM,
       opacity:      AppState.plan.opacity,
     });
-    if (result?.skipped) {
-      document.dispatchEvent(new CustomEvent('escale:toast', {
-        detail: { msg: `Ya existe un plano llamado "${nombre}"`, kind: 'info' }
-      }));
-    } else if (result) {
+    if (result) {
       document.dispatchEvent(new CustomEvent('escale:toast', {
         detail: { msg: `Plano "${nombre}" guardado y compartido con la empresa`, kind: 'success' }
       }));
-      // Notificación in-app a la empresa (campanita de L/P/S-Scale)
       NotifEmitter.emitirNotificacion({
         tipo: 'plano',
         titulo: 'Se creó un nuevo plano',
         recursoLabel: lugar || ciudad || nombre,
       });
+    } else {
+      document.dispatchEvent(new CustomEvent('escale:toast', {
+        detail: { msg: 'No se pudo guardar el plano en la nube', kind: 'warning' }
+      }));
     }
   } catch (err) {
     console.error('[PlanSaveModal] Error guardando plano:', err);
