@@ -23,7 +23,16 @@ async function _getToken() {
   if (!db) return null;
   try {
     const { data } = await db.auth.getSession();
-    return data?.session?.access_token || null;
+    const session = data?.session;
+    if (!session) return null;
+    // getSession() puede devolver un access_token ya caducado (dura ~1h). Si está
+    // caducado o a punto (<60s), refrescar para no mandar un token muerto → 401.
+    const expiresAtMs = (session.expires_at || 0) * 1000;
+    if (!expiresAtMs || expiresAtMs - Date.now() < 60_000) {
+      const { data: refreshed } = await db.auth.refreshSession();
+      return refreshed?.session?.access_token || session.access_token || null;
+    }
+    return session.access_token || null;
   } catch { return null; }
 }
 
