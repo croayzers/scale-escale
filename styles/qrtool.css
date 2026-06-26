@@ -1033,3 +1033,45 @@
   .qrtool-overlay .qrt-src-row { flex-wrap: wrap; }
   .qrtool-overlay .qrt-src-input { flex: 1 1 100%; max-width: none; }
 }
+
+/* ── Zona de subida de archivo (tipo dinámico "PDF / Imagen") ─────────────── */
+.qrtool-overlay .qrt-file-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px dashed var(--border, #d1cdc7);
+  border-radius: 10px;
+  background: var(--paper-1, #f5f2ed);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-height: 56px;
+}
+.qrtool-overlay .qrt-file-drop:hover,
+.qrtool-overlay .qrt-file-drop.is-drag {
+  border-color: var(--brand, #0a0a0b);
+  background: var(--paper-2, #ebe7df);
+}
+.qrtool-overlay .qrt-file-drop.is-uploaded {
+  border-style: solid;
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+.qrtool-overlay .qrt-file-drop [data-lucide] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--muted, #6a6a6e);
+}
+.qrtool-overlay .qrt-file-drop.is-uploaded [data-lucide="check-circle"] {
+  color: #16a34a;
+}
+.qrtool-overlay .qrt-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--fg, #1a1a2c);
+}

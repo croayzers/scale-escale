@@ -160,6 +160,8 @@ const state = {
   expiryDays: 7,
   onHome: null,
   mineLoaded: false,
+  filePath: null,   // storage path del archivo subido (tipo 'file' dinámico)
+  fileName: null,   // nombre original del archivo
 
   // ── DISEÑO de la composición (nuevo) ───────────────────────────────────────
   template: 'none',      // id de plantilla activa (qrTemplates.js)
@@ -202,7 +204,8 @@ const STATIC_TYPES = [
   { id: 'sms',      icon: 'message-square',  label: 'SMS' },
 ];
 const DYNAMIC_TYPES = [
-  { id: 'url', icon: 'link', label: 'Enlace' },
+  { id: 'url',  icon: 'link',     label: 'Enlace' },
+  { id: 'file', icon: 'file-up',  label: 'PDF / Imagen' },
 ];
 
 function currentTypes() {
@@ -213,15 +216,28 @@ function currentTypes() {
 
 function fieldsHTML() {
   if (state.mode === 'dynamic') {
+    const dynContent = state.type === 'file'
+      ? `<div class="qrt-field qrt-field-full">
+        <span>Archivo (PDF o imagen)</span>
+        <div id="qrt-file-drop" class="qrt-file-drop${state.filePath ? ' is-uploaded' : ''}">
+          <input id="qrt-file-input" type="file" accept=".pdf,image/jpeg,image/png,image/gif,image/webp,image/svg+xml" hidden/>
+          ${state.filePath
+            ? `<i data-lucide="check-circle"></i><span class="qrt-file-name">${escHtml(state.fileName || state.filePath)}</span><button id="qrt-file-clear" class="qrt-btn qrt-btn-ghost qrt-btn-sm" type="button"><i data-lucide="x"></i>Quitar</button>`
+            : `<i data-lucide="upload-cloud"></i><span>PDF o imagen, máx. 20 MB</span><button id="qrt-file-pick" class="qrt-btn qrt-btn-ghost qrt-btn-sm" type="button"><i data-lucide="folder-open"></i>Elegir…</button>`
+          }
+        </div>
+      </div>`
+      : `<label class="qrt-field qrt-field-full">
+        <span>Destino (URL a la que redirige)</span>
+        <input id="qrt-dyn-target" class="qrt-input" type="url" placeholder="https://tu-destino.com/landing" autocomplete="off"/>
+      </label>`;
+
     return `
       <label class="qrt-field qrt-field-full">
         <span>Título (para Mis QR)</span>
         <input id="qrt-dyn-title" class="qrt-input" type="text" placeholder="Campaña feria primavera" autocomplete="off"/>
       </label>
-      <label class="qrt-field qrt-field-full">
-        <span>Destino (URL a la que redirige)</span>
-        <input id="qrt-dyn-target" class="qrt-input" type="url" placeholder="https://tu-destino.com/landing" autocomplete="off"/>
-      </label>
+      ${dynContent}
       <div class="qrt-field qrt-field-full qrt-expiry">
         <label class="qrt-check">
           <input id="qrt-dyn-expiry" type="checkbox" ${state.expiry ? 'checked' : ''}/>
@@ -548,6 +564,10 @@ function renderTypeTabs() {
   refreshIcons(host);
   host.querySelectorAll('.qrt-tab').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (state.type === 'file' && btn.dataset.qrType !== 'file') {
+        state.filePath = null;
+        state.fileName = null;
+      }
       state.type = btn.dataset.qrType;
       setActiveType();
       renderFields();
@@ -567,6 +587,34 @@ function renderFields() {
     });
     const days = document.getElementById('qrt-dyn-days');
     days?.addEventListener('change', () => { state.expiryDays = Number(days.value) || 7; });
+
+    if (state.type === 'file') {
+      const pick = document.getElementById('qrt-file-pick');
+      const fileInput = document.getElementById('qrt-file-input');
+      const drop = document.getElementById('qrt-file-drop');
+      const clear = document.getElementById('qrt-file-clear');
+      pick?.addEventListener('click', () => fileInput?.click());
+      fileInput?.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (f) uploadAndSetFile(f);
+        e.target.value = '';
+      });
+      clear?.addEventListener('click', () => {
+        state.filePath = null;
+        state.fileName = null;
+        renderFields();
+      });
+      if (drop) {
+        drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('is-drag'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('is-drag'));
+        drop.addEventListener('drop', (e) => {
+          e.preventDefault();
+          drop.classList.remove('is-drag');
+          const f = e.dataTransfer?.files?.[0];
+          if (f) uploadAndSetFile(f);
+        });
+      }
+    }
   }
   // Preview EN DIRECTO: cualquier cambio en los campos refresca el QR (debounced).
   host?.querySelectorAll('input, textarea, select').forEach((el) => {
@@ -576,6 +624,33 @@ function renderFields() {
   refreshIcons(host);
   // Render inicial del preview tras (re)pintar los campos.
   schedulePreview();
+}
+
+// ── Subida de archivo (tipo dinámico 'file') ──────────────────────────────────
+
+async function uploadAndSetFile(file) {
+  if (!isAuthenticated()) { setMsg('Inicia sesión para subir archivos.', 'warn'); return; }
+  if (file.size > 20 * 1024 * 1024) { setMsg('El archivo supera el límite de 20 MB.', 'warn'); return; }
+  setMsg('Subiendo archivo…');
+  try {
+    const result = await apiFetch('/api/org/files', {
+      method: 'POST',
+      body: { action: 'sign-upload', filename: file.name }
+    });
+    const putRes = await fetch(result.signedURL, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type || 'application/octet-stream' }
+    });
+    if (!putRes.ok) throw new Error(`Upload falló: HTTP ${putRes.status}`);
+    state.filePath = result.path;
+    state.fileName = file.name;
+    setMsg(`Archivo cargado: ${file.name}`, 'ok');
+    renderFields();
+    schedulePreview(true);
+  } catch (e) {
+    setMsg('No se pudo subir el archivo: ' + (e.message || e), 'error');
+  }
 }
 
 // ── Estático: leer inputs y construir el texto ────────────────────────────────
@@ -709,8 +784,11 @@ async function composePreview() {
 // para el preview): si está vacío devuelve null para mostrar el placeholder.
 function collectPreviewText() {
   if (state.mode === 'dynamic') {
-    // En dinámico el QR real codifica el código corto (se crea al pulsar). Para
-    // el preview en directo usamos el destino tecleado como placeholder visual.
+    if (state.type === 'file') {
+      return state.filePath ? `${window.location.origin}/q/preview` : null;
+    }
+    // El QR real codifica el código corto (se crea al pulsar). Para el preview
+    // en directo usamos el destino tecleado como placeholder visual.
     const target = (document.getElementById('qrt-dyn-target')?.value || '').trim();
     return target || null;
   }
@@ -767,6 +845,32 @@ async function createDynamic() {
     return;
   }
   const title = (document.getElementById('qrt-dyn-title')?.value || '').trim();
+
+  if (state.type === 'file') {
+    if (!state.filePath) { setMsg('Sube un archivo antes de crear el QR.', 'warn'); return; }
+    const body = { type: 'file', title, filePath: state.filePath, fileName: state.fileName };
+    if (state.expiry) body.expiresInDays = Math.min(15, Math.max(1, state.expiryDays));
+    setMsg('Creando QR dinámico…');
+    let data;
+    try {
+      data = await apiFetch('/api/qr/create', { method: 'POST', body });
+    } catch (e) {
+      setMsg('No se pudo crear el QR: ' + (e.reason || e.message), 'error');
+      return;
+    }
+    const link = qrShortUrl(data.code);
+    setMsg('Generando…');
+    const ok = await paintQR(link);
+    if (!ok) return;
+    const row = document.getElementById('qrt-link-row');
+    const codeEl = document.getElementById('qrt-link-code');
+    if (row && codeEl) { codeEl.textContent = link; row.style.display = 'flex'; }
+    state.mineLoaded = false;
+    setMsg('QR dinámico creado. Lo tienes en "Mis QR".', 'ok');
+    refreshIcons(document.getElementById('qrt-view'));
+    return;
+  }
+
   const target = (document.getElementById('qrt-dyn-target')?.value || '').trim();
   if (!target) { setMsg('Indica el destino del QR.', 'warn'); return; }
   if (!/^https?:\/\//i.test(target)) { setMsg('El destino debe empezar por http:// o https://', 'warn'); return; }
@@ -1392,6 +1496,7 @@ function renderView() {
 function bindCreateEvents(host) {
   host.querySelectorAll('.qrt-seg').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (state.type === 'file') { state.filePath = null; state.fileName = null; }
       state.mode = btn.dataset.qrMode;
       state.lastText = '';
       setActiveMode();

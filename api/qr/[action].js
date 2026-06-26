@@ -25,7 +25,7 @@ const {
   updateQrCode
 } = require('../../lib/supabase');
 
-const VALID_TYPES = new Set(['url', 'text', 'vcard', 'wifi', 'email', 'phone', 'whatsapp', 'sms', 'pdf']);
+const VALID_TYPES = new Set(['url', 'text', 'vcard', 'wifi', 'email', 'phone', 'whatsapp', 'sms', 'pdf', 'file']);
 const MAX_EXPIRY_MS = 15 * 24 * 60 * 60 * 1000;
 
 function readBearerToken(req) {
@@ -91,13 +91,21 @@ async function handleCreate(req, res) {
   if (!VALID_TYPES.has(type)) return badRequest(res, 'Tipo de QR no válido.');
 
   const targetUrl = String(body.targetUrl || body.target_url || '').trim();
-  if (!targetUrl) return badRequest(res, 'Indica el destino (target_url) del QR dinámico.');
-  // El destino se sirve como redirección 302 desde /q/:code: solo http(s).
-  if (!/^https?:\/\//i.test(targetUrl)) {
+  if (!targetUrl && type !== 'file') return badRequest(res, 'Indica el destino (target_url) del QR dinámico.');
+  if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
     return badRequest(res, 'El destino debe empezar por http:// o https://');
   }
 
   const title = String(body.title || '').trim().slice(0, 160) || null;
+
+  // Para tipo 'file': extraer filePath del body y guardarlo en el payload.
+  let payload = (body.payload && typeof body.payload === 'object') ? body.payload : {};
+  if (type === 'file') {
+    const filePath = String(body.filePath || body.file_path || '').trim();
+    if (!filePath) return badRequest(res, 'Indica el path del archivo (filePath).');
+    const fileName = String(body.fileName || body.file_name || '').trim().slice(0, 200) || null;
+    payload = { ...payload, file_path: filePath, file_name: fileName };
+  }
 
   // Caducidad opcional. Tope duro: 15 días desde ahora.
   let expiresAt = null;
@@ -120,8 +128,8 @@ async function handleCreate(req, res) {
     ownerUserId: userId,
     type,
     title,
-    targetUrl,
-    payload: (body.payload && typeof body.payload === 'object') ? body.payload : {},
+    targetUrl: targetUrl || null,
+    payload,
     expiresAt
   });
 

@@ -16,7 +16,7 @@
 
 const crypto = require('crypto');
 const { env } = require('../../lib/env');
-const { escaleRest } = require('../../lib/supabase');
+const { escaleRest, createSignedViewUrl } = require('../../lib/supabase');
 
 const CODE_RE = /^[A-Za-z0-9_-]{4,40}$/;
 
@@ -254,6 +254,26 @@ module.exports = async function handler(req, res) {
   }
 
   // e) Redirigir o renderizar
+  const payload = qr.payload && typeof qr.payload === 'object' ? qr.payload : {};
+
+  // Archivo: generar URL firmada y redirigir (el scanner no necesita sesión).
+  if (payload.file_path) {
+    try {
+      const signedUrl = await createSignedViewUrl(String(payload.file_path), 3600);
+      if (signedUrl) {
+        res.statusCode = 302;
+        res.setHeader('Location', signedUrl);
+        res.setHeader('Cache-Control', 'no-store');
+        res.end();
+        return;
+      }
+    } catch (err) {
+      console.error('[q/:code] file sign failed:', err?.message);
+      return renderPage(res, 500, 'Error al acceder al archivo', 'No se pudo generar el enlace de acceso al archivo.');
+    }
+    return renderPage(res, 404, 'Archivo no encontrado', 'No se encontró el archivo asociado a este QR.');
+  }
+
   const target = String(qr.target_url || '').trim();
   if (target) {
     res.statusCode = 302;
