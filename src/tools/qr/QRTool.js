@@ -64,12 +64,19 @@ function getAccessToken() {
   try { return window.__ESCALE_AUTH__?.getAccessToken?.() || ''; }
   catch { return ''; }
 }
+async function getAccessTokenFresh() {
+  try {
+    const fn = window.__ESCALE_AUTH__?.getAccessTokenAsync;
+    if (fn) return await fn();
+    return window.__ESCALE_AUTH__?.getAccessToken?.() || '';
+  } catch { return ''; }
+}
 function isAuthenticated() {
   return Boolean(getAccessToken());
 }
 
 async function apiFetch(path, { method = 'GET', body } = {}) {
-  const token = getAccessToken();
+  const token = await getAccessTokenFresh();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(path, {

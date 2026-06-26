@@ -18,6 +18,14 @@ function providerLabel(provider) {
 function exposeTokenGetter() {
   window.__ESCALE_AUTH__ = {
     getAccessToken: () => currentSession?.access_token || '',
+    getAccessTokenAsync: async () => {
+      try {
+        const client = getSupabaseClient();
+        if (!client) return currentSession?.access_token || '';
+        const { data } = await client.auth.getSession();
+        return data?.session?.access_token || currentSession?.access_token || '';
+      } catch { return currentSession?.access_token || ''; }
+    },
     getUser: () => currentSession?.user || null
   };
 }
