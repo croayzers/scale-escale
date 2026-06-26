@@ -44,6 +44,7 @@ import { PredictiveArray }    from './ui/PredictiveArray.js';
 import { SplashScreen, collapseDock, collapseHeader } from './ui/SplashScreen.js';
 import { ContextSpawnMenu }  from './ui/ContextSpawnMenu.js';
 import { SceneModeManager } from './ui/SceneModeManager.js';
+import { FileLibraryPanel } from './ui/FileLibraryPanel.js';
 
 function showStartupError(label, error) {
   console.error(`[E-scale] ${label} falló:`, error);
@@ -105,6 +106,7 @@ async function bootstrap() {
   safeInit('MessageManager', () => MessageManager.init());
   safeInit('PlanSaveModal',    () => PlanSaveModal.init());
   safeInit('ExportMetaModal', () => ExportMetaModal.init());
+  safeInit('FileLibraryPanel', () => FileLibraryPanel.init());
   AppBridge.init();
 
   // ── WallPainter: mostrar demo antes de activar ──────────────────────────────
