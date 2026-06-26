@@ -171,8 +171,9 @@ async function save() {
   const cliente = document.getElementById('psm-cliente')?.value.trim() || null;
   const lugar   = document.getElementById('psm-lugar')?.value.trim() || null;
 
-  if (!nombre) {
-    const el = document.getElementById('psm-nombre');
+  const missingField = !nombre ? 'psm-nombre' : !ciudad ? 'psm-ciudad' : null;
+  if (missingField) {
+    const el = document.getElementById(missingField);
     el?.focus();
     el?.classList.add('psm-field-error');
     setTimeout(() => el?.classList.remove('psm-field-error'), 1500);
