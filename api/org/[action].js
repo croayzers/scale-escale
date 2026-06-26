@@ -17,7 +17,12 @@ const {
   saveOrgTemplate,
   loadOrgTemplateById,
   deleteOrgTemplate,
+  listOrgStorageFiles,
+  createSignedUploadUrl,
+  createSignedViewUrl,
+  deleteOrgStorageFile,
 } = require('../../lib/supabase');
+const { supabaseProjectUrl } = require('../../lib/env');
 const { sendEmail } = require('../../lib/resend');
 const { env } = require('../../lib/env');
 
@@ -197,6 +202,53 @@ async function handleTemplates(req, res, access) {
   return methodNotAllowed(req, res, ['GET', 'POST', 'DELETE']);
 }
 
+async function handleFiles(req, res, access) {
+  const orgId = access.organization.id;
+
+  if (req.method === 'GET') {
+    const files = await listOrgStorageFiles(orgId);
+    return json(res, 200, { ok: true, files });
+  }
+
+  if (req.method === 'POST') {
+    const body = await readJsonBody(req);
+    const subAction = body?.action || '';
+
+    if (subAction === 'sign-upload') {
+      const { filename } = body;
+      if (!filename) return badRequest(res, 'filename requerido');
+      const result = await createSignedUploadUrl(orgId, filename);
+      if (!result) return json(res, 500, { ok: false, error: 'No se pudo crear URL firmada' });
+      const base = supabaseProjectUrl();
+      const fullUrl = result.signedURL.startsWith('http')
+        ? result.signedURL
+        : `${base}/storage/v1${result.signedURL}`;
+      return json(res, 200, { ok: true, signedURL: fullUrl, path: result.path });
+    }
+
+    if (subAction === 'sign-view') {
+      const { path } = body;
+      if (!path) return badRequest(res, 'path requerido');
+      if (!path.startsWith(`${orgId}/`)) return json(res, 403, { ok: false, error: 'Acceso denegado' });
+      const url = await createSignedViewUrl(path, 3600);
+      return json(res, 200, { ok: true, url });
+    }
+
+    return badRequest(res, 'action desconocida');
+  }
+
+  if (req.method === 'DELETE') {
+    const body = await readJsonBody(req);
+    const { path } = body;
+    if (!path) return badRequest(res, 'path requerido');
+    if (!path.startsWith(`${orgId}/`)) return json(res, 403, { ok: false, error: 'Acceso denegado' });
+    await deleteOrgStorageFile(path);
+    return json(res, 200, { ok: true });
+  }
+
+  return methodNotAllowed(req, res, ['GET', 'POST', 'DELETE']);
+}
+
 module.exports = async function handler(req, res) {
   const action = req.query?.action || req.url?.split('/').pop()?.split('?')[0];
   try {
@@ -216,6 +268,7 @@ module.exports = async function handler(req, res) {
     if (action === 'members')    return await handleMembers(req, res, access);
     if (action === 'plans')      return await handlePlans(req, res, access);
     if (action === 'templates')  return await handleTemplates(req, res, access);
+    if (action === 'files')      return await handleFiles(req, res, access);
     return json(res, 404, { ok: false, error: 'unknown_action' });
   } catch (error) {
     return serverError(res, error);
