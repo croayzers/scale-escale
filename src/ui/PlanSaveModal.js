@@ -91,23 +91,29 @@ function _orgName() {
     : (c.authDisplayName || 'Mi empresa');
 }
 
+// Límite de body de Vercel = 4.5 MB. Reescalamos SIEMPRE el plano a un
+// máximo seguro: a 1600 px y JPEG 0.72 el base64 queda muy por debajo de 1 MB,
+// así que cualquier plano (data: o blob:) cabe en el POST sin reventar el límite.
+const PLAN_IMG_MAX_DIM = 1600;
+const PLAN_IMG_QUALITY = 0.72;
+
 function _getPlanImage() {
   try {
     const img = AppState.plan?.texture?.image;
-    const src = img?.src;
-    if (src && src.startsWith('data:')) return src;
-    // Blob URL u otro: rasterizar via canvas 2D (WebGL toDataURL devuelve negro sin preserveDrawingBuffer)
-    if (img) {
-      const w = img.naturalWidth || img.width;
-      const h = img.naturalHeight || img.height;
-      if (w > 0 && h > 0) {
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0);
-        return c.toDataURL('image/jpeg', 0.82);
-      }
+    if (!img) return null;
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) {
+      // Imagen sin dimensiones: si ya es data:, devolverla tal cual como último recurso.
+      const src = img.src;
+      return (src && src.startsWith('data:')) ? src : null;
     }
-    return null;
+    const scale = Math.min(1, PLAN_IMG_MAX_DIM / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width  = Math.round(w * scale);
+    c.height = Math.round(h * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', PLAN_IMG_QUALITY);
   } catch {
     return null;
   }
@@ -217,7 +223,7 @@ async function save() {
   } catch (err) {
     console.error('[PlanSaveModal] Error guardando plano:', err);
     document.dispatchEvent(new CustomEvent('escale:toast', {
-      detail: { msg: 'No se pudo guardar en la nube', kind: 'warning' }
+      detail: { msg: `No se pudo guardar: ${err?.message || 'error desconocido'}`, kind: 'warning' }
     }));
   }
 

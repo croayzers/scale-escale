@@ -53,7 +53,7 @@ export async function listFloorPlans() {
 
 export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opacity, ciudad = null, tipo = null, cliente = null, venue = null }) {
   const token = await _getToken();
-  if (!token) return null;
+  if (!token) throw new Error('Sesión no disponible. Vuelve a iniciar sesión.');
   const res = await fetch('/api/org/plans', {
     method: 'POST',
     headers: {
@@ -73,7 +73,18 @@ export async function saveFloorPlan({ name, imageDataUrl, widthM, lengthM, opaci
       opacity,
     })
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    // Surface el error real (status + reason/error del servidor) en lugar de tragárselo.
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body?.message || body?.error || body?.reason || '';
+    } catch { /* respuesta no-JSON (p.ej. 413 de Vercel) */ }
+    if (res.status === 413) detail = detail || 'La imagen del plano es demasiado grande.';
+    if (res.status === 403) detail = detail || 'No perteneces a ninguna organización.';
+    if (res.status === 401) detail = detail || 'Sesión expirada.';
+    throw new Error(detail ? `${detail} (HTTP ${res.status})` : `HTTP ${res.status}`);
+  }
   const data = await res.json();
   if (data.skipped) return { skipped: true };
   return data.plan || null;
